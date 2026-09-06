@@ -1,0 +1,175 @@
+{
+  "nodes": [
+    {
+      "id": "SPEC-LATENCY-001",
+      "type": "experiment_spec",
+      "title": "冻结纯深度图边界与 <1 ms 计时契约",
+      "status": "proposed",
+      "priority": 1,
+      "version": 1,
+      "owner_agent": "experiment-architect",
+      "model_tier": "deep",
+      "required_skills": [
+        "research-graph-protocol",
+        "experiment-contract"
+      ],
+      "input_artifacts": [
+        ".research/brief.md",
+        ".research/project-assessment.md"
+      ],
+      "output_artifacts": [
+        "experiments/specs/depth-latency-v1.md"
+      ],
+      "acceptance": [
+        "timing_input_hardware_and_statistics_explicit",
+        "quality_and_invalid_depth_criteria_explicit",
+        "bounded_run_cost_declared"
+      ],
+      "claim_ceiling": null,
+      "metadata": {
+        "approved_for_execution": false,
+        "authorization_note": "本轮授权搭建框架与库存；该后续工作尚未授权执行。"
+      },
+      "verdict": "not_assessed",
+      "freshness": "current",
+      "created_at": "2026-09-05T12:11:20Z",
+      "updated_at": "2026-09-05T12:11:20Z"
+    },
+    {
+      "id": "IMPL-BASELINE-001",
+      "type": "implementation",
+      "title": "建立可复现深度 GVF 基准入口，保留现有行为基线",
+      "status": "proposed",
+      "priority": 1,
+      "version": 1,
+      "owner_agent": "implementation-engineer",
+      "model_tier": "balanced_code",
+      "required_skills": [
+        "research-graph-protocol",
+        "defensive-research-code"
+      ],
+      "input_artifacts": [
+        "experiments/specs/depth-latency-v1.md",
+        "src/pc_gvf/pc_gvf/depth_angular_core.py",
+        "src/pc_gvf/pc_gvf/depth_angular_controller.py"
+      ],
+      "output_artifacts": [
+        "src/pc_gvf/benchmarks/depth_latency_v1.py",
+        "src/pc_gvf/benchmarks/depth_latency_v1.md"
+      ],
+      "acceptance": [
+        "benchmark_matches_frozen_contract",
+        "timing_excludes_only_declared_stages",
+        "quality_regression_checked"
+      ],
+      "claim_ceiling": null,
+      "metadata": {
+        "approved_for_execution": false,
+        "authorization_note": "本轮授权搭建框架与库存；该后续工作尚未授权执行。"
+      },
+      "verdict": "not_assessed",
+      "freshness": "current",
+      "created_at": "2026-09-05T12:11:20Z",
+      "updated_at": "2026-09-05T12:11:20Z"
+    },
+    {
+      "id": "RUN-BASELINE-001",
+      "type": "run",
+      "title": "执行首轮有界基准并保存原始逐帧记录",
+      "status": "proposed",
+      "priority": 1,
+      "version": 1,
+      "owner_agent": "experiment-runner",
+      "model_tier": "balanced_code",
+      "required_skills": [
+        "research-graph-protocol",
+        "experiment-contract",
+        "defensive-research-code"
+      ],
+      "input_artifacts": [
+        "experiments/specs/depth-latency-v1.md",
+        "src/pc_gvf/benchmarks/depth_latency_v1.py",
+        "src/pc_gvf/benchmarks/depth_latency_v1.md",
+        "src/pc_gvf/pc_gvf/depth_angular_core.py"
+      ],
+      "output_artifacts": [
+        "runs/depth-baseline-001/raw.jsonl",
+        "runs/depth-baseline-001/manifest.json",
+        "runs/depth-baseline-001/stdout.log"
+      ],
+      "acceptance": [
+        "raw_samples_and_failures_retained",
+        "environment_inputs_exit_and_timeout_recorded"
+      ],
+      "claim_ceiling": null,
+      "metadata": {
+        "approved_for_execution": false,
+        "authorization_note": "本轮授权搭建框架与库存；该后续工作尚未授权执行。"
+      },
+      "verdict": "not_assessed",
+      "freshness": "current",
+      "created_at": "2026-09-05T12:11:20Z",
+      "updated_at": "2026-09-05T12:11:20Z"
+    },
+    {
+      "id": "AUDIT-BASELINE-001",
+      "type": "finding",
+      "title": "独立复核耗时和导航质量，识别下一轮优化所需证据",
+      "status": "proposed",
+      "priority": 1,
+      "version": 1,
+      "owner_agent": "evidence-auditor",
+      "model_tier": "deep",
+      "required_skills": [
+        "research-graph-protocol",
+        "claim-evidence-audit",
+        "experiment-contract"
+      ],
+      "input_artifacts": [
+        "experiments/specs/depth-latency-v1.md",
+        "runs/depth-baseline-001/raw.jsonl",
+        "runs/depth-baseline-001/manifest.json",
+        "runs/depth-baseline-001/stdout.log"
+      ],
+      "output_artifacts": [
+        "findings/depth-baseline-001.md"
+      ],
+      "acceptance": [
+        "metrics_recomputed_from_raw_data",
+        "latency_scope_and_quality_jointly_assessed",
+        "uncertainty_and_counterevidence_explicit"
+      ],
+      "claim_ceiling": null,
+      "metadata": {
+        "approved_for_execution": false,
+        "authorization_note": "本轮授权搭建框架与库存；该后续工作尚未授权执行。"
+      },
+      "verdict": "not_assessed",
+      "freshness": "current",
+      "created_at": "2026-09-05T12:11:20Z",
+      "updated_at": "2026-09-05T12:11:20Z"
+    }
+  ],
+  "edges": [
+    {
+      "from": "BOOT-001",
+      "to": "SPEC-LATENCY-001",
+      "type": "depends_on"
+    },
+    {
+      "from": "SPEC-LATENCY-001",
+      "to": "IMPL-BASELINE-001",
+      "type": "depends_on"
+    },
+    {
+      "from": "IMPL-BASELINE-001",
+      "to": "RUN-BASELINE-001",
+      "type": "depends_on"
+    },
+    {
+      "from": "RUN-BASELINE-001",
+      "to": "AUDIT-BASELINE-001",
+      "type": "depends_on"
+    }
+  ]
+}
