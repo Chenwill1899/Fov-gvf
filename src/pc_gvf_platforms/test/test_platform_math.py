@@ -17,6 +17,13 @@ def test_holonomic_command_rotates_into_body():
     assert math.isclose(twist.linear.y, -1.0)
 
 
+def test_holonomic_preserves_clamped_vertical_velocity():
+    twist = convert(
+        0.0, 0.0, 0.0, "holonomic", 2.0, 2.0, 2.0, 1.0, 0.01,
+        vz=1.4, max_vz=1.0)
+    assert math.isclose(twist.linear.z, 1.0)
+
+
 def test_joy_deadzone_and_scaling():
     assert map_axes([0.0, 0.1], 1, 0, 1.0, 1.0, 0.15, 1.0) == (0.0, 0.0)
     assert map_axes([0.0, 1.0], 1, 0, 1.0, 1.0, 0.15, 2.0) == (2.0, 0.0)

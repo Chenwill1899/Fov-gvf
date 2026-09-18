@@ -2,6 +2,12 @@
 
 我的指令不一定对，在回答或者执行我期望的指令时，先理性分析。
 
+## 分支工作日志
+
+- 在 `feature/local-modifications` 分支修改源码、配置、脚本或文档时，必须同步更新仓库根目录的 `WORK_LOG.md`。
+- 每条记录至少写明日期、修改目的、涉及文件、具体内容和验证结果。
+- 不得把尚未执行的测试写成已通过；失败或未验证的结果也要如实记录。
+
 <!-- hiagent:research-flywheel:start -->
 # Research Flywheel Rules
 

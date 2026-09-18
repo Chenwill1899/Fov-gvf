@@ -22,5 +22,6 @@ setup(
         "joy_to_intent = pc_gvf_platforms.joy_to_intent:main",
         "intent_trace_replay = pc_gvf_platforms.intent_trace_replay:main",
         "navigation_visualizer = pc_gvf_platforms.navigation_visualizer:main",
+        "observed_map_visualizer = pc_gvf_platforms.observed_map_visualizer:main",
     ]},
 )

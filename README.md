@@ -1,5 +1,9 @@
 # Fov-GVF for ROS 2
 
+> **EGO1P0 当前运行入口：**本文件下方保留上游ROS 2说明；本机EGO1P0的实际
+> Humble + Isaac Sim + 北通手柄避障功能、平台、参数和运行命令，以
+> [EGO1P0_VERSION.md](EGO1P0_VERSION.md) 为准。
+
 ROS 2 Jazzy workspace for depth/FOV-guided vector-field navigation. The
 repository is self-contained; it does not require files from the old ROS 1
 workspace.
@@ -55,7 +59,8 @@ markers). FOV points are transformed into the world frame using the current
 body attitude and camera optical rotation; no ROS 1 TF node is required.
 
 The demo publishes synthetic odometry, depth, CameraInfo, and human intent.
-The controller publishes `pc_gvf_msgs/msg/PositionCommand`. Inspect it with:
+The default controller is the C++ runtime and publishes
+`pc_gvf_msgs/msg/PositionCommand`. Inspect it with:
 
 ```bash
 ros2 topic echo --once /depth_angular_controller/status

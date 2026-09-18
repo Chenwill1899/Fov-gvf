@@ -1,23 +1,6 @@
 import numpy as np
 
-from pc_gvf.depth_angular_controller import DepthAngularController, quaternion_matrix
 from pc_gvf.depth_angular_core import SimConfig, disk_mask, make_scenes, solve_angular_harmonic
-
-
-def test_quaternion_matrix_identity():
-    np.testing.assert_allclose(quaternion_matrix(0.0, 0.0, 0.0, 1.0), np.eye(3))
-
-
-def test_depth_decoder_rejects_unknown_encoding():
-    class Image:
-        encoding = "rgb8"
-
-    try:
-        DepthAngularController.decode_depth(Image())
-    except ValueError as exc:
-        assert "32FC1" in str(exc)
-    else:
-        raise AssertionError("invalid encoding accepted")
 
 
 def test_harmonic_field_respects_mask():

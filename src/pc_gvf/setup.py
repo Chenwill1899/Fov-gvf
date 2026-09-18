@@ -16,7 +16,6 @@ setup(
     tests_require=["pytest"],
     zip_safe=True,
     entry_points={"console_scripts": [
-        "depth_angular_controller = pc_gvf.depth_angular_controller:main",
         "depth_angular_demo_sim = pc_gvf.depth_angular_demo_sim:main",
         "depth_angular_core = pc_gvf.depth_angular_core:main",
     ]},
