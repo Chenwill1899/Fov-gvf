@@ -946,3 +946,21 @@
   协作，但邀请尚待用户确认接受；本条记录时远程仍未创建`ego1p0`。
 - 影响与边界：不改远程dev，不改算法、参数、场景或运行文件；只调整待推送分支的
   父提交和提交图。
+
+### 2026-09-18 — ego1p0分支成功推送到GitHub
+
+- 目的：完成当前EGO1P0版本的远程备份，并保持`dev`主分支不变。
+- 涉及文件：本工作日志及本地Git配置；项目外新增专用SSH密钥
+  `/home/starry/.ssh/id_ed25519_codex_github`，GitHub公钥标题为
+  `Codex EGO1P0 starry 2026-09-18`。
+- 修改内容：当前账号`dhmiaolovestar-hash`接受`Chenwill1899/Fov-gvf`协作者邀请后，
+  使用GitHub SSH 443端口推送新分支`ego1p0`。分支首个快照提交为`ff08e31`，直接父
+  提交为远程`dev=804f26e`；远程地址为
+  `ssh://git@ssh.github.com:443/Chenwill1899/Fov-gvf.git`。
+- 验证：SSH返回`successfully authenticated`；`git push -u origin ego1p0`成功报告
+  `[new branch] ego1p0 -> ego1p0`并建立跟踪关系。推送后提交图为
+  `ego1p0: ff08e31 -> dev: 804f26e`，工作区无未提交修改。此次只做版本管理，未重新
+  运行构建/算法测试；待推送快照沿用2026-09-17已记录的ROS三包构建成功、9/9 CTest
+  和真实手柄动态联调结果。
+- 影响与边界：远程`dev`未修改、未合并、未变基；`build/install/log`和缓存继续忽略。
+  未创建Pull Request，当前只是独立远程分支。
