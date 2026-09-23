@@ -1,3 +1,45 @@
+# EGO1P1 工作日志
+
+### 2026-09-23 20:00 — [EGO1P1] 发布当前版本到 GitHub ego1p0 支线
+
+- 状态：本地版本整理完成，提交并推送待执行；远程结果以 HISTORY 后续核验记录为准。
+- 目的：按用户要求以当前 EGO1P1 替换仓库 ego1p0 支线内容，不修改其他支线。
+- 项目路径：`/home/starry/isaac-data/EGO1P1`。
+- 涉及文件：此前复制和精简形成的全部项目改动，以及 WORK_LOG.md、HISTORY/CHANGELOG.md。
+- 修改内容：本地 ego1p1 提交当前完整项目状态，显式推送 HEAD:refs/heads/ego1p0 到 Chenwill1899/Fov-gvf；保留提交历史，不强制推送、不创建其他远程分支。
+- 验证：推送前远程 ego1p0 为 6d4e5778ccc3d97b585004c1d4f86e1f4a325ffc，dev 为 804f26e2e631d0571f5e1cc5088100481df1b16d；git diff --check 通过。本次不修改算法、不重跑构建或仿真；已有验证见上一条整理记录。
+- 影响与边界：仅发布 EGO1P1 项目内容到指定远程支线；本地 EGO1P0 与其他远程分支不改动。
+- 回滚/备份：旧版本提交 6d4e5778ccc3d97b585004c1d4f86e1f4a325ffc 仍保留在历史；整理前完整快照见上一条记录。
+- 后续事项：推送后核对目标分支 SHA 和其他远程引用。
+
+### 2026-09-23 19:51 — [EGO1P1] 精简为两个主入口及运行/回归依赖
+
+- 状态：完成。
+- 目的：按用户要求整理 EGO1P1，主要保留 scripts/build_isaac_ros_workspace.sh 与 scripts/run_isaac_fov_gvf_navigation.sh 及相关依赖。
+- 项目路径：`/home/starry/isaac-data/EGO1P1`。
+- 涉及文件：完整整理前快照及清单在 `/home/starry/isaac-data/备份/EGO1P1_before_cleanup_20260923_194915`。55 条移出路径见 `REMOVED_PATHS.json`，包括旧 build/install/log、KEYBOARD/MISSANDKEYBOARD 独立入口、备用场景、场景生成/查看脚本、build_ros2.sh、未接入的 src/pc_gvf_core、隐藏研究框架和旧说明。迁移手柄模块到 scripts/isaac/beitong_joystick.py，测试到 src/pc_gvf/test/test_beitong_joystick.py；修改运行器导入、pc_gvf/CMakeLists.txt 测试注册、README、EGO1P1_VERSION、AGENTS、WORK_LOG、performance 自动记录及 HISTORY 四份状态/记录文档。
+- 修改内容：scripts 顶层只保留构建/运行两个 Shell 入口，isaac 子目录保留运行器/手柄/控制数学三个 Python 文件，lib 保留设备识别。三个在用 ROS 包、Cloud/平地导航资产、RViz、算法测试/Python数值基准、ROS探针、性能记录和 Git 历史继续保留。算法、launch 参数和场景关键文件 SHA-256 与整理前一致；手柄模块仅迁移位置，内容一致。README 重写为当前最小运行指南，原说明完整保存在快照中，旧 WORK_LOG 不删除。
+- 验证：整理前完整快照 1476 个文件/链接与 SHA-256/链接目标清单逐项一致。主构建脚本三包成功；新独立构建树 CTest 10/10（新增注册已有手柄4项测试），平台 pytest 13/13 通过；29 个 Python AST 与3个 Shell bash -n 检查通过；git diff --check 通过。OpenUSD ComputeAllDependencies 核对两个保留 USD 均为单层、无外部资产、无未解析引用。执行主入口，显式 keyboard、ISAAC_MANUAL_TIMEOUT=3、默认 Cloud+RViz，运行ID ego1p1_cleanup_smoke_20260923；成功加载4路320×240相机、0.40m ESDF、第三人称视图、在线地图及唯一控制发布者。183仿真帧、151命令帧、50Hz仿真时间命令频率，位置保持(-64,-11.2,2.8)，碰撞阻断0，MANUAL_TIMEOUT后退出码0。
+- 失败/告警与边界：仿真加载内部 Humble rclpy 前尝试系统 rclpy 不可用，内部加载成功；退出时桥接 rosout 记录一次 context invalid 告警，节点仍正常退出。日志保存在快照 cleanup_smoke.log。未注入运动，guidance=0；本次仅证明整理后的完整启动/零输入/退出链可用，不声称动态绕障、实体手柄推杆或性能达标。手柄迁移由现有单元测试验证。EGO1P0 未修改。
+- 回滚/备份：`/home/starry/isaac-data/备份/EGO1P1_before_cleanup_20260923_194915/EGO1P1` 为整理前完整文件树（含Git和未提交修改）；MANIFEST.json 校验来源，REMOVED_PATHS.json列出移出项目的路径。需要恢复时先保存后续工作，再按需取回，避免覆盖新的优化。
+- 后续事项：算法优化继续在精简后的EGO1P1中进行，日常使用README中的两条命令。
+
+### 2026-09-23 19:44 — [EGO1P1] 完整复制 EGO1P0 并建立后续算法开发主线
+
+- 状态：完成。
+- 目的：按用户要求将 EGO1P0 当前文件复制到 EGO1P1，之后以 EGO1P1 作为新开发主线。
+- 项目路径：`/home/starry/isaac-data/EGO1P1`；来源 `/home/starry/isaac-data/EGO1P0`。
+- 涉及文件：完整复制来源目录 1473 个文件/符号链接，包含 Git 历史、未提交修改、场景、性能记录、研究元数据及原 build/install/log/缓存。路径适配文件：`scripts/run_cloud_pillar_scene.sh`, `scripts/run_blender_isolated_cloud_scene.sh`, `scripts/prepare_ego_swarm_cloud_navigation.sh`, `scripts/prepare_ego_swarm_navigation.sh`, `scripts/prepare_flat_ground_navigation.sh`, `scripts/export_blender_cloud_to_isaac.sh`, `scripts/run_isolated_cloud_scene.sh`, `scripts/run_crack_maze_scene.sh`, `scripts/build_isaac_ros_workspace.sh`, `scripts/run_isaac_fov_gvf_navigation.sh`, `scripts/blender/generate_isolated_cloud_scene.py`, `scripts/isaac/generate_crack_maze_scene.py`, `scripts/isaac/generate_cloud_pillar_scene.py`, `scripts/isaac/generate_isolated_cloud_scene.py`, `KEYBOARD/run_keyboard_only.sh`, `KEYBOARD/run_joystick_only.sh`, `MISSANDKEYBOARD/run_joystick_avoidance.sh`。新增 `EGO1P1_VERSION.md`；更新 `AGENTS.md`、`README.md`、`DONG.md`、`USER_MANUAL_CONTROL_GUIDE.md`、`ISAAC_EGO_SWARM_CLOUD_NAVIGATION.md`、`ISAAC_FOV_GVF_NAVIGATION.md`、两个输入入口 README、`WORK_LOG.md`；统一更新 HISTORY 的 README、PROJECT_INDEX、FOV_GVF_FAMILY 和 CHANGELOG。
+- 修改内容：完整复制后先校验逐文件 SHA-256/符号链接目标一致，再将新目录可执行脚本中的绝对根路径改为 EGO1P1，构建前缀改为 `/tmp/fov_gvf_ego1p1_isaac_{build,install,log}`，默认 ROS 日志为 `/tmp/fov_gvf_ego1p1_isaac_ros_log`。复制的独立 Git 仓建立无上游本地 `ego1p1` 分支，继承 `6d4e577`，保留所有来源未提交修改；未创建提交、未推送或修改远程。EGO1P1 设为后续优化主线，EGO1P0 保留基线。
+- 验证：复制前后清单 1473 项完全一致；适配后复核来源清单未变，算法 src 与场景 scenes 的非缓存文件字节一致。14 个 Shell 文件 `bash -n` 和 38 个 Python 文件 AST 语法检查通过，可执行源码无 EGO1P0 绝对路径残留；`git diff --check` 通过。`bash EGO1P1/scripts/build_isaac_ros_workspace.sh` 在新前缀成功构建 pc_gvf_msgs、pc_gvf_platforms、pc_gvf，三包 colcon_build.rc 均为 0；source Humble/新 install 并设 PYTHONNOUSERSITE=1 后，独立 pc_gvf 构建树 CTest 9/9 通过。未启动 Isaac、未执行手柄动态避障或性能实验。
+- 影响与边界：算法、参数、输入语义、ROS 话题与场景不变。共用 ROS_DOMAIN_ID=42 和原单实例锁，继续禁止两个副本同时控制。来源版本说明、WORK_LOG 旧条目、performance 与 .research 历史保留原内容，不宣称旧实验已在新版本复验。原目录内复制的 build/install/log 可能含旧绝对路径，仅保留来源记录，正式入口使用本轮新建的独立 /tmp 产物。
+- 回滚/备份：EGO1P0 原目录完整未改；新目录与构建产物独立，可在明确要求回滚时移除，并追加历史更正，不删除旧记录。
+- 后续事项：后续算法修改默认在 EGO1P1 进行，并同步项目 WORK_LOG 和 HISTORY；动态仿真另行执行。
+
+---
+
+以下为完整继承的来源历史记录。
+
 # Fov-GVF 分支工作日志
 
 > 分支：`feature/local-modifications`  
@@ -964,3 +1006,37 @@
   和真实手柄动态联调结果。
 - 影响与边界：远程`dev`未修改、未合并、未变基；`build/install/log`和缓存继续忽略。
   未创建Pull Request，当前只是独立远程分支。
+
+### 2026-09-23 — 北通 A2P3A BFM/XInput 双 profile 自动识别
+
+- 目的：解决北通接收器以XInput模式枚举为`045e:028e Xbox360 Controller`时，EGO1P0
+  启动器仍写死旧BFM by-id并在ROS/Isaac启动前误报“手柄不可读”的问题；同时避免只改
+  路径后把XInput的LT axis 2误当成Roll，导致回中安全门无法解锁。
+- 涉及文件：新增`scripts/lib/beitong_joystick.sh`和
+  `MISSANDKEYBOARD/test_beitong_joystick.py`；修改通用、组合及独立三个手柄入口，
+  `MISSANDKEYBOARD/beitong_joystick.py`、`KEYBOARD/keyboard_only.py`，以及版本说明、
+  两份入口README、人工控制指南、Cloud人工控制说明和`DONG.md`；同步更新统一HISTORY。
+- 修改内容：公共启动链现在扫描`/dev/input/js*`并用udev严格接受唯一一个北通A2P3A。
+  BFM `20bc:511c`固定要求8轴16按钮，映射为Yaw/Throttle/Roll/Pitch=`0/1/2/3`；
+  XInput `045e:028e`还必须匹配北通vendor/model，固定要求8轴11按钮，映射为
+  `0/1/3/4`。显式`JOYSTICK_DEVICE`不能绕过身份检查，显式profile必须与检测结果一致；
+  零匹配、多匹配、非字符设备、不可读设备和尺寸冲突均fail closed。轴/符号定制接口、
+  四杆回中0.5秒、断连清零与键盘兼容模式保持不变。
+- 验证：四个Shell文件`bash -n`通过；三份Python文件`py_compile`通过；新增4项unittest
+  全通过，覆盖BFM、XInput、尺寸推断以及错误profile拒绝，且确认不能用旧expected环境
+  变量绕过尺寸契约，并验证XInput空闲LT不会阻止回中解锁；`git diff --check`通过。
+  本轮较早的真实设备检查中，接收器枚举为BFM `20bc:511c`，
+  udev确认`/dev/input/js0`及稳定BFM by-id，ACL允许当前用户读取；解析器实测选择
+  `profile=bfm`和`0/1/2/3`。把ROS安装前缀故意指向不存在目录运行主入口时，手柄门禁
+  成功通过，随后按预期在ROS安装检查退出，没有启动ROS、Isaac或发布控制命令。最后
+  收紧profile尺寸契约后尝试重复实机检查时，解析器按设计报告没有受支持设备；`lsusb`
+  和`/dev/input`复核确认接收器已经不在系统中，因此没有把该次写成重复实机通过。
+- 影响与边界：只改变北通设备发现、profile选择和对应输入轴，不修改FOV-GVF数学、
+  ROS话题、场景、速度或末端安全逻辑。用户此前的`lsusb 045e:028e`说明接收器曾处于
+  XInput模式；本轮最终实机检查时它已切回BFM，因此XInput路径由严格udev逻辑和单元
+  测试覆盖，未写成XInput实机推杆通过。本轮未推动摇杆、未执行受控USB断连停车测试，
+  也未运行完整Isaac/ROS动态避障。
+- 回滚/后续：移除共享解析器和新增测试，并恢复上述启动器、Python输入层及文档的
+  本次差异即可回到单一BFM基线。用户可用原命令启动完整链，现场继续核对四个方向、
+  回中停车和拔出USB停车；若接收器再次显示`045e:028e`，终端应打印`profile=xinput`
+  及轴映射`0/1/3/4`。

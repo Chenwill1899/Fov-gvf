@@ -106,11 +106,23 @@ class LinuxJoystick:
 class BeitongMode2:
     """Validated BEITONG A2P3A Mode-2 mapping with a neutral-start gate."""
 
-    DEFAULT_DEVICE = Path(
+    BFM_DEVICE = Path(
         "/dev/input/by-id/usb-BEITONG_BEITONG_A2P3A_BFM_DONGLE-joystick")
+    XINPUT_DEVICE = Path(
+        "/dev/input/by-id/usb-BEITONG_BEITONG_A2P3A_XINPUT_DONGLE-joystick")
+    PROFILE_LAYOUTS = {
+        "bfm": {"axes": 8, "buttons": 16, "roll": 2, "pitch": 3},
+        "xinput": {"axes": 8, "buttons": 11, "roll": 3, "pitch": 4},
+    }
 
     def __init__(self) -> None:
-        self.path = Path(os.environ.get("JOYSTICK_DEVICE", self.DEFAULT_DEVICE))
+        configured_path = os.environ.get("JOYSTICK_DEVICE")
+        if configured_path:
+            self.path = Path(configured_path)
+        elif self.XINPUT_DEVICE.exists():
+            self.path = self.XINPUT_DEVICE
+        else:
+            self.path = self.BFM_DEVICE
         self.horizontal_speed = _nonnegative_env("JOYSTICK_HORIZONTAL_SPEED", 2.0)
         self.vertical_speed = _nonnegative_env("JOYSTICK_VERTICAL_SPEED", 1.5)
         self.max_yaw_rate = math.radians(
@@ -119,9 +131,33 @@ class BeitongMode2:
         self.neutral_hold = _nonnegative_env("JOYSTICK_NEUTRAL_HOLD", 0.5)
         if self.deadzone >= 1.0:
             raise SystemExit("JOYSTICK_DEADZONE must be less than 1.0")
+        self.device = LinuxJoystick(self.path)
+        requested_profile = os.environ.get("JOYSTICK_PROFILE", "").strip().lower()
+        if requested_profile:
+            self.profile = requested_profile
+        elif (self.device.axis_count, self.device.button_count) == (8, 11):
+            self.profile = "xinput"
+        elif (self.device.axis_count, self.device.button_count) == (8, 16):
+            self.profile = "bfm"
+        else:
+            self.close()
+            raise SystemExit(
+                "cannot infer BEITONG profile from joystick dimensions "
+                f"{self.device.axis_count} axes/{self.device.button_count} buttons")
+        if self.profile not in self.PROFILE_LAYOUTS:
+            self.close()
+            raise SystemExit("JOYSTICK_PROFILE must be bfm or xinput")
+        layout = self.PROFILE_LAYOUTS[self.profile]
+        if (self.device.axis_count, self.device.button_count) != (
+                layout["axes"], layout["buttons"]):
+            self.close()
+            raise SystemExit(
+                f"profile {self.profile} expects {layout['axes']} axes/"
+                f"{layout['buttons']} buttons, got {self.device.axis_count}/"
+                f"{self.device.button_count}")
         self.axis_indices = {
-            "roll": _integer_env("JOYSTICK_AXIS_ROLL", 2),
-            "pitch": _integer_env("JOYSTICK_AXIS_PITCH", 3),
+            "roll": _integer_env("JOYSTICK_AXIS_ROLL", layout["roll"]),
+            "pitch": _integer_env("JOYSTICK_AXIS_PITCH", layout["pitch"]),
             "throttle": _integer_env("JOYSTICK_AXIS_THROTTLE", 1),
             "yaw": _integer_env("JOYSTICK_AXIS_YAW", 0),
         }
@@ -131,7 +167,6 @@ class BeitongMode2:
             "throttle": _sign_env("JOYSTICK_SIGN_THROTTLE", -1),
             "yaw": _sign_env("JOYSTICK_SIGN_YAW", -1),
         }
-        self.device = LinuxJoystick(self.path)
         if len(set(self.axis_indices.values())) != 4:
             self.close()
             raise SystemExit("the four JOYSTICK_AXIS_* values must be different")
@@ -146,7 +181,8 @@ class BeitongMode2:
         self.disconnect_reported = False
         print(
             f"[JOYSTICK] device={self.path} name={self.device.name!r} "
-            f"axes={self.device.axis_count} buttons={self.device.button_count}",
+            f"profile={self.profile} axes={self.device.axis_count} "
+            f"buttons={self.device.button_count}",
             flush=True,
         )
         print(

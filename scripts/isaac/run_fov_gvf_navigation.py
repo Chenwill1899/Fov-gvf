@@ -74,8 +74,6 @@ if manual_input_mode not in {"keyboard", "joystick"}:
     raise SystemExit("ISAAC_MANUAL_INPUT_MODE must be keyboard or joystick")
 joystick_input = None
 if manual_input_mode == "joystick":
-    combined_input_dir = Path(__file__).resolve().parents[2] / "MISSANDKEYBOARD"
-    sys.path.insert(0, combined_input_dir.as_posix())
     from beitong_joystick import BeitongMode2
 
     joystick_input = BeitongMode2()

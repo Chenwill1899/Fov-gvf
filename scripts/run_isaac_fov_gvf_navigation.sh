@@ -1,21 +1,19 @@
 #!/usr/bin/env bash
 set -eo pipefail
 
-PROJECT_ROOT="/home/starry/isaac-data/EGO1P0"
+PROJECT_ROOT="/home/starry/isaac-data/EGO1P1"
 ISAAC_ROOT="/home/starry/isaac-data/isaacsim"
 HUMBLE_BRIDGE_LIB="$ISAAC_ROOT/exts/isaacsim.ros2.core/humble/lib"
-ROS_INSTALL="${FOV_GVF_INSTALL:-/tmp/fov_gvf_ego1p0_isaac_install}"
+ROS_INSTALL="${FOV_GVF_INSTALL:-/tmp/fov_gvf_ego1p1_isaac_install}"
 INPUT_MODE="${ISAAC_MANUAL_INPUT_MODE:-joystick}"
 case "$INPUT_MODE" in
   joystick)
-    JOYSTICK_DEVICE="${JOYSTICK_DEVICE:-/dev/input/by-id/usb-BEITONG_BEITONG_A2P3A_BFM_DONGLE-joystick}"
-    if [[ ! -r "$JOYSTICK_DEVICE" ]]; then
-      echo "Joystick is not readable: $JOYSTICK_DEVICE" >&2
-      echo "Connect the BEITONG USB controller or set JOYSTICK_DEVICE." >&2
+    # shellcheck source=scripts/lib/beitong_joystick.sh
+    source "$PROJECT_ROOT/scripts/lib/beitong_joystick.sh"
+    if ! resolve_beitong_joystick; then
       echo "For the legacy keyboard input, set ISAAC_MANUAL_INPUT_MODE=keyboard." >&2
       exit 1
     fi
-    export JOYSTICK_DEVICE
     ;;
   keyboard)
     ;;
@@ -63,7 +61,7 @@ if [[ -z "${FOV_GVF_ESDF_OCCUPANCY+x}" ]]; then
     unset FOV_GVF_ESDF_OCCUPANCY
   fi
 fi
-export ROS_LOG_DIR="${ROS_LOG_DIR:-/tmp/fov_gvf_isaac_ros_log}"
+export ROS_LOG_DIR="${ROS_LOG_DIR:-/tmp/fov_gvf_ego1p1_isaac_ros_log}"
 export FOV_GVF_RUN_ID="${FOV_GVF_RUN_ID:-$(date +%Y%m%d_%H%M%S)}"
 export FOV_GVF_PERFORMANCE_LOG="${FOV_GVF_PERFORMANCE_LOG:-$PROJECT_ROOT/performance/PERFORMANCE_METRICS.md}"
 mkdir -p "$ROS_LOG_DIR"

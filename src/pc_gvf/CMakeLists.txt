@@ -114,7 +114,8 @@ if(BUILD_TESTING)
   foreach(test_name
       test_depth_angular_core
       test_python_behavior_baseline
-      test_manual_control_math)
+      test_manual_control_math
+      test_beitong_joystick)
     ament_add_pytest_test(${test_name} test/${test_name}.py
       APPEND_ENV PYTHONPATH=${CMAKE_CURRENT_SOURCE_DIR})
   endforeach()

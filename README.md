@@ -1,108 +1,39 @@
-# Fov-GVF for ROS 2
+# EGO1P1 深度避障开发主线
 
-> **EGO1P0 当前运行入口：**本文件下方保留上游ROS 2说明；本机EGO1P0的实际
-> Humble + Isaac Sim + 北通手柄避障功能、平台、参数和运行命令，以
-> [EGO1P0_VERSION.md](EGO1P0_VERSION.md) 为准。
-
-ROS 2 Jazzy workspace for depth/FOV-guided vector-field navigation. The
-repository is self-contained; it does not require files from the old ROS 1
-workspace.
-
-## Build and test
+## 构建与运行
 
 ```bash
-./build_ros2.sh
-source /opt/ros/jazzy/setup.bash
-source install/setup.bash
-colcon test --base-paths src --build-base build --install-base install
-colcon test-result --test-result-base build --verbose
+cd /home/starry/isaac-data/EGO1P1
+bash scripts/build_isaac_ros_workspace.sh
+bash scripts/run_isaac_fov_gvf_navigation.sh
 ```
 
-The build script deliberately uses `/usr/bin/python3`, matching the ROS 2
-Jazzy Python ABI even when Conda is active.
+需要本机 `/opt/ros/humble`、`/home/starry/isaac-data/isaacsim`、可用 NVIDIA 图形环境及北通 A2P3A BFM/XInput 手柄。默认打开 4 倍 Cloud、Isaac Sim 和 RViz；手柄四轴回中 0.5 秒后解锁。关闭窗口或 Ctrl-C 退出。
 
-## Depth-angular closed loop
+无手柄时显式使用键盘：
 
 ```bash
-source /opt/ros/jazzy/setup.bash
-source install/setup.bash
-ros2 launch pc_gvf depth_angular_demo.launch.py
+ISAAC_MANUAL_INPUT_MODE=keyboard bash scripts/run_isaac_fov_gvf_navigation.sh
 ```
 
-This starts RViz2 by default with the robot marker, velocity arrow, executed
-path, odometry, and forward depth image. Disable the GUI for headless runs:
+键盘 W/S、A/D、R/F 为世界坐标前后、左右、升降；Space 停止，1/3/V 切换视角。平地测试用 `FOV_GVF_SCENE_MODE=flat`，关闭 RViz 用 `FOV_GVF_RVIZ=false`，限时用 `ISAAC_MANUAL_TIMEOUT=5`。
 
-```bash
-ros2 launch pc_gvf depth_angular_demo.launch.py rviz:=false
-```
+## 保留目录
 
-The default scenario is `single_pillar`. Available migrated scenarios are
-`empty`, `single_pillar`, `offset_box`, `center_sphere`, `overhead_bar`,
-`diagonal_gap`, and `narrow_gate`:
+| 路径 | 用途 |
+|---|---|
+| scripts/*.sh | 仅两个主入口：构建、运行 |
+| scripts/isaac/ | Isaac 运行器、手柄输入、XY/Z 控制数学 |
+| scripts/lib/ | BFM/XInput 设备识别 |
+| src/pc_gvf/ | C++ 避障、launch、测试及 Python 数值/合成验收基准 |
+| src/pc_gvf_msgs/ | PositionCommand 消息 |
+| src/pc_gvf_platforms/ | 命令桥、RViz/在线地图和相关测试工具 |
+| scenes/ | Cloud USD+occupancy.bin、平地导航 USD |
+| tools/ | 算法基线生成与 ROS 回归探针，不是日常运行入口 |
+| performance/ | 逐次运行性能记录（含继承历史） |
 
-```bash
-ros2 launch pc_gvf depth_angular_demo.launch.py scenario:=single_pillar
-ros2 launch pc_gvf depth_angular_demo.launch.py scenario:=narrow_gate
-```
+构建产物使用 `/tmp/fov_gvf_ego1p1_isaac_{build,install,log}`，无需项目内 build/install/log。修改源码后重新构建。算法参数集中于 `src/pc_gvf/launch/isaac_cloud_navigation.launch.py`。
 
-RViz shows the scenario geometry, camera FOV, unsafe angular cells, depth
-hits, reference/goal/command rays, and the angular GVF vectors. The vectors
-retain the ROS 1 depth-angular visualization: arrow length and red/green
-color encode safe speed, with animated highlights along each arrow.
-The robot uses GVF-Nav's hummingbird quadrotor mesh, installed in
-`pc_gvf_platforms`; its pose follows odometry and `robot_scale` defaults to 1.0.
-Ground-platform launches continue to use their box marker.
+当前是四相机水平 360°局部避障，Z 独立控制；历史地图只显示，ESDF 仅做仿真末端保护。与其他副本共用 ROS 域42/单实例锁，不要同时运行。
 
-The port uses ROS 2 message construction, ROS clock timestamps, and
-transient-local MarkerArray publishers (the ROS 2 equivalent of latched
-markers). FOV points are transformed into the world frame using the current
-body attitude and camera optical rotation; no ROS 1 TF node is required.
-
-The demo publishes synthetic odometry, depth, CameraInfo, and human intent.
-The default controller is the C++ runtime and publishes
-`pc_gvf_msgs/msg/PositionCommand`. Inspect it with:
-
-```bash
-ros2 topic echo --once /depth_angular_controller/status
-ros2 topic echo /position_cmd --field velocity
-```
-
-Connect the controller to another simulator or robot with:
-
-```bash
-ros2 run pc_gvf depth_angular_controller --ros-args \
-  -p odom_topic:=/your/odom \
-  -p depth_topic:=/your/depth/image_raw \
-  -p camera_info_topic:=/your/depth/camera_info \
-  -p human_intent_topic:=/human_intent \
-  -p cmd_topic:=/position_cmd
-```
-
-Depth input supports `32FC1` metres and `16UC1` millimetres.
-
-## Ground-platform adapters
-
-Launch the PositionCommand-to-Twist bridge and a differential-drive simulator:
-
-```bash
-ros2 launch pc_gvf_platforms ground_platform.launch.py
-```
-
-This launch also starts RViz2 by default and displays TF, the ground-robot
-box, commanded velocity arrow, odometry, and executed path. Use `rviz:=false`
-for headless execution.
-
-Use an installed ROS 2 joystick driver together with:
-
-```bash
-ros2 run pc_gvf_platforms joy_to_intent
-```
-
-Replay a deterministic intent trace directly as `TwistStamped`:
-
-```bash
-ros2 run pc_gvf_platforms intent_trace_replay --ros-args \
-  -p trace_file:=$(ros2 pkg prefix pc_gvf_platforms)/share/pc_gvf_platforms/config/forward_stop.yaml
-```
-
-See [MIGRATION.md](MIGRATION.md) for the mapping from the old ROS 1 packages.
+版本和整理归档见 [EGO1P1_VERSION.md](EGO1P1_VERSION.md)，实际变更与验证见 [WORK_LOG.md](WORK_LOG.md)。
