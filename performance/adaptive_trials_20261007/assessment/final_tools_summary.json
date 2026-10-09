@@ -1,0 +1,811 @@
+{
+  "scope": "Only new assessment directory artifacts; no production, old tools, policies, shared work log or HISTORY modifications by this subtask.",
+  "entries": [
+    "assess.py",
+    "assess_replay.py",
+    "collect_adaptive.py",
+    "collect_replay.py"
+  ],
+  "test_files": [
+    "test_assess.py",
+    "test_assess_replay.py",
+    "test_collect_adaptive.py",
+    "test_collect_replay.py"
+  ],
+  "final_tests": {
+    "command": "python3 -m pytest -q EGO1P5/performance/adaptive_trials_20261007/assessment",
+    "passed": 64,
+    "failed": 0,
+    "evidence": "final_pytest.log",
+    "components": {
+      "assessment": 46,
+      "navigation_collector": 9,
+      "replay_collector": 9
+    }
+  },
+  "prior_test_runs_retained": [
+    {
+      "evidence": "pytest.txt",
+      "passed": 46
+    },
+    {
+      "evidence": "adapter_pytest.log",
+      "passed": 94,
+      "explanation": "55 tool tests plus 39 preserved helper tests accidentally discovered in contract_evidence; all passed."
+    },
+    {
+      "evidence": "adapter_pytest_scoped.log",
+      "passed": 55,
+      "explanation": "Added only new pytest.ini to exclude archived evidence source from tool test discovery."
+    },
+    {
+      "evidence": "replay_adapter_pytest.log",
+      "passed": 9
+    }
+  ],
+  "policies_unchanged": {
+    "navigation": "bc365b5624f9015d5879cbc20f41e0264b300a2dd61ee1741f648568246cf0a9",
+    "replay": "50d1be24e871b924072f4c2ce28a4ac2f5c1474c3bd92e58ec17eacea2b8a466"
+  },
+  "selected_contract_negative_cases": {
+    "unknown_rejection": 2,
+    "expired_depth_rejection": 2,
+    "stale_command_rejection": 1
+  },
+  "results": {
+    "goal_polish": {
+      "decision": "REJECT",
+      "evidence": "goal_polish_explore_collected/assessment.json",
+      "failures": [
+        "p5_goal_polish_explore_20261007_after_ego1p5_3: goal did not ARRIVE",
+        "goal:fixed_goal:explore: practical regression arrival_s",
+        "goal:fixed_goal:explore: practical regression stop_s",
+        "goal:fixed_goal:explore: practical regression longest_stop_s",
+        "goal:fixed_goal:explore: practical regression jerk_rms_mps3",
+        "goal:fixed_goal:explore: practical regression compute_p95_ms",
+        "goal:fixed_goal:explore: worst arrival-time regression"
+      ],
+      "insufficient": [
+        "p5_goal_polish_explore_20261007_before_ego1p5_1: freeze not independently verified",
+        "p5_goal_polish_explore_20261007_before_ego1p5_2: freeze not independently verified",
+        "p5_goal_polish_explore_20261007_before_ego1p5_3: freeze not independently verified",
+        "p5_goal_polish_explore_20261007_after_ego1p5_1: freeze not independently verified",
+        "p5_goal_polish_explore_20261007_after_ego1p5_2: freeze not independently verified",
+        "p5_goal_polish_explore_20261007_after_ego1p5_3: freeze not independently verified"
+      ],
+      "strata": {
+        "goal:fixed_goal": {
+          "explore": {
+            "pairs": 3,
+            "metrics": {
+              "arrival_s": {
+                "unit": "s",
+                "direction": "lower",
+                "n": 3,
+                "before_mean": 69.2388888888889,
+                "after_mean": 133.38333333333333,
+                "before_std": 0.07515416254704396,
+                "after_std": 92.33280535348443,
+                "before_min": 69.16666666666667,
+                "before_max": 69.31666666666666,
+                "after_min": 79.96666666666667,
+                "after_max": 240.0,
+                "oriented_paired_changes": [
+                  10.733333333333334,
+                  11.016666666666666,
+                  170.68333333333334
+                ],
+                "mean_oriented_change": 64.14444444444445,
+                "std_paired_change": 92.26549302802051,
+                "mean_change_percent": 92.64222097408326,
+                "paired_change_central90_t_interval": [
+                  -91.40177091344651,
+                  219.6906598023354
+                ],
+                "tolerance": 0.6923888888888889,
+                "improvement_threshold": 0.6923888888888889,
+                "noninferiority": "REGRESSION",
+                "practical_improvement": false,
+                "improvement_pairs": 0,
+                "tie_pairs": 0,
+                "primary_one_sided_sign_p": 1.0
+              },
+              "path_efficiency": {
+                "unit": "ratio",
+                "direction": "higher",
+                "n": 3,
+                "before_mean": 0.9749197280046898,
+                "after_mean": 1.06097068191202,
+                "before_std": 0.0008553827541536268,
+                "after_std": 0.17834405348894042,
+                "before_min": 0.9741472472524085,
+                "before_max": 0.9758390113168306,
+                "after_min": 0.9548975096205641,
+                "after_max": 1.2668731014047923,
+                "oriented_paired_changes": [
+                  0.019875415824266218,
+                  0.014697576606127472,
+                  -0.2927258541523837
+                ],
+                "mean_oriented_change": -0.08605095390733002,
+                "std_paired_change": 0.17900443653222511,
+                "mean_change_percent": 8.826465547419525,
+                "paired_change_central90_t_interval": [
+                  -0.38782642511630633,
+                  0.21572451730164627
+                ],
+                "tolerance": 0.01,
+                "improvement_threshold": 0.005,
+                "noninferiority": "UNCERTAIN",
+                "practical_improvement": true,
+                "improvement_pairs": 1,
+                "tie_pairs": 0,
+                "primary_one_sided_sign_p": 0.875
+              },
+              "stop_s": {
+                "unit": "s",
+                "direction": "lower",
+                "n": 3,
+                "before_mean": 0.2333333333333334,
+                "after_mean": 59.01111111111111,
+                "before_std": 0.0,
+                "after_std": 101.25810987182615,
+                "before_min": 0.2333333333333334,
+                "before_max": 0.2333333333333334,
+                "after_min": 0.2333333333333334,
+                "after_max": 175.93333333333334,
+                "oriented_paired_changes": [
+                  0.0,
+                  0.6333333333333329,
+                  175.70000000000002
+                ],
+                "mean_oriented_change": 58.777777777777786,
+                "std_paired_change": 101.25810987182615,
+                "mean_change_percent": 25190.476190476184,
+                "paired_change_central90_t_interval": [
+                  -111.92868297968842,
+                  229.484238535244
+                ],
+                "tolerance": 0.05,
+                "improvement_threshold": 0.1,
+                "noninferiority": "REGRESSION",
+                "practical_improvement": false,
+                "improvement_pairs": 0,
+                "tie_pairs": 1,
+                "primary_one_sided_sign_p": 1.0
+              },
+              "longest_stop_s": {
+                "unit": "s",
+                "direction": "lower",
+                "n": 3,
+                "before_mean": 0.2333333333333334,
+                "after_mean": 57.705555555555556,
+                "before_std": 0.0,
+                "after_std": 99.31395830805866,
+                "before_min": 0.2333333333333334,
+                "before_max": 0.2333333333333334,
+                "after_min": 0.2333333333333334,
+                "after_max": 172.38333333333333,
+                "oriented_paired_changes": [
+                  0.0,
+                  0.2666666666666666,
+                  172.15
+                ],
+                "mean_oriented_change": 57.47222222222222,
+                "std_paired_change": 99.31395830805867,
+                "mean_change_percent": 24630.952380952374,
+                "paired_change_central90_t_interval": [
+                  -109.95668147786915,
+                  224.9011259223136
+                ],
+                "tolerance": 0.05,
+                "improvement_threshold": 0.05,
+                "noninferiority": "REGRESSION",
+                "practical_improvement": false,
+                "improvement_pairs": 0,
+                "tie_pairs": 1,
+                "primary_one_sided_sign_p": 1.0
+              },
+              "jerk_rms_mps3": {
+                "unit": "m/s^3",
+                "direction": "lower",
+                "n": 3,
+                "before_mean": 1.6660853843724914,
+                "after_mean": 4.834316753250982,
+                "before_std": 0.06128645162404544,
+                "after_std": 0.6165316851339677,
+                "before_min": 1.6020839571450842,
+                "before_max": 1.7242374294495764,
+                "after_min": 4.20233529926908,
+                "after_max": 5.434140001531022,
+                "oriented_paired_changes": [
+                  3.8320560443859373,
+                  3.1422375295032663,
+                  2.530400532746267
+                ],
+                "mean_oriented_change": 3.16823136887849,
+                "std_paired_change": 0.6512169588620844,
+                "mean_change_percent": 190.16020418856036,
+                "paired_change_central90_t_interval": [
+                  2.070374196022869,
+                  4.266088541734111
+                ],
+                "tolerance": 0.08330426921862458,
+                "improvement_threshold": 0.16660853843724915,
+                "noninferiority": "REGRESSION",
+                "practical_improvement": false,
+                "improvement_pairs": 0,
+                "tie_pairs": 0,
+                "primary_one_sided_sign_p": 1.0
+              },
+              "compute_p95_ms": {
+                "unit": "ms",
+                "direction": "lower",
+                "n": 3,
+                "before_mean": 8.384666666666668,
+                "after_mean": 64.15266666666666,
+                "before_std": 0.31382532296379967,
+                "after_std": 57.550629339159556,
+                "before_min": 8.037,
+                "before_max": 8.647,
+                "after_min": 30.724,
+                "after_max": 130.606,
+                "oriented_paired_changes": [
+                  22.076999999999998,
+                  23.091,
+                  122.136
+                ],
+                "mean_oriented_change": 55.768,
+                "std_paired_change": 57.4786100823602,
+                "mean_change_percent": 665.1188677745089,
+                "paired_change_central90_t_interval": [
+                  -41.132585136718845,
+                  152.66858513671883
+                ],
+                "tolerance": 0.8384666666666668,
+                "improvement_threshold": 0.8384666666666668,
+                "noninferiority": "REGRESSION",
+                "practical_improvement": false,
+                "improvement_pairs": 0,
+                "tie_pairs": 0,
+                "primary_one_sided_sign_p": 1.0
+              }
+            },
+            "arrival_worst_run_tolerance_s": 2.0795
+          }
+        }
+      }
+    },
+    "manual_continuous": {
+      "decision": "INSUFFICIENT",
+      "evidence": "manual_continuous_explore_collected/assessment.json",
+      "failures": [],
+      "insufficient": [
+        "planned pair missing: p5_manual_continuous_explore_20261007_spin_spin_before_1/p5_manual_continuous_explore_20261007_spin_spin_after_1",
+        "planned pair missing: p5_manual_continuous_explore_20261007_spin_spin_before_2/p5_manual_continuous_explore_20261007_spin_spin_after_2",
+        "planned pair missing: p5_manual_continuous_explore_20261007_spin_spin_before_3/p5_manual_continuous_explore_20261007_spin_spin_after_3",
+        "planned pair missing: p5_manual_continuous_explore_20261007_sweep_sweep_before_1/p5_manual_continuous_explore_20261007_sweep_sweep_after_1",
+        "planned pair missing: p5_manual_continuous_explore_20261007_sweep_sweep_before_2/p5_manual_continuous_explore_20261007_sweep_sweep_after_2",
+        "planned pair missing: p5_manual_continuous_explore_20261007_sweep_sweep_before_3/p5_manual_continuous_explore_20261007_sweep_sweep_after_3",
+        "registered strata differ from observed paired strata"
+      ],
+      "strata": {
+        "manual:jitter": {
+          "explore": {
+            "pairs": 3,
+            "metrics": {
+              "angle_mean_deg": {
+                "unit": "degree",
+                "direction": "lower",
+                "n": 3,
+                "before_mean": 9.20017770968337,
+                "after_mean": 9.34194630690426,
+                "before_std": 0.1385674306619522,
+                "after_std": 0.023213309115400836,
+                "before_min": 9.074171331532007,
+                "before_max": 9.348578365578254,
+                "after_min": 9.317596018539207,
+                "after_max": 9.363824817126014,
+                "oriented_paired_changes": [
+                  0.28965348559400717,
+                  0.16663465310770853,
+                  -0.030982347039046232
+                ],
+                "mean_oriented_change": 0.14176859722088983,
+                "std_paired_change": 0.16175776594524804,
+                "mean_change_percent": 1.5409332481879796,
+                "paired_change_central90_t_interval": [
+                  -0.13093149326569845,
+                  0.41446868770747813
+                ],
+                "tolerance": 0.2760053312905011,
+                "improvement_threshold": 0.5,
+                "noninferiority": "UNCERTAIN",
+                "practical_improvement": false,
+                "improvement_pairs": 1,
+                "tie_pairs": 0,
+                "primary_one_sided_sign_p": 0.875
+              },
+              "angle_p95_deg": {
+                "unit": "degree",
+                "direction": "lower",
+                "n": 3,
+                "before_mean": 28.149769022469332,
+                "after_mean": 28.803566043183643,
+                "before_std": 0.2131922423195506,
+                "after_std": 0.3864199318027922,
+                "before_min": 27.90360895249063,
+                "before_max": 28.275050681018307,
+                "after_min": 28.367151167928956,
+                "after_max": 29.102252709105006,
+                "oriented_paired_changes": [
+                  1.198643756614377,
+                  0.09210048691064898,
+                  0.6706468186179144
+                ],
+                "mean_oriented_change": 0.6537970207143134,
+                "std_paired_change": 0.553464035596441,
+                "mean_change_percent": 2.3225662000723557,
+                "paired_change_central90_t_interval": [
+                  -0.27926292670922237,
+                  1.5868569681378493
+                ],
+                "tolerance": 1.4074884511234667,
+                "improvement_threshold": 1.4074884511234667,
+                "noninferiority": "UNCERTAIN",
+                "practical_improvement": false,
+                "improvement_pairs": 0,
+                "tie_pairs": 0,
+                "primary_one_sided_sign_p": 1.0
+              },
+              "progress_m": {
+                "unit": "m",
+                "direction": "higher",
+                "n": 3,
+                "before_mean": 16.51111516787264,
+                "after_mean": 16.489041993971234,
+                "before_std": 0.015204914439270805,
+                "after_std": 0.0013264703969763534,
+                "before_min": 16.49571660531125,
+                "before_max": 16.526118737372443,
+                "after_min": 16.48754656032668,
+                "after_max": 16.490076559839366,
+                "oriented_paired_changes": [
+                  0.038572177045761435,
+                  0.02143360109485215,
+                  0.006213743563595386
+                ],
+                "mean_oriented_change": 0.022073173901402992,
+                "std_paired_change": 0.01618869495623723,
+                "mean_change_percent": -0.1336867539047526,
+                "paired_change_central90_t_interval": [
+                  -0.005218613628105457,
+                  0.049364961430911444
+                ],
+                "tolerance": 0.1651111516787264,
+                "improvement_threshold": 0.2,
+                "noninferiority": "NONINFERIOR",
+                "practical_improvement": false,
+                "improvement_pairs": 0,
+                "tie_pairs": 0,
+                "primary_one_sided_sign_p": 1.0
+              },
+              "vector_error_rms_mps": {
+                "unit": "m/s",
+                "direction": "lower",
+                "n": 3,
+                "before_mean": 0.2586021717914394,
+                "after_mean": 0.26094436970016,
+                "before_std": 0.0010178409116181183,
+                "after_std": 0.0003746931090262484,
+                "before_min": 0.2577398856224351,
+                "before_max": 0.2597249412515386,
+                "after_min": 0.26067275640908233,
+                "after_max": 0.261371834692115,
+                "oriented_paired_changes": [
+                  0.003631949069679896,
+                  0.002331067908737827,
+                  0.0010635767477439884
+                ],
+                "mean_oriented_change": 0.0023421979087205704,
+                "std_paired_change": 0.0012842223342148834,
+                "mean_change_percent": 0.9057147093913632,
+                "paired_change_central90_t_interval": [
+                  0.000177185646719901,
+                  0.00450721017072124
+                ],
+                "tolerance": 0.007758065153743182,
+                "improvement_threshold": 0.01293010858957197,
+                "noninferiority": "NONINFERIOR",
+                "practical_improvement": false,
+                "improvement_pairs": 0,
+                "tie_pairs": 0,
+                "primary_one_sided_sign_p": 1.0
+              },
+              "stop_s": {
+                "unit": "s",
+                "direction": "lower",
+                "n": 3,
+                "before_mean": 0.9666666666666712,
+                "after_mean": 0.9666666666666712,
+                "before_std": 0.0,
+                "after_std": 0.0,
+                "before_min": 0.9666666666666712,
+                "before_max": 0.9666666666666712,
+                "after_min": 0.9666666666666712,
+                "after_max": 0.9666666666666712,
+                "oriented_paired_changes": [
+                  0.0,
+                  0.0,
+                  0.0
+                ],
+                "mean_oriented_change": 0.0,
+                "std_paired_change": 0.0,
+                "mean_change_percent": 0.0,
+                "paired_change_central90_t_interval": [
+                  0.0,
+                  0.0
+                ],
+                "tolerance": 0.09666666666666712,
+                "improvement_threshold": 0.1,
+                "noninferiority": "NONINFERIOR",
+                "practical_improvement": false,
+                "improvement_pairs": 0,
+                "tie_pairs": 3,
+                "primary_one_sided_sign_p": 1.0
+              },
+              "longest_stop_s": {
+                "unit": "s",
+                "direction": "lower",
+                "n": 3,
+                "before_mean": 0.26666666666666927,
+                "after_mean": 0.26666666666666927,
+                "before_std": 0.0,
+                "after_std": 0.0,
+                "before_min": 0.26666666666666927,
+                "before_max": 0.26666666666666927,
+                "after_min": 0.26666666666666927,
+                "after_max": 0.26666666666666927,
+                "oriented_paired_changes": [
+                  0.0,
+                  0.0,
+                  0.0
+                ],
+                "mean_oriented_change": 0.0,
+                "std_paired_change": 0.0,
+                "mean_change_percent": 0.0,
+                "paired_change_central90_t_interval": [
+                  0.0,
+                  0.0
+                ],
+                "tolerance": 0.05,
+                "improvement_threshold": 0.05,
+                "noninferiority": "NONINFERIOR",
+                "practical_improvement": false,
+                "improvement_pairs": 0,
+                "tie_pairs": 3,
+                "primary_one_sided_sign_p": 1.0
+              },
+              "jerk_rms_mps3": {
+                "unit": "m/s^3",
+                "direction": "lower",
+                "n": 3,
+                "before_mean": 4.469190503665704,
+                "after_mean": 4.461912971628215,
+                "before_std": 0.009484012241340888,
+                "after_std": 0.015944004793670766,
+                "before_min": 4.461152966494734,
+                "before_max": 4.479650932391468,
+                "after_min": 4.448954277929769,
+                "after_max": 4.4797177536603785,
+                "oriented_paired_changes": [
+                  -0.017813334181141727,
+                  6.682126891011109e-05,
+                  -0.004086083200236068
+                ],
+                "mean_oriented_change": -0.007277532037489228,
+                "std_paired_change": 0.009357563731554705,
+                "mean_change_percent": -0.1628378121612802,
+                "paired_change_central90_t_interval": [
+                  -0.023053024864168867,
+                  0.008497960789190413
+                ],
+                "tolerance": 0.2234595251832852,
+                "improvement_threshold": 0.4469190503665704,
+                "noninferiority": "NONINFERIOR",
+                "practical_improvement": false,
+                "improvement_pairs": 2,
+                "tie_pairs": 0,
+                "primary_one_sided_sign_p": 0.5
+              },
+              "compute_p95_ms": {
+                "unit": "ms",
+                "direction": "lower",
+                "n": 3,
+                "before_mean": 8.207666666666666,
+                "after_mean": 8.891666666666666,
+                "before_std": 0.7652485435029149,
+                "after_std": 1.3830236199477337,
+                "before_min": 7.389,
+                "before_max": 8.905,
+                "after_min": 7.504,
+                "after_max": 10.27,
+                "oriented_paired_changes": [
+                  0.11499999999999932,
+                  1.940999999999999,
+                  -0.0039999999999995595
+                ],
+                "mean_oriented_change": 0.6839999999999996,
+                "std_paired_change": 1.0902187853820895,
+                "mean_change_percent": 8.333671770296055,
+                "paired_change_central90_t_interval": [
+                  -1.1539504667770055,
+                  2.5219504667770045
+                ],
+                "tolerance": 0.8207666666666666,
+                "improvement_threshold": 0.8207666666666666,
+                "noninferiority": "UNCERTAIN",
+                "practical_improvement": false,
+                "improvement_pairs": 1,
+                "tie_pairs": 0,
+                "primary_one_sided_sign_p": 0.875
+              },
+              "release_target_p95_s": {
+                "unit": "s",
+                "direction": "lower",
+                "n": 3,
+                "before_mean": 0.0,
+                "after_mean": 0.0,
+                "before_std": 0.0,
+                "after_std": 0.0,
+                "before_min": 0.0,
+                "before_max": 0.0,
+                "after_min": 0.0,
+                "after_max": 0.0,
+                "oriented_paired_changes": [
+                  0.0,
+                  0.0,
+                  0.0
+                ],
+                "mean_oriented_change": 0.0,
+                "std_paired_change": 0.0,
+                "mean_change_percent": null,
+                "paired_change_central90_t_interval": [
+                  0.0,
+                  0.0
+                ],
+                "tolerance": 0.016666666666666666,
+                "improvement_threshold": 0.016666666666666666,
+                "noninferiority": "NONINFERIOR",
+                "practical_improvement": false,
+                "improvement_pairs": 0,
+                "tie_pairs": 3,
+                "primary_one_sided_sign_p": 1.0
+              },
+              "release_brake_p95_s": {
+                "unit": "s",
+                "direction": "lower",
+                "n": 3,
+                "before_mean": 0.6000000000000003,
+                "after_mean": 0.6000000000000003,
+                "before_std": 0.0,
+                "after_std": 0.0,
+                "before_min": 0.6000000000000003,
+                "before_max": 0.6000000000000003,
+                "after_min": 0.6000000000000003,
+                "after_max": 0.6000000000000003,
+                "oriented_paired_changes": [
+                  0.0,
+                  0.0,
+                  0.0
+                ],
+                "mean_oriented_change": 0.0,
+                "std_paired_change": 0.0,
+                "mean_change_percent": 0.0,
+                "paired_change_central90_t_interval": [
+                  0.0,
+                  0.0
+                ],
+                "tolerance": 0.05,
+                "improvement_threshold": 0.06000000000000003,
+                "noninferiority": "NONINFERIOR",
+                "practical_improvement": false,
+                "improvement_pairs": 0,
+                "tie_pairs": 3,
+                "primary_one_sided_sign_p": 1.0
+              }
+            }
+          }
+        }
+      }
+    },
+    "geometry_v3": {
+      "decision": "REJECT",
+      "evidence": "geometry_v3_explore_collected/assessment.json",
+      "failures": [
+        "explore: P95 mean regressed"
+      ],
+      "insufficient": [
+        "no externally recorded preregistration evidence"
+      ],
+      "exploration": {
+        "pairs": 5,
+        "before_p95_mean_ms": 230.0995975930705,
+        "after_p95_mean_ms": 307.03190107713345,
+        "before_p95_std_ms": 1.1920879565132803,
+        "after_p95_std_ms": 3.1621470527000133,
+        "paired_improvement_ms": [
+          -75.21636041346869,
+          -76.87896121642487,
+          -74.44032898638329,
+          -82.81132660340452,
+          -75.31454020063327
+        ],
+        "paired_relative_improvement": [
+          -0.32699871800761077,
+          -0.3359824216173462,
+          -0.3207764501255399,
+          -0.3603737975104662,
+          -0.32773463542667414
+        ],
+        "aggregate_relative_improvement": -0.3343434942468572,
+        "one_sided_sign_p": 1.0,
+        "central90_t_improvement_interval": [
+          -80.17724192116475,
+          -73.6873650469611
+        ],
+        "practical_improvement": false,
+        "before_batch_max_ms": [
+          2441.8838339915965,
+          2771.100904996274,
+          2382.7378900023177,
+          2370.5736289848574,
+          2467.453316989122
+        ],
+        "after_batch_max_ms": [
+          4162.545655010035,
+          4503.06969601661,
+          4521.592827019049,
+          4584.839135990478,
+          4168.3522569946945
+        ]
+      }
+    },
+    "geometry_v4": {
+      "decision": "NO_PRACTICAL_IMPROVEMENT",
+      "evidence": "geometry_v4_explore_collected/assessment.json",
+      "failures": [],
+      "insufficient": [],
+      "exploration": {
+        "pairs": 5,
+        "before_p95_mean_ms": 229.97306892415466,
+        "after_p95_mean_ms": 223.10152583871928,
+        "before_p95_std_ms": 0.9127320964077911,
+        "after_p95_std_ms": 1.9519982539561467,
+        "paired_improvement_ms": [
+          5.468170013045835,
+          9.074387181317405,
+          8.205511636333483,
+          6.958894612034754,
+          4.650751984445378
+        ],
+        "paired_relative_improvement": [
+          0.023782640446190346,
+          0.03930256264420224,
+          0.035669987636214574,
+          0.030455557921883775,
+          0.020174685256046147
+        ],
+        "aggregate_relative_improvement": 0.029879772955943868,
+        "one_sided_sign_p": 0.03125,
+        "central90_t_improvement_interval": [
+          5.117394808839267,
+          8.625691362031477
+        ],
+        "practical_improvement": false,
+        "before_batch_max_ms": [
+          2427.95151998871,
+          2354.2417059943546,
+          2353.3731940260623,
+          2360.4404350044206,
+          2764.533052017214
+        ],
+        "after_batch_max_ms": [
+          2311.8433470081072,
+          2343.007873976603,
+          2436.739585013129,
+          2370.4206320107915,
+          2407.6438259799033
+        ]
+      }
+    }
+  },
+  "implementation_and_validation_boundaries": [
+    "No new Isaac trajectories, C++ build, or CPU replay benchmarks executed by this subtask.",
+    "Navigation collected twelve existing new trajectories: B six goals and C six scripted jitter runs.",
+    "B manifest complete=false reflects real after3 TIMEOUT, not an unfinished run; original manifest preserved.",
+    "C primary failed in jitter; spin/sweep unexecuted, overall full-protocol evidence insufficient, early stop recommended.",
+    "A-v3/v4 both lacked practical improvement under original policy; no confirmation or actual navigation trials for A.",
+    "V4 prospective plan precedes original raw started_unix; v3 mapping explicitly retrospective.",
+    "Safety contracts cover selected component negative tests only, not all real-world unknown/expiry events.",
+    "Source/launch runtime checks captured before root reverted BC production and installed launch."
+  ],
+  "new_files": [
+    "ADAPTER.md",
+    "README.md",
+    "REPLAY_ADAPTER.md",
+    "adapter_partial_goal_snapshot/after_analysis.json",
+    "adapter_partial_goal_snapshot/before_analysis.json",
+    "adapter_partial_goal_snapshot/supplement.json",
+    "adapter_pytest.log",
+    "adapter_pytest_scoped.log",
+    "adapter_validation.json",
+    "assess.py",
+    "assess_replay.py",
+    "collect_adaptive.py",
+    "collect_replay.py",
+    "contract_evidence/ctest_candidates_environment_retry.log",
+    "contract_evidence/ctest_candidates_original.log",
+    "contract_evidence/depth_angular_controller_node.cpp",
+    "contract_evidence/manual_control_math.py",
+    "contract_evidence/manual_control_math_39_passed.txt",
+    "contract_evidence/manual_control_math_39_passed.xunit.xml",
+    "contract_evidence/observed_space_check.cpp",
+    "contract_evidence/paper_guidance.cpp",
+    "contract_evidence/paper_guidance_check.cpp",
+    "contract_evidence/platform_first_import_failure.log",
+    "contract_evidence/platform_ros_environment_15_passed.log",
+    "contract_evidence/platform_second_import_failure.log",
+    "contract_evidence/run_fov_gvf_navigation.py",
+    "contract_evidence/test_manual_control_math.py",
+    "contracts_bc_reviewed.json",
+    "final_pytest.log",
+    "geometry_v3_explore_collected/after_batches.json",
+    "geometry_v3_explore_collected/assessment.json",
+    "geometry_v3_explore_collected/before_batches.json",
+    "geometry_v3_explore_collected/collection_audit.json",
+    "geometry_v3_explore_collected/mapping_plan.json",
+    "geometry_v4_explore_collected/after_batches.json",
+    "geometry_v4_explore_collected/assessment.json",
+    "geometry_v4_explore_collected/before_batches.json",
+    "geometry_v4_explore_collected/collection_audit.json",
+    "geometry_v4_explore_collected/mapping_plan.json",
+    "geometry_v4_plan.json",
+    "geometry_v4_registration.json",
+    "goal_polish_explore_collected/after_analysis.json",
+    "goal_polish_explore_collected/assessment.json",
+    "goal_polish_explore_collected/before_analysis.json",
+    "goal_polish_explore_collected/supplement.json",
+    "goal_polish_failure.json",
+    "historical_goal_descriptive.json",
+    "historical_jitter_descriptive.json",
+    "manual_continuous_early_stop.json",
+    "manual_continuous_explore_collected/after_analysis.json",
+    "manual_continuous_explore_collected/assessment.json",
+    "manual_continuous_explore_collected/before_analysis.json",
+    "manual_continuous_explore_collected/supplement.json",
+    "plan.template.json",
+    "policy.json",
+    "pytest.ini",
+    "pytest.txt",
+    "replay_adapter_pytest.log",
+    "replay_input.template.json",
+    "replay_plan.template.json",
+    "replay_policy.json",
+    "supplement.template.json",
+    "test_assess.py",
+    "test_assess_replay.py",
+    "test_collect_adaptive.py",
+    "test_collect_replay.py",
+    "validation.json"
+  ],
+  "source_sha256": {
+    "assess.py": "76ef9fa9c497a533fc546a92be6c54a804a6ad53f41a0604781f772a8f9ff3f0",
+    "assess_replay.py": "4f836c2820d2b51c1975c0eeac546493d772553b355c51680ef16f0bf0408681",
+    "collect_adaptive.py": "697d89e42fba368b9806d0a8439ca398ce0c855b38582257a6cfe9b33d2b8138",
+    "collect_replay.py": "dc810e23f5969e03c059f44b41c59ee53cc356af8ea488f64fee6b91ab5e5375",
+    "pytest.ini": "67e2bb7fe3d227436a4cd03f8fa42347c4e8fce28cbc5b074075e3313309d9b4",
+    "geometry_v4_plan.json": "bdcbb63c536c06d8669924c40aca496c5918f0bdee944e0c4225d2b277bf0dbb",
+    "geometry_v4_registration.json": "2fa867c13f98ad8d0f507688ee8e4d122748f8521032a472f475bac2640ecefb"
+  }
+}

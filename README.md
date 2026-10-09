@@ -1,39 +1,74 @@
-# EGO1P1 深度避障开发主线
+# EGO1P5：全向避障与六方向可选机制
 
-## 构建与运行
+2026-10-08 最新启用状态（验证中断）：**①深度不确定性、④球面记忆、⑥共享占据默认开启；②动态响应因240s原地卡停撤销默认，③增量和⑤输入滤波仍关闭。** 共享相机时间戳修复已通过真实ROS前后回归；核心36/36。基线、共享、球面、不确定性单开已到达，但部分单次运行指标较差；本轮组合及人工对照未完成，后台试验已停止，不宣称全组合通过。当前结果见[中断状态](performance/enable_gains_20261008/interruption_status.json)。下方旧日期记录保留历史含义。
+
+2026-10-08 11:36 — **EGO1P5完成逐项消融，实际保留固定目标模式的固定管段几何复用；人工模式使用与本轮baseline逐字节相同的控制器。** 取消旧10%收益门槛后，根盒预筛、全局复用、组合因运行退化停止默认采用；纯v4重放逐批P95均值下降3.04%，固定目标两批各3对jerk RMS同向改善，新确认2.408522→2.033052。新到达均时71.311111→70.672222s，但标准差0.483716→1.429290s，部分单对不利，不能宣称全部指标已证明不退化。43条Isaac扫掠重叠/外部保护0，18/18目标到达，核心36/36；原六项仍默认关、同样本callback修复保持开。详见[本轮采用与退化报告](RETAINED_OPTIMIZATIONS.md)及[机器汇总](performance/retain_gains_20261008/completion_summary.json)。下方旧条目保留历史含义。
+
+2026-10-07 23:34 — **本轮完成3个方向、6个实现版本的消融，没有新算法达到保留门槛，生产已恢复实验前版本。** 四版几何共740对重放输出一致但全组收益不足或退化；目标切弯出现240s超时，连续球面细化微扰角误差9.200→9.342°，均回退。12条新Isaac轨迹扫掠重叠/外部保护0（其中1次目标超时）；最终主构建3包、核心31/31、平台15/15、评估工具64/64。154份原运行源及控制器/重放器/库SHA与基线一致，P3/P4保护源码一致。默认callback、原六项开关全关；失败与原始数据全部保留，未提交推送。 详见[新想法及回退报告](ADAPTIVE_OPTIMIZATION.md)与[机器汇总](performance/adaptive_trials_20261007/completion_summary.json)。下方条目保留历史含义。
+
+2026-10-07 22:31 — **EGO1P5完成新一轮六项局部优化和34条Isaac验证，整体全面优胜仍未通过。** 深度处理耗时下降约40–46%、密集动态关联253.118→41.248ms、增量场69.597→46.539ms、球面缓存维护162.603→110.487ms、意图微扰jerk下降约66.8%，共享容量满时危险误放行32→0；这些各有冻结旧/新模块消融。另修复执行向量和接收时间来自不同订阅的问题，同控制器③⑤开启时三对手柄实际jerk4.532→4.463、停车1.033→.967s；目标均值71.322→70.756s但停车/波动退化。默认启用绑定样本执行源，六项算法开关仍均关闭。核心31/31、平台15/15、执行样本39/39及64组合重放通过；本轮34条扫掠重叠/外部保护0，P3/P4保护源码未改。原始滤波整机退化、关闭阶段异常与所有旧记录保留；未提交推送。详见[本轮继续优化报告](SIX_AXIS_REFINEMENT.md)及[机器汇总](performance/six_axis_refinement_20261007/completion_summary.json)。下方为历史记录。
+
+2026-10-07 17:33 — **六方向实现与逐项消融已完成，整体运行全面优胜未通过。** 最终主入口构建、核心31/31、平台15/15、64种组合重放通过；18次目标安全到达、12次手柄等效轨迹通过独立机体扫掠，30次均重叠0/外部保护0。第二版③⑤平均到达70.039s，基线69.256s；操控方向误差略减但jerk略增，因此六项当前默认均关闭，独立实验开关保留。P3/P4源码未改，失败与冻结版本保留。六项方案、实现、收益与退化、适用边界及手柄指令见[六方向优化报告](SIX_AXIS_OPTIMIZATION.md)，全量数据见[机器汇总](performance/six_axis_20261007/completion_summary.json)。
+
+## 复制检查点历史（保留来源说明）
+
+**历史状态边界（2026-10-07 16:27）：本页主体记录从EGO1P3 v22建立的复制检查点。复制期间另一项“六方向优化”已在EGO1P5接续修改源码并运行基线；该工作保留在当前目录，本任务没有覆盖或回滚。22/22与15/15是复制检查点的验证结果，不代表随后修改已验收。最新后续状态以[WORK_LOG](WORK_LOG.md)为准。**
+
+2026-10-07按用户要求完整复制EGO1P3。**EGO1P3原目录保留；EGO1P5继承相同算法和参数，本次只适配独立路径与版本标识。**
+源码、隐藏文件、Git、地图、全部成功/失败实验和最新手柄运行记录均已复制。
+
+先阅读[项目算法、进展与当前状态](EGO1P5_VERSION.md)。复制证据和本次验证在[复制验证目录](performance/copy_from_ego1p3_20261007)，实际变更见[WORK_LOG.md](WORK_LOG.md)。
+来源说明原文保留于[EGO1P3_VERSION.md](EGO1P3_VERSION.md)、[来源README](EGO1P3_README.md)和[来源360°验收报告](OMNI_ACCEPTANCE.md)；这些历史成绩仍属于EGO1P3，不是P5新导航成绩。
+
+## 构建与手柄运行
 
 ```bash
-cd /home/starry/isaac-data/EGO1P1
+cd /home/starry/isaac-data/EGO1P5
 bash scripts/build_isaac_ros_workspace.sh
+
+ISAAC_MANUAL_INPUT_MODE=joystick \
+ISAAC_HEADLESS=0 \
+ISAAC_MANUAL_TIMEOUT=0 \
+FOV_GVF_SCENE_MODE=cloud \
+FOV_GVF_RVIZ=true \
+FOV_GVF_OMNI_DEPTH=1 \
+FOV_GVF_INSTALL=/tmp/fov_gvf_ego1p5_isaac_install \
 bash scripts/run_isaac_fov_gvf_navigation.sh
 ```
 
-需要本机 `/opt/ros/humble`、`/home/starry/isaac-data/isaacsim`、可用 NVIDIA 图形环境及北通 A2P3A BFM/XInput 手柄。默认打开 4 倍 Cloud、Isaac Sim 和 RViz；手柄四轴回中 0.5 秒后解锁。关闭窗口或 Ctrl-C 退出。
+已有本目录构建产物时可直接运行后半段。主脚本自动加载ROS环境和识别北通A2P3A BFM/XInput设备。
+默认启动原4倍Cloud场景、Isaac Sim与RViz，四轴回中保持0.5秒后解锁；看到`controls enabled after neutral hold`后操作。
 
-无手柄时显式使用键盘：
+| 操作 | 功能 |
+|---|---|
+| 右摇杆上下 | 相对机头前进/后退 |
+| 右摇杆左右或斜推 | 左右平移或任意水平方向 |
+| 左摇杆上下 | 升降 |
+| 左摇杆左右 | 独立旋转机头 |
+| 两摇杆回中 | 制动停止 |
+| 终端Ctrl+C或关闭窗口 | 退出仿真 |
+
+需要本机ROS Humble、Isaac Sim、NVIDIA图形环境及手柄。无手柄时可用：
 
 ```bash
-ISAAC_MANUAL_INPUT_MODE=keyboard bash scripts/run_isaac_fov_gvf_navigation.sh
+ISAAC_MANUAL_INPUT_MODE=keyboard ISAAC_HEADLESS=0 \
+FOV_GVF_INSTALL=/tmp/fov_gvf_ego1p5_isaac_install \
+bash scripts/run_isaac_fov_gvf_navigation.sh
 ```
 
-键盘 W/S、A/D、R/F 为世界坐标前后、左右、升降；Space 停止，1/3/V 切换视角。平地测试用 `FOV_GVF_SCENE_MODE=flat`，关闭 RViz 用 `FOV_GVF_RVIZ=false`，限时用 `ISAAC_MANUAL_TIMEOUT=5`。
+键盘W/S、A/D、R/F对应世界坐标前后、左右、升降；Space停止，1/3/V切换视角。
+手柄平移以机头为参照，再转换为世界方向；键盘映射仍是世界坐标，两者不要混淆。
 
-## 保留目录
+## 当前链路与已知边界
 
-| 路径 | 用途 |
-|---|---|
-| scripts/*.sh | 仅两个主入口：构建、运行 |
-| scripts/isaac/ | Isaac 运行器、手柄输入、XY/Z 控制数学 |
-| scripts/lib/ | BFM/XInput 设备识别 |
-| src/pc_gvf/ | C++ 避障、launch、测试及 Python 数值/合成验收基准 |
-| src/pc_gvf_msgs/ | PositionCommand 消息 |
-| src/pc_gvf_platforms/ | 命令桥、RViz/在线地图和相关测试工具 |
-| scenes/ | Cloud USD+occupancy.bin、平地导航 USD |
-| tools/ | 算法基线生成与 ROS 回归探针，不是日常运行入口 |
-| performance/ | 逐次运行性能记录（含继承历史） |
+四路深度及采集位姿 → 世界坐标球面方向融合 → 连续360°候选 → 单三维矢量整形 → 完整运动/制动认证 → 命令桥 → Isaac。
+实际机体球半径.48m、认证包络.58m；速度上限2m/s、垂向1m/s、响应.22s、实际加减速度1.2m/s²。
+未知、过期或撤销证据不得用于放行。水平360°方向域不等于上下/接缝无盲区。
 
-构建产物使用 `/tmp/fov_gvf_ego1p1_isaac_{build,install,log}`，无需项目内 build/install/log。修改源码后重新构建。算法参数集中于 `src/pc_gvf/launch/isaac_cloud_navigation.launch.py`。
+继承的v22正式对照：扫向明显改善，但独立旋转部分指标退化，固定目标平均70.143s慢于P2的69.717s；全面优胜未通过。
+新发现并保留的来源手柄日志`20261007_160119`记录147.5s仿真、用户退出、外部保护0，避障计算峰值633.340ms；不是新P5动态验收。
 
-当前是四相机水平 360°局部避障，Z 独立控制；历史地图只显示，ESDF 仅做仿真末端保护。与其他副本共用 ROS 域42/单实例锁，不要同时运行。
-
-版本和整理归档见 [EGO1P1_VERSION.md](EGO1P1_VERSION.md)，实际变更与验证见 [WORK_LOG.md](WORK_LOG.md)。
+新目录使用独立`/tmp/fov_gvf_ego1p5_isaac_{build,install,log}`、ROS日志和重放前缀；性能日志写入本目录。
+ROS域42与`/tmp/fov_gvf_user_navigation.lock`继续共用，禁止多个副本同时控制。
+设置`FOV_GVF_OMNI_DEPTH=0`只切换旧候选前端，联合覆盖证明仍为7层，不能当作完整EGO1P2。
+继承的Git分支名仍为`ego1p1`，本次没有创建提交或推送。

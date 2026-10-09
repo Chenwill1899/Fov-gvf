@@ -1,0 +1,226 @@
+{
+  "stage": "EGO1P5 refinement 20261007 stage1 uncertainty",
+  "status": "mechanism and local performance improved; whole-vehicle benefit not measured in this stage",
+  "algorithm": "same square occlusion/unknown erosion computed as separable horizontal/vertical minima; cached per-axis ray factors; no changed bounds",
+  "baseline_archive": "../baseline/sources.tar.gz",
+  "baseline_archive_sha256": "0e3d4c581ed9c35aa77485e66ccc1e23fca342ac56c3fe7a6bb7c135e1453f1c",
+  "source_sha256": {
+    "src/pc_gvf/src/depth_uncertainty.cpp": "7c70fcadeab5cb73c167a69af67f95efb88df0be4622a4296002f2cd32ec4c13",
+    "src/pc_gvf/test/cpp/depth_uncertainty_check.cpp": "b16057ff274798025005daedb9c400f84f411f416deae03495a73f48aaebaef1"
+  },
+  "correctness": {
+    "random_and_boundary_bit_identical_pixels": 651857,
+    "benchmark_bit_identical_pixels": 2764800,
+    "malformed_inputs_rejected": 7,
+    "noise_samples": 1000,
+    "raw_overestimates": 488,
+    "lower_bound_overestimates_before": 0,
+    "lower_bound_overestimates_after": 0,
+    "raw_false_free_envelopes": 8,
+    "robust_false_free_envelopes_before": 0,
+    "robust_false_free_envelopes_after": 0,
+    "credited_false_free_envelopes_before": 0,
+    "credited_false_free_envelopes_after": 0,
+    "native_footprint_occupied_cells": 28,
+    "coarse_expansion_occupied_cells": 42
+  },
+  "benchmark": {
+    "width": 320,
+    "height": 240,
+    "views": 4,
+    "batches_per_timing": 8,
+    "rounds": 9,
+    "reserved_radial_bound_m": 0.03,
+    "alternating_order": true,
+    "timing_unit": "milliseconds for four native depth views",
+    "cases": [
+      {
+        "scene": "smooth",
+        "radius": 0,
+        "rounds": 9,
+        "before_median_ms": 1.96610125,
+        "after_median_ms": 0.940763,
+        "speedup": 2.0899006976252252,
+        "reduction_percent": 52.15083658585742,
+        "before_min_max_ms": [
+          1.9132305,
+          2.011674375
+        ],
+        "after_min_max_ms": [
+          0.82357775,
+          1.042369
+        ],
+        "all_rounds_faster": true
+      },
+      {
+        "scene": "smooth",
+        "radius": 1,
+        "rounds": 9,
+        "before_median_ms": 4.45004425,
+        "after_median_ms": 2.5618495,
+        "speedup": 1.7370435890164508,
+        "reduction_percent": 42.4309207711811,
+        "before_min_max_ms": [
+          3.02095725,
+          4.571630375
+        ],
+        "after_min_max_ms": [
+          1.88775025,
+          2.806597
+        ],
+        "all_rounds_faster": true
+      },
+      {
+        "scene": "smooth",
+        "radius": 4,
+        "rounds": 9,
+        "before_median_ms": 21.17524625,
+        "after_median_ms": 3.54356075,
+        "speedup": 5.975697255931057,
+        "reduction_percent": 83.2655511621264,
+        "before_min_max_ms": [
+          18.10058675,
+          21.92151988
+        ],
+        "after_min_max_ms": [
+          2.707153875,
+          3.750931625
+        ],
+        "all_rounds_faster": true
+      },
+      {
+        "scene": "occlusion",
+        "radius": 0,
+        "rounds": 9,
+        "before_median_ms": 1.979909625,
+        "after_median_ms": 0.931627125,
+        "speedup": 2.1252168081731195,
+        "reduction_percent": 52.945977269038224,
+        "before_min_max_ms": [
+          1.923954375,
+          2.028328125
+        ],
+        "after_min_max_ms": [
+          0.853348625,
+          1.063170625
+        ],
+        "all_rounds_faster": true
+      },
+      {
+        "scene": "occlusion",
+        "radius": 1,
+        "rounds": 9,
+        "before_median_ms": 4.463368125,
+        "after_median_ms": 2.685772375,
+        "speedup": 1.6618564426927653,
+        "reduction_percent": 39.8263307040129,
+        "before_min_max_ms": [
+          4.364819,
+          4.565743
+        ],
+        "after_min_max_ms": [
+          2.540481875,
+          2.83375925
+        ],
+        "all_rounds_faster": true
+      },
+      {
+        "scene": "occlusion",
+        "radius": 4,
+        "rounds": 9,
+        "before_median_ms": 21.04153112,
+        "after_median_ms": 3.578485,
+        "speedup": 5.880010987890126,
+        "reduction_percent": 82.99322905927389,
+        "before_min_max_ms": [
+          18.04200275,
+          25.2740015
+        ],
+        "after_min_max_ms": [
+          2.507091625,
+          3.94558125
+        ],
+        "all_rounds_faster": true
+      },
+      {
+        "scene": "missing",
+        "radius": 0,
+        "rounds": 9,
+        "before_median_ms": 1.9944795,
+        "after_median_ms": 0.93599275,
+        "speedup": 2.130870671808088,
+        "reduction_percent": 53.07082624815146,
+        "before_min_max_ms": [
+          1.934990125,
+          2.093349
+        ],
+        "after_min_max_ms": [
+          0.843529,
+          1.113445125
+        ],
+        "all_rounds_faster": true
+      },
+      {
+        "scene": "missing",
+        "radius": 1,
+        "rounds": 9,
+        "before_median_ms": 4.69518375,
+        "after_median_ms": 2.554620875,
+        "speedup": 1.8379180237458914,
+        "reduction_percent": 45.59060920672168,
+        "before_min_max_ms": [
+          3.020030625,
+          4.865009125
+        ],
+        "after_min_max_ms": [
+          1.924364,
+          2.894129
+        ],
+        "all_rounds_faster": true
+      },
+      {
+        "scene": "missing",
+        "radius": 4,
+        "rounds": 9,
+        "before_median_ms": 22.46974275,
+        "after_median_ms": 3.416238875,
+        "speedup": 6.577333603464718,
+        "reduction_percent": 84.79627064266234,
+        "before_min_max_ms": [
+          16.80237062,
+          22.83228025
+        ],
+        "after_min_max_ms": [
+          2.44768625,
+          3.599313
+        ],
+        "all_rounds_faster": true
+      }
+    ]
+  },
+  "verification": {
+    "optimized_mechanism_exit": 0,
+    "asan_ubsan_mechanism_exit": 0,
+    "production_cpp_warning_check_exit": 0,
+    "production_cpp_warning_output_bytes": 0,
+    "main_build": "not run by stage owner; root integrates",
+    "isaac": "not run by stage owner",
+    "source_trailing_whitespace_check": "pass"
+  },
+  "runtime": {
+    "compiler": "c++ (Ubuntu 11.4.0-1ubuntu1~22.04.3) 11.4.0",
+    "platform": "Linux-6.8.0-138-generic-x86_64-with-glibc2.35",
+    "flags": "-O3 -DNDEBUG -fopenmp; no fast-math"
+  },
+  "limitations": [
+    "Fixed sensor uncertainty model still needs real-sensor calibration.",
+    "Exact depth equivalence is the benefit boundary: no claim of smaller safety reserve or more certified free space.",
+    "Native filter timings exclude ROS, rendering, guidance search, and body motion certification.",
+    "One extra native double buffer plus per-axis ray arrays; at 320x240 approximately 0.59 MiB extra temporary storage.",
+    "Six-axis top-level switches remain root-managed; this patch adds no default enablement."
+  ],
+  "tool_failures": [
+    "Default exec and apply_patch failed before filesystem edits because bubblewrap mountinfo path is not absolute; authorized source edits and independent checks used require_escalated.",
+    "git diff was not a valid repository review in this non-git workspace; it treated the two file paths as a no-index comparison and exited 1. Used frozen-archive unified diff plus explicit whitespace check instead."
+  ]
+}

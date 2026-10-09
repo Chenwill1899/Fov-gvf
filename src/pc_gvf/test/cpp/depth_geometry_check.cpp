@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <random>
 #include <cstdlib>
 #include <iostream>
 #include <limits>
@@ -196,6 +197,27 @@ int main()
             "manifest case count must match its case list");
     for (const std::string& name : cases) {
         checkFixture(directory, name);
+    }
+    // Compare projected broad-phase bounds against an independent exhaustive
+    // ray/sphere oracle, including near-camera, off-screen and grazing cases.
+    std::mt19937 random(42949);std::uniform_real_distribution<double> xy(-15.,15.),z(-2.,20.);
+    for(double radius:{0.,.01,.58,3.})for(int variant=0;variant<2;++variant) {
+        Camera camera(64,48,90,68,20);
+        if(variant)camera.setIntrinsics(45.2,39.7,27.3,20.1);
+        std::vector<Eigen::Vector3d> points;
+        for(int i=0;i<500;++i)points.emplace_back(xy(random),xy(random),z(random));
+        points.emplace_back(.1,.1,radius+1e-8);
+        auto actual=collisionConeFreeDistance(points,camera,radius,17);
+        for(std::size_t i=0;i<actual.size();++i) {
+            double expected=std::max(0.,camera.maxDepth()-radius);
+            for(const auto& p:points) {
+                const double longitudinal=camera.rays()[i].dot(p);
+                const double lateral=std::max(0.,p.squaredNorm()-longitudinal*longitudinal);
+                if(longitudinal>0&&lateral<radius*radius)
+                    expected=std::min(expected,longitudinal-std::sqrt(std::max(0.,radius*radius-lateral)));
+            }
+            require(std::abs(actual[i]-expected)<1e-11,"projected bounds skipped a ray/sphere intersection");
+        }
     }
     checkEdgeCaseCounts(directory);
     checkInputValidation();

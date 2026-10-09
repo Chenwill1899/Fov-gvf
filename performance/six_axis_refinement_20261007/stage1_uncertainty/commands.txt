@@ -1,0 +1,7 @@
+# Run from /home/starry/isaac-data. Main build intentionally not run by stage owner.
+/usr/bin/c++ -O3 -DNDEBUG -fopenmp -I EGO1P5/src/pc_gvf/include -isystem /usr/include/eigen3 EGO1P5/src/pc_gvf/test/cpp/depth_uncertainty_check.cpp EGO1P5/src/pc_gvf/src/depth_uncertainty.cpp /tmp/fov_gvf_ego1p5_isaac_build/pc_gvf/libpc_gvf_depth_angular_core.a -lcrypto -o /tmp/p5_refinement_depth_uncertainty_check
+/tmp/p5_refinement_depth_uncertainty_check
+/tmp/p5_refinement_depth_uncertainty_check --benchmark
+/usr/bin/c++ -O1 -g -fno-omit-frame-pointer -fsanitize=address,undefined -fopenmp -I EGO1P5/src/pc_gvf/include -isystem /usr/include/eigen3 EGO1P5/src/pc_gvf/test/cpp/depth_uncertainty_check.cpp EGO1P5/src/pc_gvf/src/depth_uncertainty.cpp /tmp/fov_gvf_ego1p5_isaac_build/pc_gvf/libpc_gvf_depth_angular_core.a -lcrypto -o /tmp/p5_refinement_depth_uncertainty_sanitized
+ASAN_OPTIONS=detect_leaks=1 /tmp/p5_refinement_depth_uncertainty_sanitized
+/usr/bin/c++ -O3 -DNDEBUG -fopenmp -Wall -Wextra -Wpedantic -I EGO1P5/src/pc_gvf/include -isystem /usr/include/eigen3 -c EGO1P5/src/pc_gvf/src/depth_uncertainty.cpp -o /tmp/p5_refinement_depth_uncertainty_warnings.o

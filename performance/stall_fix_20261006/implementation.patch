@@ -1,0 +1,418 @@
+--- a/src/pc_gvf/CMakeLists.txt
++++ b/src/pc_gvf/CMakeLists.txt
+@@ -75,6 +75,10 @@
+ 
+ if(BUILD_TESTING)
+   find_package(ament_cmake_pytest REQUIRED)
++
++  add_executable(history_repair_check test/cpp/history_repair_check.cpp)
++  target_link_libraries(history_repair_check PRIVATE pc_gvf_depth_angular_core)
++  add_test(NAME history_repair_check COMMAND history_repair_check)
+ 
+   add_executable(clearance_check test/cpp/clearance_check.cpp)
+   target_link_libraries(clearance_check PRIVATE pc_gvf_depth_angular_core)
+--- a/src/pc_gvf/launch/isaac_cloud_navigation.launch.py
++++ b/src/pc_gvf/launch/isaac_cloud_navigation.launch.py
+@@ -52,6 +52,7 @@
+                 "paper_subpixel_proposal": True,
+                 "paper_local_path_proposal": False,
+                 "paper_retain_certified_volume": True,
++                "paper_local_history_repair": os.environ.get("FOV_GVF_LOCAL_HISTORY_REPAIR", "1") == "1",
+                 "paper_goal_projection_clearance": 0.0,
+                 "paper_intent_corridor": False,
+                 "paper_native_proposal_stride": 0,
+--- a/src/pc_gvf/test/cpp/intent_response_check.cpp
++++ b/src/pc_gvf/test/cpp/intent_response_check.cpp
+@@ -67,7 +67,7 @@
+     // Capture with 2deg accumulated, then cross the 0.05rad threshold before the next field interval.
+     std::stringstream replay(std::ios::in|std::ios::out|std::ios::binary);
+     retained.saveReplay(replay,o,Eigen::Vector3d::Zero(),heading(2),heading(3),1.14,.02);
+-    require(replay.str().substr(0,8)=="EGOPAPRH","cumulative state replay version missing");
++    require(replay.str().substr(0,8)=="EGOPAPRI","cumulative state replay version missing");
+     auto expected=retained.step(o,Eigen::Vector3d::Zero(),heading(2),heading(3),1.14,.02);
+     replay.seekg(0);auto actual=PaperGuidance::replay(replay);
+     require(expected.command_changed&&expected.refreshed&&!expected.continued,"cumulative change delayed by field interval");
+@@ -81,7 +81,7 @@
+         try{PaperGuidance bad(c);}catch(const std::invalid_argument&){rejected=true;}
+         require(rejected,"invalid command-change threshold accepted");
+     }
+-    std::cout<<"jitter/magnitude, same-depth updates, immediate reset, release, V11 replay: PASS\n";
++    std::cout<<"jitter/magnitude, same-depth updates, immediate reset, release, V18 replay: PASS\n";
+     std::ofstream csv;if(argc>1){csv.open(argv[1]);csv<<"case,t,qx,qy,qz,vx,vy,vz,error_deg,changed,reset,status\n";}
+     for(double turn:{90.0,180.0}) {
+         PaperGuidance p(config());p.setVerifiedSeed(Eigen::Vector3d::Zero(),100);
+--- a/src/pc_gvf/include/pc_gvf/paper_guidance.hpp
++++ b/src/pc_gvf/include/pc_gvf/paper_guidance.hpp
+@@ -46,6 +46,8 @@
+     // Static-scene volume already proved by an accepted full-motion check.
+     // This stores geometry, never a claim that the vehicle followed a forecast.
+     bool retain_certified_volume = false;
++    // Keep consistent static depth columns when a local native hit conflicts.
++    bool local_history_repair = false;
+     double history_sample_interval = .5;
+     int history_max_observations = 32;
+     double history_uncertainty_rate = .10;
+--- a/src/pc_gvf/src/paper_replay.cpp
++++ b/src/pc_gvf/src/paper_replay.cpp
+@@ -68,7 +68,7 @@
+ };
+ }
+ struct PaperReplayCodec {
+-    static void config(Archive& io,PaperConfig& c,bool modern=true,bool teleop=true,bool preview=true,bool direct=true,bool model=true,bool response=true,bool history_capacity=true,bool certificate_memory=true,bool feedforward=true,bool command_accel=true) {
++    static void config(Archive& io,PaperConfig& c,bool modern=true,bool teleop=true,bool preview=true,bool direct=true,bool model=true,bool response=true,bool history_capacity=true,bool certificate_memory=true,bool feedforward=true,bool command_accel=true,bool local_repair=true) {
+         io.number(c.motion.body_radius);
+         io.number(c.motion.safety_margin);
+         io.number(c.motion.reference_speed);
+@@ -138,6 +138,7 @@
+         if(certificate_memory)io.number(c.retain_certified_volume);
+         if(feedforward)io.number(c.proposal_feedforward);
+         if(command_accel)io.number(c.proposal_command_accel);
++        if(local_repair)io.number(c.local_history_repair);
+     }
+     static void state(Archive& io,PaperGuidance& p,bool modern=true,bool reference_intent=true,bool recovery=true,bool acceleration=true,bool feedforward=true) {
+         std::uint32_t n=static_cast<std::uint32_t>(p.history_.size());io.number(n);
+@@ -187,7 +188,7 @@
+ };
+ void PaperGuidance::saveReplay(std::ostream& out,const DepthObservation& observation,
+     const Eigen::Vector3d& position,const Eigen::Vector3d& velocity,const Eigen::Vector3d& intent,double now,double dt,const Eigen::Vector3d* proposal) const {
+-    out.write("EGOPAPRH",8);Archive io(out);
++    out.write("EGOPAPRI",8);Archive io(out);
+     // Output archives never mutate any scalar or collection.
+     PaperReplayCodec::config(io,const_cast<PaperConfig&>(cfg_));
+     PaperReplayCodec::state(io,const_cast<PaperGuidance&>(*this));
+@@ -198,9 +199,9 @@
+ PaperResult PaperGuidance::replay(std::istream& in,std::ostream* audit) {
+     char magic[8]={};in.read(magic,8);
+     const std::string version(magic,8);
+-    if(version!="EGOPAPR3"&&version!="EGOPAPR4"&&version!="EGOPAPR5"&&version!="EGOPAPR6"&&version!="EGOPAPR7"&&version!="EGOPAPR8"&&version!="EGOPAPR9"&&version!="EGOPAPRA"&&version!="EGOPAPRB"&&version!="EGOPAPRC"&&version!="EGOPAPRD"&&version!="EGOPAPRE"&&version!="EGOPAPRF"&&version!="EGOPAPRG"&&version!="EGOPAPRH")throw std::runtime_error("unsupported replay format");
++    if(version!="EGOPAPR3"&&version!="EGOPAPR4"&&version!="EGOPAPR5"&&version!="EGOPAPR6"&&version!="EGOPAPR7"&&version!="EGOPAPR8"&&version!="EGOPAPR9"&&version!="EGOPAPRA"&&version!="EGOPAPRB"&&version!="EGOPAPRC"&&version!="EGOPAPRD"&&version!="EGOPAPRE"&&version!="EGOPAPRF"&&version!="EGOPAPRG"&&version!="EGOPAPRH"&&version!="EGOPAPRI")throw std::runtime_error("unsupported replay format");
+     Archive io(in);const bool modern=version!="EGOPAPR3";
+-    PaperConfig config;PaperReplayCodec::config(io,config,modern,version>="EGOPAPR6",version>="EGOPAPR7",version>="EGOPAPR8",version>="EGOPAPRC",version>="EGOPAPRD",version>="EGOPAPRE",version>="EGOPAPRF",version>="EGOPAPRG",version>="EGOPAPRH");PaperGuidance p(config);
++    PaperConfig config;PaperReplayCodec::config(io,config,modern,version>="EGOPAPR6",version>="EGOPAPR7",version>="EGOPAPR8",version>="EGOPAPRC",version>="EGOPAPRD",version>="EGOPAPRE",version>="EGOPAPRF",version>="EGOPAPRG",version>="EGOPAPRH",version>="EGOPAPRI");PaperGuidance p(config);
+     PaperReplayCodec::state(io,p,modern,version>="EGOPAPR5",version>="EGOPAPR9",version>="EGOPAPRB",version>="EGOPAPRG");
+     DepthObservation o(Camera(),{},Eigen::Vector3d::Zero(),Eigen::Matrix3d::Identity(),0);io.observation(o);
+     Eigen::Vector3d position,velocity,intent;double now,dt;
+@@ -228,6 +229,21 @@
+             p.reached_proofs_.resize(size);
+             *audit<<"motion_scale "<<scale<<" current "<<current<<" saved_certificate "<<saved<<'\n';
+         }
++        // Diagnostic samples locate missing evidence; they never authorize motion.
++        if(intent.norm()>1e-9)for(double advance:{.01,.10,.30}) {
++            const Eigen::Vector3d center=position+advance*intent.normalized();
++            int missing=0,total=0;
++            for(int latitude=-90;latitude<=90;latitude+=15)for(int longitude=0;longitude<360;longitude+=15) {
++                const double a=latitude*std::acos(-1.)/180.,b=longitude*std::acos(-1.)/180.;
++                const Eigen::Vector3d offset=p.envelopeRadius()*Eigen::Vector3d(std::cos(a)*std::cos(b),std::cos(a)*std::sin(b),std::sin(a));
++                ++total;
++                if(!p.envelopeKnown(evidence,center+offset,0.,now)) {
++                    if(missing<3)*audit<<"uncovered_surface "<<advance<<" offset "<<offset.transpose()<<'\n';
++                    ++missing;
++                }
++            }
++            *audit<<"surface_sample_missing "<<advance<<' '<<missing<<'/'<<total<<'\n';
++        }
+         *audit<<"yaw_deg,pitch_deg,intent_cosine,prefix_m\n";
+         const double radians=std::acos(-1.)/180.;
+         for(int pitch:{-60,-30,0,30,60})for(int yaw=-180;yaw<180;yaw+=15) {
+--- a/src/pc_gvf/src/depth_angular_controller_node.cpp
++++ b/src/pc_gvf/src/depth_angular_controller_node.cpp
+@@ -251,6 +251,7 @@
+             paper_config.proposal_feedforward=declare_parameter<bool>("paper_proposal_feedforward",false);
+             paper_config.response_preview=declare_parameter<bool>("paper_response_preview",false);
+             paper_config.certified_direct=declare_parameter<bool>("paper_certified_direct",false);
++            paper_config.local_history_repair=declare_parameter<bool>("paper_local_history_repair",false);
+             paper_config.transverse_gain = declare_parameter<double>("paper_transverse_gain", 1.0);
+             paper_config.minimum_lookahead=declare_parameter<double>("paper_minimum_lookahead", .50);
+             paper_config.chart_speed = declare_parameter<double>("paper_chart_speed", 32.0);
+--- a/src/pc_gvf/src/paper_guidance.cpp
++++ b/src/pc_gvf/src/paper_guidance.cpp
+@@ -605,6 +605,11 @@
+         hit_groups.push_back({begin,end,(lo+hi)*.5,(hi-lo)*.5});
+     }
+     std::vector<unsigned char> contradicted(history_.size(),0);
++    // Static keyframes are spatial evidence. A local contradiction must remove
++    // its whole uncertain footprint, but need not erase unrelated free columns.
++    // Non-static history retains the original whole-view revocation policy.
++    const bool repair_static=cfg_.local_history_repair&&cfg_.retain_verified_travel&&cfg_.history_uncertainty_rate==0.;
++    std::vector<std::vector<double>> repaired_depth(history_.size());
+ #ifdef _OPENMP
+ #pragma omp parallel for num_threads(2) schedule(static) if(history_.size()>=8)
+ #endif
+@@ -671,14 +676,47 @@
+             if(p.z()<=uncertainty||p.z()+uncertainty>=old->camera.maxDepth())continue;
+             const int u=static_cast<int>(std::floor(old->camera.fx()*p.x()/p.z()+old->camera.cx()+.5));
+             const int v=static_cast<int>(std::floor(old->camera.fy()*p.y()/p.z()+old->camera.cy()+.5));
+-            if(u<0||v<0||u>=old->camera.width()||v>=old->camera.height()||
+-                old->depth[idx(u,v,old->camera.width())]<=p.z()+uncertainty)continue;
+-            if(observedEnvelope(*old,point,uncertainty)){contradicted[index]=1;break;}
+-            }
+-            if(contradicted[index])break;
+-        }
+-    }
+-    for(std::size_t i=0;i<history_.size();++i)if(contradicted[i])history_[i]->revoked=true;
++            if(u<0||v<0||u>=old->camera.width()||v>=old->camera.height())continue;
++            // Test against the original view: a previous hit may have clipped
++            // this center while leaving part of the next uncertainty footprint.
++            if(old->depth[idx(u,v,old->camera.width())]<=p.z()+uncertainty)continue;
++            if(!observedEnvelope(*old,point,uncertainty))continue;
++            contradicted[index]=1;
++            if(!repair_static)break;
++            if(repaired_depth[index].empty())repaired_depth[index]=old->depth;
++            // Conservatively project the entire uncertain hit ball, not just
++            // its central pixel. Every intersecting column ends at its nearest
++            // possible z; depth is only reduced, never enlarged or fabricated.
++            const double denominator=p.z()*p.z()-uncertainty*uncertainty;
++            const double sx=uncertainty*std::sqrt(p.x()*p.x()+denominator);
++            const double sy=uncertainty*std::sqrt(p.y()*p.y()+denominator);
++            const auto bound=[](double pixel,int count) {
++                return static_cast<int>(std::floor(clip(pixel,-1.,double(count))+.5));
++            };
++            const int x0=std::max(0,bound(old->camera.fx()*(p.x()*p.z()-sx)/denominator+old->camera.cx(),old->camera.width())-1);
++            const int x1=std::min(old->camera.width()-1,bound(old->camera.fx()*(p.x()*p.z()+sx)/denominator+old->camera.cx(),old->camera.width())+1);
++            const int y0=std::max(0,bound(old->camera.fy()*(p.y()*p.z()-sy)/denominator+old->camera.cy(),old->camera.height())-1);
++            const int y1=std::min(old->camera.height()-1,bound(old->camera.fy()*(p.y()*p.z()+sy)/denominator+old->camera.cy(),old->camera.height())+1);
++            const double limit=std::max(0.,p.z()-uncertainty-1e-9);
++            for(int y=y0;y<=y1;++y)for(int x=x0;x<=x1;++x) {
++                auto& value=repaired_depth[index][idx(x,y,old->camera.width())];
++                value=std::isfinite(value)&&value>0?std::min(value,limit):0.;
++            }
++            }
++            if(contradicted[index]&&!repair_static)break;
++        }
++    }
++    for(std::size_t i=0;i<history_.size();++i)if(contradicted[i]) {
++        // Invalidate any existing field/cache borrowing the original view.
++        // Publish a new immutable, strictly smaller observation to history.
++        history_[i]->revoked=true;
++        if(repair_static) {
++            auto repaired=std::make_shared<DepthObservation>(*history_[i]);
++            repaired->depth=std::move(repaired_depth[i]);repaired->revoked=false;
++            repaired->supporting_views.clear();repaired->obstacle_points.reset();
++            history_[i]=std::move(repaired);
++        }
++    }
+     history_.erase(std::remove_if(history_.begin(),history_.end(),[](const auto& old) {
+         return old->revoked;
+     }),history_.end());
+--- a/scripts/isaac/run_fov_gvf_navigation.py
++++ b/scripts/isaac/run_fov_gvf_navigation.py
+@@ -80,15 +80,17 @@
+     goal_trial = GoalTrial(json.loads(Path(os.environ["ISAAC_GOAL_PROTOCOL"]).read_text()),
+         float(os.environ.get("ISAAC_EXPLORATION_STALL_S", "0")))
+ intent_trace = None
++trace_manual_yaw = False
+ trace_disturbances = []
+ if manual_input_mode == "trace":
+     intent_trace = json.loads(Path(os.environ["ISAAC_INTENT_TRACE"]).read_text())
+     events = intent_trace.get("events", [])
+     if not events or any(len(e.get("velocity", [])) != 3 or
+-            not all(math.isfinite(float(v)) for v in [e["at"], *e["velocity"]]) for e in events):
++            not all(math.isfinite(float(v)) for v in [e["at"], *e["velocity"], e.get("yaw_rate", 0.0)]) for e in events):
+         raise ValueError("trace events require finite at and three-dimensional velocity")
+     if any(events[i]["at"] >= events[i+1]["at"] for i in range(len(events)-1)):
+         raise ValueError("trace times must increase")
++    trace_manual_yaw = any("yaw_rate" in event for event in events)
+     trace_disturbances = list(intent_trace.get("disturbances", []))
+ plant_tau = scalar_from_env("ISAAC_PLANT_TAU", 0.22)
+ plant_accel = scalar_from_env("ISAAC_PLANT_ACCEL", 1.2)
+@@ -589,11 +591,13 @@
+         return direction, 0.0, any(abs(v) > 1e-6 for v in direction)
+     if intent_trace is not None:
+         direction = (0.0, 0.0, 0.0)
++        requested_yaw_rate = 0.0
+         for event in intent_trace["events"]:
+             if now < event["at"]:
+                 break
+             direction = tuple(float(v) for v in event["velocity"])
+-        return direction, 0.0, any(abs(v) > 1e-6 for v in direction)
++            requested_yaw_rate = max(-max_yaw_rate, min(max_yaw_rate, float(event.get("yaw_rate", 0.0))))
++        return direction, requested_yaw_rate, any(abs(v) > 1e-6 for v in (*direction, requested_yaw_rate))
+     if joystick_input is None:
+         direction, active = sample_keyboard_intent()
+         return direction, 0.0, active
+@@ -724,7 +728,7 @@
+     position = candidate
+     velocity = Gf.Vec3d(*command)
+     horizontal_command = math.hypot(command[0], command[1])
+-    if joystick_input is not None:
++    if joystick_input is not None or trace_manual_yaw:
+         yaw_step = manual_yaw_rate * dt if manual_active else 0.0
+         yaw = math.atan2(math.sin(yaw + yaw_step), math.cos(yaw + yaw_step))
+         yaw_rate = yaw_step / dt
+--- /dev/null
++++ b/src/pc_gvf/test/cpp/history_repair_check.cpp
+@@ -0,0 +1,67 @@
++#include "pc_gvf/paper_guidance.hpp"
++#include <iostream>
++#include <stdexcept>
++#include <cmath>
++using namespace pc_gvf::depth_angular;
++namespace {
++void check(bool value,const char* message){if(!value)throw std::runtime_error(message);}
++DepthObservation evidence(const DepthObservation& current,const PaperGuidance& planner) {
++    auto result=current;result.supporting_views=planner.retainedDepthObservations();return result;
++}
++}
++int main() {
++ try {
++    PaperConfig cfg;cfg.local_history_repair=true;cfg.history_duration=60.;cfg.history_uncertainty_rate=0.;
++    cfg.retain_verified_travel=true;cfg.history_sample_interval=1.;cfg.history_max_observations=4;
++    cfg.motion.body_radius=.48;cfg.motion.safety_margin=.02;cfg.motion.rollout_margin=.02;
++    cfg.depth_uncertainty=.01;cfg.uncertainty_rate=.1;cfg.observation_timeout=.5;
++    Camera camera(64,48,90,68,10.);
++    DepthObservation wide(camera,std::vector<double>(64*48,10.),Eigen::Vector3d::Zero(),fixedCameraRotation(),1.,1,0);
++    const Eigen::Vector3d location(3.,0.,0.),hit(4.,2.,0.);
++    PaperGuidance planner(cfg);planner.ingestObservation(wide);
++    const auto original=planner.retainedDepthObservations().front();
++    check(planner.envelopeKnown(evidence(wide,planner),location,planner.envelopeRadius()+.1,1.),"fixture does not cover body");
++    auto fresh=wide;fresh.depth.assign(64*48,0.);fresh.stamp=1.1;fresh.version=2;fresh.view=1;
++    fresh.obstacle_points=std::make_shared<std::vector<Eigen::Vector3d>>(1,fresh.rotation.transpose()*(hit-fresh.origin));
++    planner.ingestObservation(fresh);
++    check(original->revoked,"borrowed old keyframe was not invalidated");
++    check(planner.retainedObservations()==2,"local conflict erased the entire static keyframe");
++    const auto corrected=planner.retainedDepthObservations().front();
++    check(!corrected->revoked&&corrected.get()!=original.get(),"repaired keyframe not immutable replacement");
++    for(std::size_t i=0;i<wide.depth.size();++i)check(corrected->depth[i]<=wide.depth[i],"repair invented free depth");
++    auto current=evidence(fresh,planner);
++    check(planner.envelopeKnown(current,location,planner.envelopeRadius()+.1,1.1),"remote conflict erased valid near-body evidence");
++    check(!planner.envelopeKnown(current,hit,0.,1.1),"fresh hit remains certified as free");
++    check(!planner.motionSafe(current,location,Eigen::Vector3d::Zero(),(hit-location).normalized()*2.,1.1),"motion toward conflicting hit accepted");
++    // The whole uncertainty footprint, including neighboring angular cells,
++    // must be removed; a single central-pixel edit would fail this test.
++    for(int x=-1;x<=1;++x)for(int y=-1;y<=1;++y)for(int z=-1;z<=1;++z)
++        check(!planner.envelopeKnown(current,hit+.004*Eigen::Vector3d(x,y,z),0.,1.1),"uncertain hit neighborhood remained free");
++    // A cleared nearby corridor must produce an actual nonzero, fully
++    // certified restart after release, not merely pass a point/surface test.
++    const auto stopped=planner.stepWithProposal(fresh,location,Eigen::Vector3d::Zero(),
++        Eigen::Vector3d::Zero(),Eigen::Vector3d::Zero(),1.1,1./60.);
++    check(!stopped.accepted&&stopped.command.norm()==0.,"release failed to stop");
++    const Eigen::Vector3d forward(.5,0.,0.);
++    const auto restart=planner.stepWithProposal(fresh,location,Eigen::Vector3d::Zero(),forward,forward,1.1,1./60.);
++    check(restart.accepted&&restart.command.x()>.1&&restart.command.dot(forward)>0.,"local repair did not restore a certified restart");
++    check(planner.motionSafe(current,location,Eigen::Vector3d::Zero(),restart.command,1.1),"restart skipped full motion proof");
++    // The same conflict with the feature disabled reproduces complete loss
++    // of the corridor; this guards against an ineffective synthetic fixture.
++    auto legacy_cfg=cfg;legacy_cfg.local_history_repair=false;
++    PaperGuidance legacy(legacy_cfg);legacy.ingestObservation(wide);legacy.ingestObservation(fresh);
++    const auto blocked=legacy.stepWithProposal(fresh,location,Eigen::Vector3d::Zero(),forward,forward,1.1,1./60.);
++    check(!blocked.accepted&&blocked.command.norm()==0.,"fixture does not reproduce legacy startup blockage");
++    // Additional hits between keyframe retention times must keep carving.
++    const Eigen::Vector3d next_hit(3.,0.,0.);fresh.stamp=1.2;fresh.version++;
++    fresh.obstacle_points=std::make_shared<std::vector<Eigen::Vector3d>>(1,fresh.rotation.transpose()*next_hit);
++    planner.ingestObservation(fresh);current=evidence(fresh,planner);
++    check(!planner.envelopeKnown(current,next_hit,0.,1.2),"between-sample contradiction ignored");
++    // A dynamic history is revoked as before, rather than locally repaired.
++    cfg.history_uncertainty_rate=.1;PaperGuidance dynamic(cfg);dynamic.ingestObservation(wide);
++    fresh.stamp=1.1;fresh.version=2;dynamic.ingestObservation(fresh);
++    check(dynamic.retainedObservations()==1,"non-static contradictory history survived");
++    check(!dynamic.envelopeKnown(evidence(fresh,dynamic),location,dynamic.envelopeRadius(),1.1),"non-static history fabricated free space");
++    std::cout<<"history_repair_check: local carving, uncertainty footprint, immutable invalidation, certified restart versus legacy blockage, between-sample hits and dynamic revocation passed\n";
++ }catch(const std::exception& e){std::cerr<<e.what()<<'\n';return 1;}
++}
+--- /dev/null
++++ b/src/pc_gvf/test/fixtures/paper/isaac_stall_repair_trace.json
+@@ -0,0 +1,104 @@
++{
++  "description": "Four-camera manual-equivalent world velocity plus independent yaw, pause/restart, strafe and reversal. Approximate approach to reported stall; not an exact recording of the user sticks.",
++  "events": [
++    {
++      "at": 0,
++      "velocity": [
++        0,
++        0,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 1,
++      "velocity": [
++        2,
++        0.1,
++        -0.05
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 11,
++      "velocity": [
++        0,
++        0,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 14,
++      "velocity": [
++        2,
++        0.1,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 25,
++      "velocity": [
++        0,
++        0,
++        0
++      ],
++      "yaw_rate": 0.4
++    },
++    {
++      "at": 28,
++      "velocity": [
++        0,
++        1.5,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 38,
++      "velocity": [
++        0,
++        0,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 41,
++      "velocity": [
++        -1.5,
++        0,
++        0
++      ],
++      "yaw_rate": -0.4
++    },
++    {
++      "at": 51,
++      "velocity": [
++        0,
++        0,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 55,
++      "velocity": [
++        1.5,
++        -0.5,
++        0.15
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 68,
++      "velocity": [
++        0,
++        0,
++        0
++      ],
++      "yaw_rate": 0
++    }
++  ]
++}

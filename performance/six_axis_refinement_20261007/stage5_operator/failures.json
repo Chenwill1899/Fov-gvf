@@ -1,0 +1,29 @@
+[
+  {
+    "step": "first isolated operator_intent_check",
+    "returncode": 139,
+    "backtrace": [
+      "PaperGuidance::~PaperGuidance()",
+      "main()"
+    ],
+    "cause": "Frozen core archive was linked against concurrently edited current public headers; PaperGuidance member layout differed.",
+    "resolution": "Extract every include from baseline sources.tar.gz, then override only the OperatorIntent header under test. Both old/new checks pass with matching core ABI.",
+    "scope": "Test harness ABI failure, not an Isaac run."
+  },
+  {
+    "step": "initial always-two-pole candidate",
+    "status": "revised",
+    "evidence": "fixture_metrics.json",
+    "reason": "At 60 Hz slow-turn intent jerk 2.568059072 -> 2.589365310; enabled second pole only after raw reversal, restoring the complete slow-turn waveform to baseline."
+  },
+  {
+    "step": "two-pole post-update angular bound",
+    "status": "confirmed contract violation, fixed",
+    "source": "../review/operator_lag_angles.txt",
+    "samples": 203,
+    "before_max_angle": 0.018039772220365173,
+    "after_max_angle": 0.017996310160701866,
+    "fix": "Check actual output after filtering; above .018 rad reset anchor and stage to raw and clear oscillation.",
+    "evidence": "lag_bound_fixed.log and measurements_v2_lag_bound"
+  }
+]

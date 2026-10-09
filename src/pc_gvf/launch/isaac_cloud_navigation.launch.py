@@ -1,17 +1,37 @@
 
-from ament_index_python.packages import get_package_share_directory
+from ament_index_python.packages import get_package_share_directory, get_package_prefix
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
 from launch.conditions import IfCondition
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 import os
+import json
+import hashlib
 from pathlib import Path
 
 
 def generate_launch_description():
     performance_log = os.environ.get("FOV_GVF_PERFORMANCE_LOG", "")
     performance_run_id = os.environ.get("FOV_GVF_RUN_ID", "unspecified")
+    # Frozen binaries allow interleaved comparisons without replacing the
+    # installed controller. Normal launches keep the package executable.
+    controller_executable = os.environ.get("FOV_GVF_CONTROLLER_EXECUTABLE", "depth_angular_controller")
+    if "FOV_GVF_CONTROLLER_EXECUTABLE" in os.environ:
+        frozen = Path(controller_executable)
+        if not frozen.is_absolute() or not frozen.is_file() or not os.access(frozen, os.X_OK):
+            raise ValueError("FOV_GVF_CONTROLLER_EXECUTABLE must be an absolute executable file")
+    runtime_manifest = os.environ.get("FOV_GVF_RUNTIME_MANIFEST", "")
+    if runtime_manifest:
+        actual = (Path(controller_executable) if Path(controller_executable).is_absolute()
+                  else Path(get_package_prefix("pc_gvf")) / "lib/pc_gvf" / controller_executable)
+        if not actual.is_file() or not os.access(actual, os.X_OK):
+            raise ValueError("selected controller must be an executable file")
+        Path(runtime_manifest).write_text(json.dumps({
+            "executable": str(actual),
+            "executable_sha256": hashlib.sha256(actual.read_bytes()).hexdigest(),
+            "launch_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
+        }, indent=2))
     rviz_config = str(
         Path(get_package_share_directory("pc_gvf_platforms")) /
         "config" / "isaac_cloud_navigation.rviz"
@@ -19,7 +39,7 @@ def generate_launch_description():
     return LaunchDescription([
         DeclareLaunchArgument("rviz", default_value="true"),
         Node(
-            package="pc_gvf", executable="depth_angular_controller", output="screen",
+            package="pc_gvf", executable=controller_executable, output="screen",
             parameters=[{
                 "use_sim_time": True,
                 "frame_id": "world",
@@ -33,6 +53,73 @@ def generate_launch_description():
                 "right_depth_topic": "/sim/depth_right/image_raw",
                 "right_camera_info_topic": "/sim/depth_right/camera_info",
                 "horizontal_360_enabled": True,
+                "paper_enabled": True,
+                "paper_omni_depth": os.environ.get("FOV_GVF_OMNI_DEPTH", "1") == "1",
+                "paper_goal_front_only": True,
+                "paper_intent_guard": True,
+                "paper_smooth_speed": True,
+                "paper_model_velocity_shaping": False,
+                "paper_proposal_feedforward": False,
+                "control_rate": 60.0,
+                "paper_depth_processing_rate": 10.0,
+                "paper_proposal_jerk_limit": 6.0,
+                "paper_proposal_command_accel": 2.4,
+                "paper_proposal_response_time": 0.22,
+                "paper_response_preview": True,
+                "paper_certified_direct": True,
+                "paper_depth_proposal": True,
+                "paper_angular_goal_cost": False,
+                "paper_vehicle_origin_proposal": True,
+                "paper_subpixel_proposal": True,
+                "paper_local_path_proposal": False,
+                "paper_retain_certified_volume": True,
+                "paper_shared_obstacles": os.environ.get("FOV_GVF_SHARED_OBSTACLES", "1") == "1",
+                "shared_robot_id": os.environ.get("FOV_GVF_ROBOT_ID", "ego1p5"),
+                "shared_map_frame": os.environ.get("FOV_GVF_SHARED_FRAME", "world"),
+                "operator_assistance": os.environ.get("FOV_GVF_OPERATOR_ASSISTANCE", "0") == "1",
+                "paper_spherical_memory": os.environ.get("FOV_GVF_SPHERICAL_MEMORY", "1") == "1",
+                "paper_incremental_frontend": os.environ.get("FOV_GVF_INCREMENTAL_FRONTEND", "1") == "1",
+                "paper_incremental_field": os.environ.get("FOV_GVF_INCREMENTAL_FIELD", "0") == "1",
+                "paper_dynamic_obstacles": os.environ.get("FOV_GVF_DYNAMIC_OBSTACLES", "0") == "1",
+                "depth_uncertainty_enabled": os.environ.get("FOV_GVF_DEPTH_UNCERTAINTY", "1") == "1",
+                "depth_uncertainty_sigma0": float(os.environ.get("FOV_GVF_DEPTH_SIGMA0", "0.005")),
+                "depth_uncertainty_sigma_range2": float(os.environ.get("FOV_GVF_DEPTH_SIGMA_RANGE2", "0.001")),
+                "depth_uncertainty_multiplier": 3.0,
+                "depth_uncertainty_pose_bound": 0.01,
+                "depth_uncertainty_edge_radius": 1,
+                "paper_local_history_repair": os.environ.get("FOV_GVF_LOCAL_HISTORY_REPAIR", "1") == "1",
+                "paper_goal_projection_clearance": 0.0,
+                "paper_intent_corridor": False,
+                "paper_native_proposal_stride": 0,
+                "angular_width": 64, "angular_height": 48,
+                "paper_chart_width": 24, "paper_chart_height": 18,
+                "paper_depth_contract": "isaac_rendered_z",
+                "paper_observation_history": 60.0,
+                "paper_static_verified_travel": True,
+                "paper_history_sample_interval": 1.0,
+                "paper_history_max_observations": 16,
+                "paper_history_uncertainty_rate": 0.0,
+                "paper_static_scene": True,
+                "paper_observation_uncertainty_rate": 0.1,
+                "paper_seed_scene": os.environ.get("FOV_GVF_ACTUAL_SCENE", "") if os.environ.get("FOV_GVF_VERIFIED_START", "1") == "1" else "",
+                "paper_seed_occupancy": os.environ.get("FOV_GVF_ESDF_OCCUPANCY", ""),
+                "paper_seed_radius": 2.5,
+                "paper_field_interval": 0.10,
+                "paper_command_change_angle": 0.05,  # radians, relative to active-reference intent
+                "paper_pipeline_delay": 0.20,
+                "paper_rollout_horizon": 0.20,
+                "paper_transverse_gain": 1.0,
+                "paper_chart_speed": 16.0,
+                "paper_minimum_lookahead": float(os.environ.get("FOV_GVF_MIN_LOOKAHEAD", "0.10")),
+                "paper_feedback": True,
+                "paper_continuation": True,
+                "paper_coarse_fine": True,
+                "paper_continuous_certificates": os.environ.get("FOV_GVF_CONTINUOUS_CERTIFICATES", "1") == "1",
+                "paper_adaptive_lookahead": os.environ.get("FOV_GVF_ADAPTIVE_LOOKAHEAD", "1") == "1",
+                "paper_adaptive_grid": True,
+                "paper_certificate_resolution": 0.005,
+                "paper_replay_directory": os.environ.get("FOV_GVF_REPLAY_DIR", ""),
+                "camera_offset": [0.22, 0.0, 0.02],
                 "cmd_topic": "/position_cmd",
                 "human_intent_topic": "/human_intent",
                 "human_intent_timeout": 0.25,
@@ -40,26 +127,25 @@ def generate_launch_description():
                 "use_fixed_goal": False,
                 "stop_at_goal": False,
                 "use_reference_line": False,
-                "max_depth_age": 0.5,
-                "max_depth": 40.0,
+                "max_depth_age": 0.3,
+                "max_depth": 10.0,
                 "obstacle_clear_frames": 3,
                 "speed": 2.0, "max_speed": 2.0,
                 "max_vertical_speed": 1.0,
                 "command_accel_limit": 1.2,
-                "command_jerk_limit": 8.0,
-                "command_response_time": 0.22,
-                "speed_recovery_accel": 1.0,
-                "speed_brake_accel": 2.5,
                 "max_direction_rate": 1.60,
                 "continuous_harmonic_guidance": True,
                 "harmonic_gradient_radius_cells": 3,
                 "harmonic_gradient_lookahead_cells": 2.5,
                 "field_publish_rate": 15.0,
                 "safe_goal_hysteresis_weight": 0.40,
+                "safe_goal_clearance_reward": 0.018,
+                "safe_goal_clearance_cap": 0.0,
+                "safe_goal_left_bias": 0.012,
                 "safe_goal_hold_time": 0.35,
-                "body_radius": 0.25,
-                "safety_margin": 0.20,
-                "rollout_margin": 0.10,
+                "body_radius": float(os.environ.get("FOV_GVF_BODY_RADIUS", "0.48")),
+                "safety_margin": float(os.environ.get("FOV_GVF_SAFETY_MARGIN", "0.02")),
+                "rollout_margin": float(os.environ.get("FOV_GVF_ROLLOUT_MARGIN", "0.02")),
                 "planning_horizon": 3.0,
                 "performance_report_interval": 5.0,
                 "performance_log_path": performance_log,

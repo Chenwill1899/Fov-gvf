@@ -1,0 +1,2532 @@
+--- EGO1P2/scripts/build_isaac_ros_workspace.sh
++++ EGO1P3/scripts/build_isaac_ros_workspace.sh
+@@ -1,11 +1,11 @@
+ #!/usr/bin/env bash
+ set -eo pipefail
+-PROJECT_ROOT="/home/starry/isaac-data/EGO1P2"
++PROJECT_ROOT="/home/starry/isaac-data/EGO1P3"
+ source /opt/ros/humble/setup.bash
+ set -u
+ export PYTHONNOUSERSITE=1
+-colcon --log-base /tmp/fov_gvf_ego1p2_isaac_log build --base-paths "$PROJECT_ROOT/src" \
+-  --build-base /tmp/fov_gvf_ego1p2_isaac_build \
+-  --install-base /tmp/fov_gvf_ego1p2_isaac_install \
++colcon --log-base /tmp/fov_gvf_ego1p3_isaac_log build --base-paths "$PROJECT_ROOT/src" \
++  --build-base /tmp/fov_gvf_ego1p3_isaac_build \
++  --install-base /tmp/fov_gvf_ego1p3_isaac_install \
+   --packages-up-to pc_gvf pc_gvf_platforms \
+   --cmake-args -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=ON
+--- EGO1P2/scripts/run_isaac_fov_gvf_navigation.sh
++++ EGO1P3/scripts/run_isaac_fov_gvf_navigation.sh
+@@ -4,10 +4,10 @@
+ # Sleeping OpenMP workers leave CPU time available for sensor rendering.
+ export OMP_WAIT_POLICY="${OMP_WAIT_POLICY:-PASSIVE}"
+ 
+-PROJECT_ROOT="/home/starry/isaac-data/EGO1P2"
++PROJECT_ROOT="/home/starry/isaac-data/EGO1P3"
+ ISAAC_ROOT="/home/starry/isaac-data/isaacsim"
+ HUMBLE_BRIDGE_LIB="$ISAAC_ROOT/exts/isaacsim.ros2.core/humble/lib"
+-ROS_INSTALL="${FOV_GVF_INSTALL:-/tmp/fov_gvf_ego1p2_isaac_install}"
++ROS_INSTALL="${FOV_GVF_INSTALL:-/tmp/fov_gvf_ego1p3_isaac_install}"
+ INPUT_MODE="${ISAAC_MANUAL_INPUT_MODE:-joystick}"
+ case "$INPUT_MODE" in
+   joystick)
+@@ -22,7 +22,7 @@
+     ;;
+   goal)
+     test -f "${ISAAC_GOAL_PROTOCOL:?goal mode requires ISAAC_GOAL_PROTOCOL}"
+-    : "${FOV_GVF_BENCHMARK_ALGORITHM:?select ego1p2, ego1p1, ego1p0 or user_ego}"
++    : "${FOV_GVF_BENCHMARK_ALGORITHM:?select ego1p3, ego1p1, ego1p0 or user_ego}"
+     : "${ISAAC_BENCHMARK_RESULT:?set result JSON path}"
+     ;;
+   trace)
+@@ -73,9 +73,9 @@
+     unset FOV_GVF_ESDF_OCCUPANCY
+   fi
+ fi
+-export ROS_LOG_DIR="${ROS_LOG_DIR:-/tmp/fov_gvf_ego1p2_isaac_ros_log}"
++export ROS_LOG_DIR="${ROS_LOG_DIR:-/tmp/fov_gvf_ego1p3_isaac_ros_log}"
+ export FOV_GVF_RUN_ID="${FOV_GVF_RUN_ID:-$(date +%Y%m%d_%H%M%S)}"
+-export FOV_GVF_REPLAY_DIR="${FOV_GVF_REPLAY_DIR-/tmp/fov_gvf_ego1p2_replays/$FOV_GVF_RUN_ID}"
++export FOV_GVF_REPLAY_DIR="${FOV_GVF_REPLAY_DIR-/tmp/fov_gvf_ego1p3_replays/$FOV_GVF_RUN_ID}"
+ if [[ -n "$FOV_GVF_REPLAY_DIR" ]]; then
+   mkdir -p "$FOV_GVF_REPLAY_DIR"
+ fi
+--- EGO1P2/src/pc_gvf/CMakeLists.txt
++++ EGO1P3/src/pc_gvf/CMakeLists.txt
+@@ -23,6 +23,7 @@
+   src/paper_guidance.cpp
+   src/paper_replay.cpp
+   src/verified_start.cpp
++  src/omni_depth.cpp
+   src/local_depth_path.cpp
+ )
+ target_compile_features(pc_gvf_depth_angular_core PUBLIC cxx_std_14)
+@@ -75,6 +76,10 @@
+ 
+ if(BUILD_TESTING)
+   find_package(ament_cmake_pytest REQUIRED)
++
++  add_executable(omni_depth_check test/cpp/omni_depth_check.cpp)
++  target_link_libraries(omni_depth_check PRIVATE pc_gvf_depth_angular_core)
++  add_test(NAME omni_depth_check COMMAND omni_depth_check)
+ 
+   add_executable(history_repair_check test/cpp/history_repair_check.cpp)
+   target_link_libraries(history_repair_check PRIVATE pc_gvf_depth_angular_core)
+--- /dev/null
++++ EGO1P3/src/pc_gvf/include/pc_gvf/omni_depth.hpp
+@@ -0,0 +1,44 @@
++#ifndef PC_GVF_OMNI_DEPTH_HPP
++#define PC_GVF_OMNI_DEPTH_HPP
++
++#include "pc_gvf/paper_guidance.hpp"
++#include <functional>
++
++namespace pc_gvf { namespace depth_angular {
++
++// A world-frame spherical proposal atlas. It is NOT free-space evidence:
++// every selected direction must pass the caller's real-frustum certificate.
++struct OmniDepthConfig {
++    int azimuth_bins = 180;
++    int elevation_bins = 37;
++    double horizon = 4.0;
++    double radius = .58;
++    double max_age = .30;
++    double continuity_weight = .12;
++    int max_certificates = 64;
++    bool include_atlas = false; // Populate even when exact intent passes immediately.
++};
++
++struct OmniDepthResult {
++    Eigen::Vector3d direction = Eigen::Vector3d::Zero();
++    std::vector<Eigen::Vector3d> rays;
++    std::vector<double> clearance;
++    // Center ray visible to the proposal horizon; not a body/corridor proof.
++    std::vector<std::uint8_t> observed;
++    bool valid = false;
++    int fresh_views = 0;
++    int certificates = 0;
++};
++
++// Optical z depth is backprojected with each capture pose and translated to
++// the current vehicle origin. Unknown pixels never create occupied or free
++// evidence. The observed mask is a visibility diagnostic, not certification.
++OmniDepthResult omniDepthProposal(
++    const std::vector<std::shared_ptr<const DepthObservation>>& views,
++    const Eigen::Vector3d& position, const Eigen::Vector3d& intent,
++    const Eigen::Vector3d& previous_direction, double now, double corridor,
++    const OmniDepthConfig& config,
++    const std::function<bool(const Eigen::Vector3d&)>& certify);
++
++} }
++#endif
+--- EGO1P2/src/pc_gvf/launch/isaac_cloud_navigation.launch.py
++++ EGO1P3/src/pc_gvf/launch/isaac_cloud_navigation.launch.py
+@@ -34,6 +34,7 @@
+                 "right_camera_info_topic": "/sim/depth_right/camera_info",
+                 "horizontal_360_enabled": True,
+                 "paper_enabled": True,
++                "paper_omni_depth": os.environ.get("FOV_GVF_OMNI_DEPTH", "1") == "1",
+                 "paper_goal_front_only": True,
+                 "paper_intent_guard": True,
+                 "paper_smooth_speed": True,
+--- EGO1P2/src/pc_gvf/launch/navigation_benchmark.launch.py
++++ EGO1P3/src/pc_gvf/launch/navigation_benchmark.launch.py
+@@ -11,6 +11,7 @@
+ 
+ def generate_launch_description():
+     roots = {
++        'ego1p3': '/home/starry/isaac-data/EGO1P3',
+         'ego1p2': '/home/starry/isaac-data/EGO1P2',
+         'ego1p1': '/home/starry/isaac-data/EGO1P1',
+         'ego1p0': '/home/starry/isaac-data/EGO1P0',
+@@ -38,7 +39,7 @@
+     effective = dict(native, **overrides)
+     executable = Path(f'/tmp/fov_gvf_{algorithm}_isaac_install/pc_gvf/lib/pc_gvf/depth_angular_controller')
+     output = Path(os.environ['ISAAC_BENCHMARK_RESULT']).with_suffix('.parameters.json')
+-    shared_root=Path('/home/starry/isaac-data/EGO1P2')
++    shared_root=Path('/home/starry/isaac-data/EGO1P3')
+     shared_files=['scripts/run_isaac_fov_gvf_navigation.sh','scripts/isaac/run_fov_gvf_navigation.py','scripts/isaac/navigation_benchmark.py',
+         'scripts/isaac/manual_control_math.py','src/pc_gvf_platforms/pc_gvf_platforms/command_bridge.py',
+         'performance/navigation_benchmark_20260929/protocol.json']
+--- EGO1P2/src/pc_gvf/src/depth_angular_controller_node.cpp
++++ EGO1P3/src/pc_gvf/src/depth_angular_controller_node.cpp
+@@ -1,6 +1,7 @@
+ #include "pc_gvf/depth_angular_core.hpp"
+ #include "pc_gvf/paper_guidance.hpp"
+ #include "pc_gvf/local_depth_path.hpp"
++#include "pc_gvf/omni_depth.hpp"
+ #include "pc_gvf/verified_start.hpp"
+ #include <deque>
+ 
+@@ -202,8 +203,9 @@
+         // Optional fixed-goal perception policy. The platform should point the
+         // front camera toward travel; if it does not, unknown-space checks can
+         // stop motion. Teleoperation retains all configured horizontal cameras.
++        omni_depth_enabled_=declare_parameter<bool>("paper_omni_depth",false);
+         const bool goal_front_only=declare_parameter<bool>("paper_goal_front_only",false);
+-        if(paper_enabled_&&use_fixed_goal_&&goal_front_only) {
++        if(paper_enabled_&&use_fixed_goal_&&goal_front_only&&!omni_depth_enabled_) {
+             horizontal_360_enabled_=false;config_.horizontal_only=false;
+             RCLCPP_INFO(get_logger(),"GOAL_FRONT_ONLY enabled: front depth plus certified history; manual mode retains four views");
+         }
+@@ -211,6 +213,8 @@
+             chart_width_=std::max(8,static_cast<int>(declare_parameter<std::int64_t>("paper_chart_width",24)));
+             chart_height_=std::max(8,static_cast<int>(declare_parameter<std::int64_t>("paper_chart_height",18)));
+             paper_depth_proposal_=declare_parameter<bool>("paper_depth_proposal",false);
++            if(omni_depth_enabled_&&!paper_depth_proposal_)
++                throw std::invalid_argument("paper_omni_depth requires paper_depth_proposal");
+             paper_local_path_proposal_=declare_parameter<bool>("paper_local_path_proposal",false);
+             paper_subpixel_proposal_=declare_parameter<bool>("paper_subpixel_proposal",false);
+             paper_vehicle_origin_proposal_=declare_parameter<bool>("paper_vehicle_origin_proposal",false);
+@@ -1126,7 +1130,45 @@
+         Eigen::Vector3d proposal=Eigen::Vector3d::Zero();
+         std::shared_ptr<const DepthObservation> proposal_observation;
+         AngularSolution proposal_solution;bool proposal_goal_valid=false;
+-        if(paper_depth_proposal_&&intent.norm()>1e-5) {
++        OmniDepthResult omni_result;
++        double omni_corridor=0.;
++        if(omni_depth_enabled_&&intent.norm()>1e-5) {
++            double speed=std::min(intent.norm(),max_reference_speed_);
++            omni_corridor=std::max(.25,velocity.norm()*.2+
++                velocity.squaredNorm()/(2.*std::min(config_.brake_accel,config_.max_accel))+.25);
++            if(use_fixed_goal_) {
++                SimConfig approach=config_;
++                approach.brake_accel=std::min(config_.brake_accel,config_.max_accel);
++                approach.delay=.20+2.*config_.velocity_tau;
++                speed=brakingSpeed((fixed_goal_-position).norm(),speed,approach);
++                omni_corridor=std::min(omni_corridor,(fixed_goal_-position).norm());
++            }
++            OmniDepthConfig cfg;
++            cfg.radius=paper_->envelopeRadius();cfg.max_age=max_depth_age_;
++            cfg.include_atlas=field_publisher_->get_subscription_count()>0&&
++                (!has_last_field_publish_time_||(stamp-last_field_publish_time_).seconds()>=1./field_publish_rate_);
++            cfg.horizon=std::min(camera.maxDepth()-cfg.radius,
++                speed*config_.planning_horizon+speed*config_.delay+
++                speed*speed/(2.*std::min(config_.brake_accel,config_.max_accel))+.35);
++            if(use_fixed_goal_)cfg.horizon=std::min(cfg.horizon,(fixed_goal_-position).norm());
++            cfg.horizon=std::max(omni_corridor+.01,cfg.horizon);
++            const Eigen::Vector3d previous=has_previous_goal_direction_world_?
++                previous_goal_direction_world_:Eigen::Vector3d::Zero();
++            omni_result=omniDepthProposal(current_views,position,intent,previous,
++                stamp.seconds(),omni_corridor,cfg,[&](const Eigen::Vector3d& d){
++                    return paper_->proposalCorridor(observation,position,d,omni_corridor,stamp.seconds());
++                });
++            if(omni_result.valid) {
++                proposal=speed*omni_result.direction;
++                previous_goal_direction_world_=omni_result.direction;
++                has_previous_goal_direction_world_=true;
++            }
++            RCLCPP_INFO_THROTTLE(get_logger(),*get_clock(),1000,
++                "OMNI_DEPTH views=%d azimuth_bins=%d elevation_bins=%d valid=%d certificates=%d yaw=%.2f",
++                omni_result.fresh_views,cfg.azimuth_bins,cfg.elevation_bins,omni_result.valid,
++                omni_result.certificates,std::atan2(proposal.y(),proposal.x())*180./kPi);
++        }
++        if(paper_depth_proposal_&&!omni_depth_enabled_&&intent.norm()>1e-5) {
+             const Eigen::Vector3d direction=intent.normalized();
+             if(!has_reference_direction_||(!use_fixed_goal_&&direction.dot(reference_direction_)<std::cos(.05))) {
+                 resetPlanningHistory();reference_direction_=direction;has_reference_direction_=true;
+@@ -1343,12 +1385,30 @@
+             << ",\"command_x\":" << result.command.x() << ",\"command_y\":" << result.command.y() << ",\"command_z\":" << result.command.z()
+             << ",\"reset_reason\":\"" << result.reset_reason << "\"}";
+         std_msgs::msg::String message; message.data=diagnostic.str(); paper_diagnostics_->publish(message);
++        if(omni_depth_enabled_&&field_publisher_->get_subscription_count()>0&&
++           (!has_last_field_publish_time_||(stamp-last_field_publish_time_).seconds()>=1./field_publish_rate_)) {
++            visualization_msgs::msg::MarkerArray markers;
++            auto clear=marker(stamp,"omni",0,visualization_msgs::msg::Marker::POINTS);
++            clear.action=visualization_msgs::msg::Marker::DELETEALL;markers.markers.push_back(clear);
++            auto atlas=marker(stamp,"omni_depth",0,visualization_msgs::msg::Marker::POINTS);
++            atlas.scale.x=.045;atlas.scale.y=.045;
++            for(std::size_t i=0;i<omni_result.rays.size();++i) {
++                atlas.points.push_back(point(position+std::min(3.,omni_result.clearance[i])*omni_result.rays[i]));
++                atlas.colors.push_back(omni_result.clearance[i]<=omni_corridor?color(1.,.2,.15,.7):
++                    (omni_result.observed[i]?color(.1,.85,.7,.45):color(.5,.5,.5,.15)));
++            }
++            markers.markers.push_back(std::move(atlas));
++            auto goal=marker(stamp,"omni_proposal",0,visualization_msgs::msg::Marker::ARROW);
++            goal.scale.x=.06;goal.scale.y=.12;goal.scale.z=.15;goal.color=color(.1,1.,.15);
++            goal.points={point(position),point(position+proposal)};markers.markers.push_back(std::move(goal));
++            field_publisher_->publish(markers);last_field_publish_time_=stamp;has_last_field_publish_time_=true;
++        }
+         if(!retained&&proposal_observation&&proposal_goal_valid&&field_publisher_->get_subscription_count()>0&&
+            (!has_last_field_publish_time_||(stamp-last_field_publish_time_).seconds()>=1./field_publish_rate_)) {
+             publishField(stamp,position,proposal_observation->rotation,proposal_observation->camera,proposal_solution);
+             last_field_publish_time_=stamp;has_last_field_publish_time_=true;
+         }
+-        if (retained && paper_->field().valid && result.accepted) {
++        if (!omni_depth_enabled_ && retained && paper_->field().valid && result.accepted) {
+             const auto& field=paper_->field();
+             AngularSolution solution;
+             solution.depth=retained->depth;
+@@ -1440,7 +1500,7 @@
+             }
+             for(std::size_t view=0;view<cameras.size();++view) {
+                 if(!cameras[view]||!has_depth_times[view]||
+-                    age(stamp,depth_times[view],true)>max_depth_age_||depths[view].size()!=cameras[view]->rays().size())continue;
++                    age(stamp,depth_times[view],true)>max_depth_age_||age(stamp,depth_times[view],true)<-.02||depths[view].size()!=cameras[view]->rays().size())continue;
+                 Eigen::Vector3d captured;Eigen::Matrix3d rotation;
+                 if(!observationPose(depth_times[view],&captured,&rotation))continue;
+                 const Eigen::Matrix3d yaw=Eigen::AngleAxisd(camera_yaw_offsets_[view],Eigen::Vector3d::UnitZ()).toRotationMatrix();
+@@ -1497,6 +1557,18 @@
+                 pose.orientation.x, pose.orientation.y, pose.orientation.z,
+                 pose.orientation.w, &body_rotation)) {
+             stop(stamp, position, "INVALID_GUIDANCE");
++            return;
++        }
++        // The omni front-end consumes all fresh capture poses. A missing
++        // cardinal camera cannot veto evidence available from the other views.
++        // This stamp is metadata for the virtual chart, never synthetic depth.
++        if(paper_enabled_&&omni_depth_enabled_) {
++            if(current_paper_views.empty()) {stop(stamp,position,"WAITING_OMNI_DEPTH");return;}
++            const auto freshest=*std::max_element(current_paper_views.begin(),current_paper_views.end(),
++                [](const auto& a,const auto& b){return a->stamp<b->stamp;});
++            const auto index=static_cast<std::size_t>(freshest->view);
++            paperControl(stamp,depth_times[index],freshest->camera,{},freshest->version,
++                current_paper_views,position,velocity,reference,control_dt);
+             return;
+         }
+         std::size_t view_index = 0;
+@@ -1699,6 +1771,7 @@
+     double local_path_time_=-1.;
+     Eigen::Vector3d local_path_intent_=Eigen::Vector3d::Zero();
+     bool paper_vehicle_origin_proposal_=false,paper_subpixel_proposal_=false;
++    bool omni_depth_enabled_=false;
+     bool paper_depth_proposal_=false,sampled_proposal_=false,paper_intent_corridor_=false,paper_angular_goal_cost_=false;
+     int native_proposal_stride_=0;
+     std::unique_ptr<PaperGuidance> paper_;
+--- /dev/null
++++ EGO1P3/src/pc_gvf/src/omni_depth.cpp
+@@ -0,0 +1,227 @@
++#include "pc_gvf/omni_depth.hpp"
++#include <algorithm>
++#include <cmath>
++#include <stdexcept>
++#include <queue>
++
++namespace pc_gvf { namespace depth_angular {
++namespace {
++constexpr double pi = 3.14159265358979323846;
++double clamp(double x) { return std::max(-1., std::min(1., x)); }
++Eigen::Vector3d ray(double yaw, double elevation) {
++    return {std::cos(elevation)*std::cos(yaw),
++            std::cos(elevation)*std::sin(yaw), std::sin(elevation)};
++}
++struct Sphere { Eigen::Vector3d center; double radius; };
++double entry(const Eigen::Vector3d& direction, const Sphere& sphere, double limit) {
++    const double norm2 = sphere.center.squaredNorm();
++    const double radius2 = sphere.radius*sphere.radius;
++    if (norm2 <= radius2) return 0.;
++    const double along = direction.dot(sphere.center);
++    if (along <= 0.) return limit;
++    const double perpendicular2 = std::max(0., norm2-along*along);
++    if (perpendicular2 > radius2) return limit;
++    return std::min(limit, std::max(0., along-std::sqrt(radius2-perpendicular2)));
++}
++bool visible(const DepthObservation& view, const Eigen::Vector3d& point) {
++    const Eigen::Vector3d p = view.rotation.transpose()*(point-view.origin);
++    if (p.z() <= 0.) return false;
++    // Full pixel cells, including half-pixel FOV edges; never clamp outside rays.
++    const double u = view.camera.fx()*p.x()/p.z()+view.camera.cx();
++    const double v = view.camera.fy()*p.y()/p.z()+view.camera.cy();
++    if (u < -.5 || v < -.5 || u >= view.camera.width()-.5 || v >= view.camera.height()-.5)
++        return false;
++    const double d = view.depth[static_cast<int>(std::floor(v+.5))*view.camera.width()+
++                               static_cast<int>(std::floor(u+.5))];
++    return std::isfinite(d) && d > p.z();
++}
++}
++
++OmniDepthResult omniDepthProposal(
++    const std::vector<std::shared_ptr<const DepthObservation>>& views,
++    const Eigen::Vector3d& position, const Eigen::Vector3d& intent,
++    const Eigen::Vector3d& previous_direction, double now, double corridor,
++    const OmniDepthConfig& cfg,
++    const std::function<bool(const Eigen::Vector3d&)>& certify)
++{
++    if (cfg.azimuth_bins < 8 || cfg.azimuth_bins > 720 ||
++        cfg.elevation_bins < 3 || cfg.elevation_bins > 181 ||
++        !std::isfinite(cfg.horizon) || cfg.horizon <= 0. ||
++        !std::isfinite(cfg.radius) || cfg.radius <= 0. ||
++        !std::isfinite(cfg.max_age) || cfg.max_age <= 0. ||
++        !std::isfinite(cfg.continuity_weight) || cfg.continuity_weight < 0. ||
++        cfg.max_certificates < 1)
++        throw std::invalid_argument("invalid omni depth proposal configuration");
++    OmniDepthResult result;
++    if (!position.allFinite() || !intent.allFinite() || intent.norm() < 1e-8 ||
++        !std::isfinite(now) || !std::isfinite(corridor) || corridor < 0. || !certify)
++        return result;
++    std::vector<const DepthObservation*> fresh;
++    std::vector<Sphere> spheres;
++    for (const auto& ptr : views) {
++        if (!ptr || ptr->revoked || !std::isfinite(ptr->stamp) ||
++            now-ptr->stamp > cfg.max_age || ptr->stamp-now > .02 ||
++            !ptr->origin.allFinite() || !ptr->rotation.allFinite() ||
++            ptr->depth.size() != ptr->camera.rays().size()) continue;
++        const auto& view = *ptr;
++        fresh.push_back(&view);
++        for (std::size_t i=0; i<view.depth.size(); ++i) {
++            const double z = view.depth[i];
++            if (!std::isfinite(z) || z <= 0. || z >= view.camera.maxDepth()) continue;
++            const auto& camera_ray = view.camera.rays()[i];
++            const Eigen::Vector3d point = view.origin + view.rotation*(z/camera_ray.z()*camera_ray)-position;
++            // Cover the coarse pixel's transverse footprint when proposing.
++            // Original conservative frusta remain the sole safety proof.
++            const double radius = cfg.radius + .5*z*std::hypot(1./view.camera.fx(),1./view.camera.fy());
++            if (point.norm()-radius < cfg.horizon) spheres.push_back({point,radius});
++        }
++    }
++    result.fresh_views = static_cast<int>(fresh.size());
++    if (fresh.empty()) return result;
++    const Eigen::Vector3d desired=intent.normalized();
++    auto exact_clearance=[&](const Eigen::Vector3d& d) {
++        double clearance=cfg.horizon;
++        for (const auto& sphere : spheres) clearance=entry(d,sphere,clearance);
++        return clearance;
++    };
++    const double direct_clearance=exact_clearance(desired);
++    bool direct_checked=false;
++    if (direct_clearance >= cfg.horizon-1e-9) {
++        ++result.certificates;direct_checked=true;
++        if (certify(desired)) {
++            result.direction=desired;result.valid=true;
++            // No need to rasterize thousands of unused alternatives in open
++            // space. Visual subscribers can explicitly request the whole atlas.
++            if (!cfg.include_atlas) return result;
++        }
++    }
++    const int width=cfg.azimuth_bins, height=cfg.elevation_bins;
++    const double dyaw=2*pi/width, delevation=pi/(height-1);
++    result.rays.reserve(width*height);
++    result.clearance.assign(width*height,cfg.horizon);
++    result.observed.assign(width*height,0);
++    for (int y=0;y<height;++y) for (int x=0;x<width;++x) {
++        const Eigen::Vector3d d=ray(-pi+x*dyaw,-pi/2+y*delevation);
++        result.rays.push_back(d);
++        for (const auto* view : fresh)
++            if (visible(*view,position+cfg.horizon*d)) {result.observed[y*width+x]=1;break;}
++    }
++    // Rasterize angular caps on a periodic longitude domain. Bound each row
++    // analytically; no artificial obstacle or disconnected edge at +/-pi.
++    for (const auto& sphere : spheres) {
++        const double distance=sphere.center.norm();
++        if (distance <= sphere.radius) {
++            std::fill(result.clearance.begin(),result.clearance.end(),0.);
++            break;
++        }
++        const double yaw=std::atan2(sphere.center.y(),sphere.center.x());
++        const double elevation=std::asin(clamp(sphere.center.z()/distance));
++        const double alpha=std::asin(std::min(1.,sphere.radius/distance));
++        const int ymin=std::max(0,static_cast<int>(std::ceil((elevation-alpha+pi/2)/delevation)));
++        const int ymax=std::min(height-1,static_cast<int>(std::floor((elevation+alpha+pi/2)/delevation)));
++        for (int y=ymin;y<=ymax;++y) {
++            const double e=-pi/2+y*delevation;
++            const double denominator=std::cos(e)*std::cos(elevation);
++            const double numerator=std::cos(alpha)-std::sin(e)*std::sin(elevation);
++            if (denominator > 1e-12 && numerator/denominator > 1.+1e-12) continue;
++            const double half=denominator <= 1e-12 ? pi : std::acos(clamp(numerator/denominator));
++            const int first=static_cast<int>(std::ceil((yaw-half+pi)/dyaw));
++            const int last=std::min(first+width-1,static_cast<int>(std::floor((yaw+half+pi)/dyaw)));
++            for (int a=first;a<=last;++a) {
++                const int x=(a%width+width)%width, i=y*width+x;
++                result.clearance[i]=entry(result.rays[i],sphere,result.clearance[i]);
++            }
++        }
++    }
++    if (result.valid) return result;
++    // Distance to the blocked angular domain, with periodic longitude and
++    // physical angular edge lengths. Prefer the middle of a broad corridor,
++    // not a direction barely grazing an inflated obstacle.
++    constexpr double room_cap=.4;
++    std::vector<double> angular_clearance(width*height,room_cap);
++    using QueueItem=std::pair<double,int>;
++    std::priority_queue<QueueItem,std::vector<QueueItem>,std::greater<QueueItem>> queue;
++    for(int i=0;i<width*height;++i)
++        if(!result.observed[i]||result.clearance[i]<cfg.horizon-1e-9) angular_clearance[i]=0.;
++    // Only boundary cells can reduce a free cell's capped distance. Seeding
++    // blocked interiors needlessly dominates the heap on a spherical atlas.
++    for(int y=0;y<height;++y)for(int x=0;x<width;++x) {
++        const int i=y*width+x;if(angular_clearance[i]!=0.)continue;
++        bool boundary=false;
++        for(int dy=-1;dy<=1&&!boundary;++dy)for(int dx=-1;dx<=1;++dx) {
++            const int yy=y+dy;if(yy<0||yy>=height)continue;
++            if(angular_clearance[yy*width+(x+dx+width)%width]>0.){boundary=true;break;}
++        }
++        if(boundary)queue.push({0.,i});
++    }
++    while(!queue.empty()) {
++        const auto item=queue.top();queue.pop();
++        const int i=item.second,y=i/width,x=i%width;
++        if(item.first>angular_clearance[i])continue;
++        for(int dy=-1;dy<=1;++dy)for(int dx=-1;dx<=1;++dx) {
++            const int yy=y+dy;if((!dx&&!dy)||yy<0||yy>=height)continue;
++            const int xx=(x+dx+width)%width,j=yy*width+xx;
++            const double e=-pi/2+(y+.5*dy)*delevation;
++            const double distance=item.first+std::hypot(dx*dyaw*std::cos(e),dy*delevation);
++            if(distance+1e-12<angular_clearance[j]){angular_clearance[j]=distance;queue.push({distance,j});}
++        }
++    }
++    auto angular_room=[&](const Eigen::Vector3d& d) {
++        int x=static_cast<int>(std::lround((std::atan2(d.y(),d.x())+pi)/dyaw));x=(x%width+width)%width;
++        const int y=std::max(0,std::min(height-1,static_cast<int>(std::lround((std::asin(clamp(d.z()))+pi/2)/delevation))));
++        return angular_clearance[y*width+x];
++    };
++    const bool has_previous=previous_direction.allFinite() && previous_direction.norm()>1e-8 &&
++        previous_direction.normalized().dot(desired)>0.;
++    const Eigen::Vector3d previous=has_previous ? previous_direction.normalized().eval() : desired;
++    struct Candidate { Eigen::Vector3d d; double cost; };
++    std::vector<Candidate> candidates;
++    auto score=[&](const Eigen::Vector3d& d,double clearance) {
++        const double angle=std::acos(clamp(d.dot(desired)));
++        const double continuity=std::acos(clamp(d.dot(previous)));
++        (void)clearance;
++        const double elevation_error=std::asin(clamp(d.z()))-std::asin(clamp(desired.z()));
++        return .25*(angle*angle+elevation_error*elevation_error)+
++            .25*cfg.continuity_weight*continuity*continuity-.55*std::min(.4,angular_room(d));
++    };
++    auto append=[&](const Eigen::Vector3d& d,double clearance,bool seen) {
++        if (!seen || clearance < cfg.horizon-1e-9 || d.dot(desired) <= 0.) return;
++        candidates.push_back({d,score(d,clearance)});
++    };
++    auto seen=[&](const Eigen::Vector3d& d) {
++        return std::any_of(fresh.begin(),fresh.end(),[&](const DepthObservation* view){
++            return visible(*view,position+cfg.horizon*d);
++        });
++    };
++    append(desired,direct_clearance,seen(desired));
++    if (has_previous) append(previous,exact_clearance(previous),seen(previous));
++    for (std::size_t i=0;i<result.rays.size();++i) append(result.rays[i],result.clearance[i],result.observed[i]);
++    std::stable_sort(candidates.begin(),candidates.end(),[](const Candidate& a,const Candidate& b){return a.cost<b.cost;});
++    std::vector<Eigen::Vector3d> attempted;
++    if (direct_checked) attempted.push_back(desired);
++    for (const auto& candidate : candidates) {
++        if (result.certificates >= cfg.max_certificates) break;
++        const double spacing=(result.certificates<12?8.:20.)*pi/180.;
++        if (std::any_of(attempted.begin(),attempted.end(),[&](const Eigen::Vector3d& d){return d.dot(candidate.d)>std::cos(spacing);})) continue;
++        attempted.push_back(candidate.d);
++        ++result.certificates;
++        if (!certify(candidate.d)) continue;
++        result.direction=candidate.d;result.valid=true;
++        double best_cost=candidate.cost;
++        // Sub-cell refinement toward intent is certified after interpolation.
++        // Interpolate vectors, never angles across a wrapped seam.
++        for (double fraction : {.5,.25,.125}) {
++            if (result.certificates >= cfg.max_certificates) break;
++            const Eigen::Vector3d refined=((1.-fraction)*result.direction+fraction*desired).normalized();
++            const double clearance=exact_clearance(refined);
++            if (clearance < cfg.horizon-1e-9 || !seen(refined)) continue;
++            const double cost=score(refined,clearance);
++            if (cost > best_cost) continue;
++            ++result.certificates;
++            if (certify(refined)) {result.direction=refined;best_cost=cost;}
++        }
++        break;
++    }
++    return result;
++}
++} }
+--- /dev/null
++++ EGO1P3/src/pc_gvf/test/cpp/omni_depth_check.cpp
+@@ -0,0 +1,117 @@
++#include "pc_gvf/omni_depth.hpp"
++#include <Eigen/Geometry>
++#include <algorithm>
++#include <cmath>
++#include <cstdlib>
++#include <iostream>
++#include <limits>
++
++using namespace pc_gvf::depth_angular;
++namespace {
++constexpr double pi=3.14159265358979323846;
++void require(bool b,const char* message) {if(!b){std::cerr<<message<<'\n';std::exit(1);}}
++Eigen::Vector3d direction(double degrees,double elevation=0.) {
++    const double a=degrees*pi/180.,e=elevation*pi/180.;
++    return {std::cos(e)*std::cos(a),std::cos(e)*std::sin(a),std::sin(e)};
++}
++std::vector<std::shared_ptr<const DepthObservation>> views(double yaw=0.,double depth=10.) {
++    std::vector<std::shared_ptr<const DepthObservation>> out;
++    Camera c(32,24,90.,68.,10.);
++    for(int i=0;i<4;++i) {
++        auto rotation=Eigen::AngleAxisd(yaw+i*pi/2,Eigen::Vector3d::UnitZ()).toRotationMatrix();
++        out.push_back(std::make_shared<DepthObservation>(c,std::vector<double>(32*24,depth),
++            rotation*Eigen::Vector3d(.3,0,0),rotation*fixedCameraRotation(),1.,1,i));
++    }
++    return out;
++}
++}
++int main() {
++    OmniDepthConfig cfg;cfg.horizon=4.;cfg.include_atlas=true;
++    const auto zero=Eigen::Vector3d::Zero().eval();
++    const auto yes=[](const Eigen::Vector3d&){return true;};
++    auto input=views(.173);
++    // Continuous input through all camera boundaries and +/-pi; no quantization.
++    for(double a=-180.;a<=180.;a+=.5) {
++        const auto q=direction(a,7.13);
++        const auto out=omniDepthProposal(input,zero,q,direction(a-.5),1.05,.8,cfg,yes);
++        require(out.valid && (out.direction-q).norm()<1e-12,"open-space direction quantized or discontinuous");
++        require(out.fresh_views==4,"did not fuse four views");
++    }
++    // Independent ray/sphere intersection oracle, using non-coincident camera
++    // centers and a moved/translated vehicle; catches z-depth vs range errors.
++    std::vector<std::pair<Eigen::Vector3d,double>> spheres;
++    const Eigen::Vector3d position(.11,-.07,.03);
++    for(int view=0;view<4;++view) {
++        auto v=std::make_shared<DepthObservation>(*input[view]);
++        for(int j=0;j<8;++j) {
++            int u=(j*7+3)%32,y=(j*5+2)%24;
++            double z=1.2+.13*j;v->depth[y*32+u]=z;
++            Eigen::Vector3d local(z*(u-v->camera.cx())/v->camera.fx(),z*(y-v->camera.cy())/v->camera.fy(),z);
++            spheres.push_back({v->origin+v->rotation*local-position,
++                cfg.radius+.5*z*std::hypot(1./v->camera.fx(),1./v->camera.fy())});
++        }
++        input[view]=v;
++    }
++    auto out=omniDepthProposal(input,position,direction(179.),zero,1.05,.5,cfg,yes);
++    for(std::size_t i=0;i<out.rays.size();++i) {
++        double expected=cfg.horizon;
++        for(const auto& sphere:spheres) {
++            double b=out.rays[i].dot(sphere.first),c=sphere.first.squaredNorm()-sphere.second*sphere.second;
++            if(c<=0.)expected=0.;
++            else if(b>0. && b*b>=c)expected=std::min(expected,b-std::sqrt(b*b-c));
++        }
++        require(std::abs(out.clearance[i]-expected)<1e-7,"atlas differs from independent ray-sphere oracle");
++    }
++    auto reversed=input;std::reverse(reversed.begin(),reversed.end());
++    auto out2=omniDepthProposal(reversed,position,direction(179.),zero,1.05,.5,cfg,yes);
++    require((out.direction-out2.direction).norm()<1e-10 && out.clearance==out2.clearance,"view ordering changes fusion");
++    // A certified corridor on the other side of the old 45-degree boundary
++    // must be reachable without selecting the adjacent camera first.
++    int checks=0;
++    out=omniDepthProposal(views(),zero,direction(44.),zero,1.05,.5,cfg,[&](const Eigen::Vector3d& d){
++        ++checks;return d.y()>d.x() && d.z()>=-.001 && d.z()<=.001;
++    });
++    require(out.valid && out.direction.y()>out.direction.x(),"cannot select across camera seam");
++    require(checks==out.certificates && checks<=cfg.max_certificates,"certificate count/bound wrong");
++    out=omniDepthProposal(views(),zero,direction(179.9),zero,1.05,.5,cfg,[](const Eigen::Vector3d& d){return d.y()<0. && std::abs(d.z())<.01;});
++    require(out.valid && out.direction.y()<0. && out.direction.x()<-.99,"cannot wrap across longitude seam");
++    out=omniDepthProposal(views(),zero,direction(0),zero,1.05,.5,cfg,[](const Eigen::Vector3d& d){
++        return d.y()>.85 && d.x()>.1 && d.z()>-.1 && d.z()<.1;
++    });
++    require(out.valid,"certificate budget missed a wide lateral corridor");
++    out=omniDepthProposal(views(),zero,direction(0),zero,1.31,.5,cfg,yes);
++    require(!out.valid && out.fresh_views==0,"stale views accepted");
++    out=omniDepthProposal(views(),zero,direction(0),zero,.9,.5,cfg,yes);
++    require(!out.valid,"future views accepted");
++    auto missing=views();missing[0].reset();
++    out=omniDepthProposal(missing,zero,direction(90),zero,1.05,.5,cfg,yes);
++    require(out.valid && out.fresh_views==3,"missing front camera vetoed side view");
++    auto revoked=views();for(auto& v:revoked)v->revoked=true;
++    require(!omniDepthProposal(revoked,zero,direction(0),zero,1.05,.5,cfg,yes).valid,"revoked view used");
++    // Actual certification, not a permissive callback: unknown space remains
++    // unknown even though no obstacle endpoints were added to the histogram.
++    PaperConfig pc;pc.motion.body_radius=.48;pc.motion.safety_margin=.02;
++    pc.motion.rollout_margin=.02;pc.depth_uncertainty=.03;pc.uncertainty_rate=.1;
++    pc.observation_timeout=.3;pc.continuous_certificates=true;
++    PaperGuidance paper(pc);
++    auto unknown=views(0.,0.);
++    DepthObservation evidence=*unknown[0];evidence.supporting_views=unknown;
++    out=omniDepthProposal(unknown,zero,direction(45.),zero,1.05,.8,cfg,[&](const Eigen::Vector3d& d){
++        return paper.proposalCorridor(evidence,zero,d,.8,1.05);
++    });
++    require(!out.valid,"unknown depth authorized a corridor");
++    require(std::none_of(out.observed.begin(),out.observed.end(),[](int v){return v!=0;}),"unknown marked observed");
++    require(!paper.motionSafe(evidence,zero,zero,direction(45),1.05),"unknown motion certified");
++    auto clear=views();evidence=*clear[0];evidence.supporting_views=clear;
++    require(paper.setVerifiedSeed(zero,2.5),"seed failed");
++    for(double a:{44.9,45.,45.1,134.9,135.1,-135.1,-134.9,-45.1,-44.9,179.9,-179.9}) {
++        out=omniDepthProposal(clear,zero,direction(a),zero,1.05,1.,cfg,[&](const Eigen::Vector3d& d){
++            return paper.proposalCorridor(evidence,zero,d,1.,1.05);
++        });
++        require(out.valid,"real corridor failed at seam");
++        require(paper.motionSafe(evidence,zero,zero,.1*out.direction,1.05),"proposed seam motion not certifiable");
++    }
++    bool threw=false;try{cfg.azimuth_bins=0;omniDepthProposal(clear,zero,direction(0),zero,1.,1.,cfg,yes);}catch(const std::invalid_argument&){threw=true;}
++    require(threw,"invalid dimensions accepted");
++    std::cout<<"omni_depth_check: continuous sweep, periodic fusion oracle, cross-view proposals, poses, missing/stale/revoked/unknown and real seam certificates passed\n";
++}
+--- /dev/null
++++ EGO1P3/src/pc_gvf/test/fixtures/paper/isaac_omni_spin_trace.json
+@@ -0,0 +1,50 @@
++{
++  "description": "Straight world intent with independently rotating body crosses every camera seam, followed by stop/reverse on observed route.",
++  "events": [
++    {
++      "at": 0,
++      "velocity": [
++        0,
++        0,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 1,
++      "velocity": [
++        1.8,
++        0.2,
++        0
++      ],
++      "yaw_rate": 0.35
++    },
++    {
++      "at": 29,
++      "velocity": [
++        0,
++        0,
++        0
++      ],
++      "yaw_rate": 0.35
++    },
++    {
++      "at": 33,
++      "velocity": [
++        -1.8,
++        -0.2,
++        0
++      ],
++      "yaw_rate": -0.35
++    },
++    {
++      "at": 60,
++      "velocity": [
++        0,
++        0,
++        0
++      ],
++      "yaw_rate": 0
++    }
++  ]
++}
+--- /dev/null
++++ EGO1P3/src/pc_gvf/test/fixtures/paper/isaac_omni_sweep_trace.json
+@@ -0,0 +1,1652 @@
++{
++  "description": "360-degree continuous world-intent sweep at fixed body yaw, original Cloud. 2 degrees every .2 s, .8 m/s.",
++  "events": [
++    {
++      "at": 0,
++      "velocity": [
++        0,
++        0,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 1.0,
++      "velocity": [
++        0.8,
++        0.0,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 1.2,
++      "velocity": [
++        0.7995126616152767,
++        0.027919597362000777,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 1.4,
++      "velocity": [
++        0.7980512402078594,
++        0.05580517899530024,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 1.6,
++      "velocity": [
++        0.7956175162946186,
++        0.08362277061412277,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 1.8,
++      "velocity": [
++        0.7922144549932564,
++        0.11133848076805236,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 2.0,
++      "velocity": [
++        0.7878462024097664,
++        0.13891854213354426,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 2.2,
++      "velocity": [
++        0.7825180805870446,
++        0.16632935265420745,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 2.4000000000000004,
++      "velocity": [
++        0.7762365810207972,
++        0.1935375164797342,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 2.6,
++      "velocity": [
++        0.7690093567506552,
++        0.22050988465359933,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 2.8,
++      "velocity": [
++        0.7608452130361228,
++        0.24721359549995792,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 3.0,
++      "velocity": [
++        0.7517540966287268,
++        0.273616114660535,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 3.2,
++      "velocity": [
++        0.74174708365343,
++        0.2996852747327296,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 3.4000000000000004,
++      "velocity": [
++        0.7308363661140808,
++        0.3253893144606401,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 3.6,
++      "velocity": [
++        0.7190352370393337,
++        0.35069691743126197,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 3.8000000000000003,
++      "velocity": [
++        0.7063580742871416,
++        0.3755772502287127,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 4.0,
++      "velocity": [
++        0.692820323027551,
++        0.39999999999999997,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 4.2,
++      "velocity": [
++        0.6784384769251408,
++        0.42393541138656393,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 4.4,
++      "velocity": [
++        0.6632300580440333,
++        0.44735432277659753,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 4.6,
++      "velocity": [
++        0.647213595499958,
++        0.4702282018339785,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 4.800000000000001,
++      "velocity": [
++        0.6304086028853777,
++        0.49252918026052656,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 5.0,
++      "velocity": [
++        0.6128355544951825,
++        0.5142300877492314,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 5.2,
++      "velocity": [
++        0.5945158603819154,
++        0.5353044850870866,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 5.4,
++      "velocity": [
++        0.575471840270921,
++        0.5557266963671978,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 5.6000000000000005,
++      "velocity": [
++        0.555726696367198,
++        0.5754718402709209,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 5.800000000000001,
++      "velocity": [
++        0.5353044850870866,
++        0.5945158603819153,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 6.0,
++      "velocity": [
++        0.5142300877492315,
++        0.6128355544951825,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 6.2,
++      "velocity": [
++        0.49252918026052667,
++        0.6304086028853777,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 6.4,
++      "velocity": [
++        0.4702282018339785,
++        0.647213595499958,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 6.6000000000000005,
++      "velocity": [
++        0.4473543227765975,
++        0.6632300580440335,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 6.800000000000001,
++      "velocity": [
++        0.42393541138656393,
++        0.6784384769251408,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 7.0,
++      "velocity": [
++        0.40000000000000013,
++        0.6928203230275509,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 7.2,
++      "velocity": [
++        0.3755772502287127,
++        0.7063580742871416,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 7.4,
++      "velocity": [
++        0.35069691743126197,
++        0.7190352370393337,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 7.6000000000000005,
++      "velocity": [
++        0.3253893144606402,
++        0.7308363661140808,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 7.800000000000001,
++      "velocity": [
++        0.2996852747327296,
++        0.74174708365343,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 8.0,
++      "velocity": [
++        0.2736161146605351,
++        0.7517540966287267,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 8.2,
++      "velocity": [
++        0.24721359549995797,
++        0.7608452130361228,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 8.4,
++      "velocity": [
++        0.22050988465359933,
++        0.7690093567506552,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 8.600000000000001,
++      "velocity": [
++        0.19353751647973433,
++        0.7762365810207972,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 8.8,
++      "velocity": [
++        0.16632935265420756,
++        0.7825180805870445,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 9.0,
++      "velocity": [
++        0.13891854213354435,
++        0.7878462024097664,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 9.200000000000001,
++      "velocity": [
++        0.11133848076805256,
++        0.7922144549932563,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 9.4,
++      "velocity": [
++        0.08362277061412277,
++        0.7956175162946186,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 9.6,
++      "velocity": [
++        0.05580517899530037,
++        0.7980512402078594,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 9.8,
++      "velocity": [
++        0.027919597362000864,
++        0.7995126616152767,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 10.0,
++      "velocity": [
++        4.898587196589413e-17,
++        0.8,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 10.200000000000001,
++      "velocity": [
++        -0.027919597362000587,
++        0.7995126616152767,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 10.4,
++      "velocity": [
++        -0.05580517899530027,
++        0.7980512402078594,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 10.600000000000001,
++      "velocity": [
++        -0.08362277061412267,
++        0.7956175162946187,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 10.8,
++      "velocity": [
++        -0.11133848076805229,
++        0.7922144549932564,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 11.0,
++      "velocity": [
++        -0.13891854213354424,
++        0.7878462024097664,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 11.200000000000001,
++      "velocity": [
++        -0.1663293526542073,
++        0.7825180805870446,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 11.4,
++      "velocity": [
++        -0.19353751647973425,
++        0.7762365810207972,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 11.600000000000001,
++      "velocity": [
++        -0.22050988465359925,
++        0.7690093567506552,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 11.8,
++      "velocity": [
++        -0.2472135954999579,
++        0.760845213036123,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 12.0,
++      "velocity": [
++        -0.273616114660535,
++        0.7517540966287268,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 12.200000000000001,
++      "velocity": [
++        -0.29968527473272966,
++        0.74174708365343,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 12.4,
++      "velocity": [
++        -0.32538931446064007,
++        0.7308363661140809,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 12.600000000000001,
++      "velocity": [
++        -0.350696917431262,
++        0.7190352370393336,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 12.8,
++      "velocity": [
++        -0.37557725022871247,
++        0.7063580742871417,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 13.0,
++      "velocity": [
++        -0.39999999999999986,
++        0.692820323027551,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 13.200000000000001,
++      "velocity": [
++        -0.4239354113865639,
++        0.6784384769251409,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 13.4,
++      "velocity": [
++        -0.44735432277659737,
++        0.6632300580440335,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 13.600000000000001,
++      "velocity": [
++        -0.47022820183397845,
++        0.647213595499958,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 13.8,
++      "velocity": [
++        -0.49252918026052667,
++        0.6304086028853777,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 14.0,
++      "velocity": [
++        -0.5142300877492315,
++        0.6128355544951825,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 14.200000000000001,
++      "velocity": [
++        -0.5353044850870866,
++        0.5945158603819154,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 14.4,
++      "velocity": [
++        -0.5557266963671976,
++        0.5754718402709211,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 14.600000000000001,
++      "velocity": [
++        -0.575471840270921,
++        0.5557266963671977,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 14.8,
++      "velocity": [
++        -0.5945158603819153,
++        0.5353044850870867,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 15.0,
++      "velocity": [
++        -0.6128355544951823,
++        0.5142300877492316,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 15.200000000000001,
++      "velocity": [
++        -0.6304086028853776,
++        0.4925291802605267,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 15.4,
++      "velocity": [
++        -0.6472135954999579,
++        0.4702282018339786,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 15.600000000000001,
++      "velocity": [
++        -0.6632300580440333,
++        0.44735432277659753,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 15.8,
++      "velocity": [
++        -0.6784384769251408,
++        0.42393541138656393,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 16.0,
++      "velocity": [
++        -0.692820323027551,
++        0.39999999999999997,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 16.200000000000003,
++      "velocity": [
++        -0.7063580742871415,
++        0.3755772502287129,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 16.4,
++      "velocity": [
++        -0.7190352370393337,
++        0.35069691743126186,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 16.6,
++      "velocity": [
++        -0.7308363661140806,
++        0.32538931446064034,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 16.8,
++      "velocity": [
++        -0.7417470836534299,
++        0.2996852747327298,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 17.0,
++      "velocity": [
++        -0.7517540966287267,
++        0.2736161146605351,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 17.2,
++      "velocity": [
++        -0.7608452130361228,
++        0.24721359549995803,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 17.400000000000002,
++      "velocity": [
++        -0.769009356750655,
++        0.22050988465359975,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 17.6,
++      "velocity": [
++        -0.7762365810207972,
++        0.1935375164797342,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 17.8,
++      "velocity": [
++        -0.7825180805870446,
++        0.16632935265420745,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 18.0,
++      "velocity": [
++        -0.7878462024097664,
++        0.13891854213354424,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 18.2,
++      "velocity": [
++        -0.7922144549932563,
++        0.1113384807680526,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 18.400000000000002,
++      "velocity": [
++        -0.7956175162946186,
++        0.08362277061412299,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 18.6,
++      "velocity": [
++        -0.7980512402078594,
++        0.05580517899530042,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 18.8,
++      "velocity": [
++        -0.7995126616152767,
++        0.02791959736200056,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 19.0,
++      "velocity": [
++        -0.8,
++        9.797174393178826e-17,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 19.2,
++      "velocity": [
++        -0.7995126616152767,
++        -0.027919597362000722,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 19.400000000000002,
++      "velocity": [
++        -0.7980512402078594,
++        -0.05580517899529987,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 19.6,
++      "velocity": [
++        -0.7956175162946187,
++        -0.08362277061412245,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 19.8,
++      "velocity": [
++        -0.7922144549932563,
++        -0.11133848076805242,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 20.0,
++      "velocity": [
++        -0.7878462024097664,
++        -0.13891854213354438,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 20.200000000000003,
++      "velocity": [
++        -0.7825180805870446,
++        -0.16632935265420726,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 20.400000000000002,
++      "velocity": [
++        -0.7762365810207972,
++        -0.19353751647973402,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 20.6,
++      "velocity": [
++        -0.7690093567506552,
++        -0.22050988465359922,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 20.8,
++      "velocity": [
++        -0.7608452130361228,
++        -0.2472135954999582,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 21.0,
++      "velocity": [
++        -0.7517540966287268,
++        -0.2736161146605349,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 21.200000000000003,
++      "velocity": [
++        -0.74174708365343,
++        -0.2996852747327296,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 21.400000000000002,
++      "velocity": [
++        -0.7308363661140809,
++        -0.3253893144606399,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 21.6,
++      "velocity": [
++        -0.7190352370393338,
++        -0.3506969174312617,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 21.8,
++      "velocity": [
++        -0.7063580742871416,
++        -0.3755772502287127,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 22.0,
++      "velocity": [
++        -0.6928203230275509,
++        -0.40000000000000013,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 22.200000000000003,
++      "velocity": [
++        -0.6784384769251409,
++        -0.4239354113865639,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 22.400000000000002,
++      "velocity": [
++        -0.6632300580440336,
++        -0.44735432277659737,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 22.6,
++      "velocity": [
++        -0.647213595499958,
++        -0.47022820183397845,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 22.8,
++      "velocity": [
++        -0.6304086028853778,
++        -0.4925291802605263,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 23.0,
++      "velocity": [
++        -0.6128355544951825,
++        -0.5142300877492314,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 23.200000000000003,
++      "velocity": [
++        -0.5945158603819154,
++        -0.5353044850870866,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 23.400000000000002,
++      "velocity": [
++        -0.5754718402709209,
++        -0.555726696367198,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 23.6,
++      "velocity": [
++        -0.5557266963671981,
++        -0.5754718402709207,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 23.8,
++      "velocity": [
++        -0.5353044850870868,
++        -0.5945158603819153,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 24.0,
++      "velocity": [
++        -0.5142300877492316,
++        -0.6128355544951823,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 24.200000000000003,
++      "velocity": [
++        -0.4925291802605265,
++        -0.6304086028853777,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 24.400000000000002,
++      "velocity": [
++        -0.4702282018339786,
++        -0.6472135954999579,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 24.6,
++      "velocity": [
++        -0.4473543227765978,
++        -0.6632300580440331,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 24.8,
++      "velocity": [
++        -0.42393541138656404,
++        -0.6784384769251408,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 25.0,
++      "velocity": [
++        -0.40000000000000036,
++        -0.6928203230275507,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 25.200000000000003,
++      "velocity": [
++        -0.37557725022871263,
++        -0.7063580742871416,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 25.400000000000002,
++      "velocity": [
++        -0.3506969174312622,
++        -0.7190352370393335,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 25.6,
++      "velocity": [
++        -0.3253893144606401,
++        -0.7308363661140809,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 25.8,
++      "velocity": [
++        -0.2996852747327298,
++        -0.7417470836534299,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 26.0,
++      "velocity": [
++        -0.27361611466053554,
++        -0.7517540966287266,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 26.200000000000003,
++      "velocity": [
++        -0.24721359549995806,
++        -0.7608452130361228,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 26.400000000000002,
++      "velocity": [
++        -0.2205098846535991,
++        -0.7690093567506553,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 26.6,
++      "velocity": [
++        -0.19353751647973425,
++        -0.7762365810207972,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 26.8,
++      "velocity": [
++        -0.16632935265420784,
++        -0.7825180805870445,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 27.0,
++      "velocity": [
++        -0.13891854213354426,
++        -0.7878462024097664,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 27.200000000000003,
++      "velocity": [
++        -0.11133848076805196,
++        -0.7922144549932564,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 27.400000000000002,
++      "velocity": [
++        -0.0836227706141227,
++        -0.7956175162946187,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 27.6,
++      "velocity": [
++        -0.055805178995300464,
++        -0.7980512402078594,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 27.8,
++      "velocity": [
++        -0.027919597362001322,
++        -0.7995126616152766,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 28.0,
++      "velocity": [
++        -1.4695761589768238e-16,
++        -0.8,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 28.200000000000003,
++      "velocity": [
++        0.027919597362001027,
++        -0.7995126616152767,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 28.400000000000002,
++      "velocity": [
++        0.05580517899530018,
++        -0.7980512402078594,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 28.6,
++      "velocity": [
++        0.08362277061412239,
++        -0.7956175162946187,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 28.8,
++      "velocity": [
++        0.11133848076805238,
++        -0.7922144549932564,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 29.0,
++      "velocity": [
++        0.138918542133544,
++        -0.7878462024097665,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 29.200000000000003,
++      "velocity": [
++        0.16632935265420687,
++        -0.7825180805870446,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 29.400000000000002,
++      "velocity": [
++        0.19353751647973397,
++        -0.7762365810207973,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 29.6,
++      "velocity": [
++        0.22050988465359952,
++        -0.7690093567506551,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 29.8,
++      "velocity": [
++        0.2472135954999578,
++        -0.760845213036123,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 30.0,
++      "velocity": [
++        0.27361611466053454,
++        -0.7517540966287268,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 30.200000000000003,
++      "velocity": [
++        0.2996852747327296,
++        -0.74174708365343,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 30.400000000000002,
++      "velocity": [
++        0.32538931446064046,
++        -0.7308363661140806,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 30.6,
++      "velocity": [
++        0.35069691743126197,
++        -0.7190352370393337,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 30.8,
++      "velocity": [
++        0.37557725022871236,
++        -0.7063580742871417,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 31.0,
++      "velocity": [
++        0.40000000000000013,
++        -0.6928203230275509,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 31.200000000000003,
++      "velocity": [
++        0.42393541138656377,
++        -0.678438476925141,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 31.400000000000002,
++      "velocity": [
++        0.44735432277659704,
++        -0.6632300580440337,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 31.6,
++      "velocity": [
++        0.47022820183397834,
++        -0.647213595499958,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 31.8,
++      "velocity": [
++        0.49252918026052683,
++        -0.6304086028853775,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 32.0,
++      "velocity": [
++        0.5142300877492314,
++        -0.6128355544951826,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 32.2,
++      "velocity": [
++        0.5353044850870863,
++        -0.5945158603819157,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 32.400000000000006,
++      "velocity": [
++        0.5557266963671973,
++        -0.5754718402709215,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 32.6,
++      "velocity": [
++        0.5754718402709207,
++        -0.5557266963671981,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 32.8,
++      "velocity": [
++        0.5945158603819154,
++        -0.5353044850870865,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 33.0,
++      "velocity": [
++        0.6128355544951822,
++        -0.5142300877492317,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 33.2,
++      "velocity": [
++        0.6304086028853773,
++        -0.4925291802605271,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 33.4,
++      "velocity": [
++        0.6472135954999579,
++        -0.47022820183397873,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 33.6,
++      "velocity": [
++        0.6632300580440331,
++        -0.4473543227765979,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 33.800000000000004,
++      "velocity": [
++        0.6784384769251404,
++        -0.42393541138656465,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 34.0,
++      "velocity": [
++        0.6928203230275507,
++        -0.40000000000000036,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 34.2,
++      "velocity": [
++        0.7063580742871416,
++        -0.3755772502287127,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 34.4,
++      "velocity": [
++        0.7190352370393338,
++        -0.35069691743126163,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 34.6,
++      "velocity": [
++        0.7308363661140809,
++        -0.3253893144606401,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 34.800000000000004,
++      "velocity": [
++        0.7417470836534299,
++        -0.2996852747327299,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 35.0,
++      "velocity": [
++        0.7517540966287268,
++        -0.27361611466053487,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 35.2,
++      "velocity": [
++        0.7608452130361228,
++        -0.2472135954999581,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 35.4,
++      "velocity": [
++        0.769009356750655,
++        -0.22050988465359983,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 35.6,
++      "velocity": [
++        0.7762365810207972,
++        -0.1935375164797343,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 35.800000000000004,
++      "velocity": [
++        0.7825180805870445,
++        -0.1663293526542079,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 36.0,
++      "velocity": [
++        0.7878462024097663,
++        -0.13891854213354501,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 36.2,
++      "velocity": [
++        0.7922144549932563,
++        -0.11133848076805271,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 36.4,
++      "velocity": [
++        0.7956175162946186,
++        -0.08362277061412274,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 36.6,
++      "velocity": [
++        0.7980512402078594,
++        -0.05580517899529981,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 36.800000000000004,
++      "velocity": [
++        0.7995126616152767,
++        -0.02791959736200066,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 37.0,
++      "velocity": [
++        0.8,
++        -1.9594348786357652e-16,
++        0
++      ],
++      "yaw_rate": 0
++    },
++    {
++      "at": 38,
++      "velocity": [
++        0,
++        0,
++        0
++      ],
++      "yaw_rate": 0
++    }
++  ]
++}
+--- EGO1P2/tools/analyze_navigation_benchmark.py
++++ EGO1P3/tools/analyze_navigation_benchmark.py
+@@ -19,7 +19,7 @@
+ origin = np.array([-80.,-60.,0.])
+ trials = []
+ trajectories = []
+-for algorithm in ('user_ego', 'ego1p0', 'ego1p1', 'ego1p2'):
++for algorithm in ('user_ego', 'ego1p0', 'ego1p1', 'ego1p2', 'ego1p3'):
+     for file in sorted(folder.glob(f'{args.label}_{algorithm}_[0-9]*.json')):
+         if '.parameters.' in file.name:
+             continue
+@@ -91,7 +91,7 @@
+         trials.append(trial)
+         trajectories.append((algorithm,file.stem,p))
+ groups = {}
+-for algorithm in ('user_ego','ego1p0','ego1p1','ego1p2'):
++for algorithm in ('user_ego','ego1p0','ego1p1','ego1p2','ego1p3'):
+     group = [t for t in trials if t['algorithm']==algorithm]
+     if not group:
+         continue
+@@ -116,7 +116,7 @@
+     fig,ax = plt.subplots(figsize=(12,9))
+     # Low-altitude projection is illustrative, not an online navigation map.
+     ax.imshow(grid[:,:,:15].max(axis=2).T,origin='lower',extent=(-80,80,-60,60),cmap='Greys',alpha=.4)
+-    colors = dict(user_ego='tab:blue',ego1p0='tab:orange',ego1p1='tab:green',ego1p2='tab:purple')
++    colors = dict(user_ego='tab:blue',ego1p0='tab:orange',ego1p1='tab:green',ego1p2='tab:purple',ego1p3='tab:red')
+     for algorithm,name,p in trajectories:
+         ax.plot(p[:,0],p[:,1],color=colors[algorithm],label=name,lw=1.3)
+     protocol = json.loads((folder/'protocol.json').read_text())
+--- /dev/null
++++ EGO1P3/tools/analyze_omni_comparison.py
+@@ -0,0 +1,48 @@
++#!/usr/bin/env python3
++"""Aggregate all matching trials, retaining every failure and safety audit."""
++import argparse,csv,json,re
++from pathlib import Path
++import numpy as np
++
++p=argparse.ArgumentParser();p.add_argument('label');a=p.parse_args()
++root=Path(__file__).resolve().parents[1];out=root/'performance/omni_20261006'
++results=[]
++for meta in sorted(out.glob(a.label+'_*_process.json')):
++    m=json.loads(meta.read_text());name=meta.name.removesuffix('_process.json')
++    rows=list(csv.DictReader((out/(name+'.csv')).open()))
++    arr=lambda keys:np.array([[float(r[k]) for k in keys] for r in rows])
++    t=arr(['t'])[:,0];dt=np.diff(t);v=arr(['vx','vy','vz']);q=arr(['qx','qy','qz'])
++    speed=np.linalg.norm(v,axis=1);qs=np.linalg.norm(q,axis=1);active=qs>.05
++    moving=active&(speed>.05)
++    cosine=np.sum(v[moving]*q[moving],axis=1)/speed[moving]/qs[moving]
++    angles=np.degrees(np.arccos(np.clip(cosine,-1,1)))
++    error=np.linalg.norm(v-q,axis=1)
++    acc=np.diff(v,axis=0)/dt[:,None]
++    jerk=np.diff(acc,axis=0)/((dt[1:]+dt[:-1])/2)[:,None]
++    perf=(out/(name+'_performance.md')).read_text()
++    compute=re.findall(r'Avoidance compute mean / P50 / P95 / max: ([\d.]+) / ([\d.]+) / ([\d.]+) / ([\d.]+)',perf)
++    log=(out/(name+'.log')).read_text()
++    audit=json.loads((out/(name+'_audit.json')).read_text())
++    r=dict(name=name,algorithm=m['algorithm'],case=m['case'],returncode=m['returncode'],
++        moving_angle_mean_deg=float(np.mean(angles)),moving_angle_p95_deg=float(np.percentile(angles,95)),
++        active_vector_error_rms_mps=float(np.sqrt(np.mean(error[active]**2))),
++        active_projected_progress_m=float(np.sum(np.sum(v[:-1]*q[:-1],axis=1)/np.maximum(qs[:-1],1e-10)*dt*active[:-1])),
++        jerk_rms_mps3=float(np.sqrt(np.mean(np.sum(jerk*jerk,axis=1)))),
++        camera_switches=log.count('3D guidance switched to view'),
++        compute_deadlines=log.count('COMPUTE_DEADLINE'),
++        compute_ms=dict(zip(['mean','p50','p95','max'],map(float,compute[-1]))) if compute else None,
++        safety={k:audit[k] for k in ('swept_sphere_overlap_segments','external_collision_blocks','minimum_swept_sphere_clearance_m')},
++        stop_s=audit['stopped_with_input_s'],longest_stop_s=audit['longest_stopped_with_input_s'])
++    results.append(r)
++groups={}
++for r in results:groups.setdefault(r['case']+'/'+r['algorithm'],[]).append(r)
++summary={}
++keys=['moving_angle_mean_deg','moving_angle_p95_deg','active_vector_error_rms_mps','active_projected_progress_m','jerk_rms_mps3','stop_s','longest_stop_s','camera_switches','compute_deadlines']
++for group,rs in groups.items():
++    summary[group]=dict(runs=len(rs),means={k:float(np.mean([r[k] for r in rs])) for k in keys},
++        safe_runs=sum(r['returncode']==0 and r['safety']['swept_sphere_overlap_segments']==0 and r['safety']['external_collision_blocks']==0 for r in rs),
++        compute_mean_ms=float(np.mean([r['compute_ms']['mean'] for r in rs if r['compute_ms']])) if any(r['compute_ms'] for r in rs) else None)
++report=dict(label=a.label,runs=results,summary=summary,
++    interpretation='Tracking error includes necessary avoidance. Zero collisions alone is insufficient; compare progress and stalls alongside error. This audit covers only these scripted static Cloud scenarios.')
++(out/(a.label+'_analysis.json')).write_text(json.dumps(report,indent=2)+'\n')
++print(json.dumps(report,indent=2))
+--- EGO1P2/tools/ros_vector_guidance_probe.py
++++ EGO1P3/tools/ros_vector_guidance_probe.py
+@@ -47,7 +47,7 @@
+     arguments = [str(executable), '--ros-args']
+     for key, value in parameters.items():
+         arguments += ['-p', f'{key}:={str(value).lower()}']
+-    with tempfile.NamedTemporaryFile(prefix='ego1p2-vector-controller-', suffix='.log', delete=False) as log:
++    with tempfile.NamedTemporaryFile(prefix='ego1p3-vector-controller-', suffix='.log', delete=False) as log:
+         process = subprocess.Popen(arguments, stdout=log, stderr=subprocess.STDOUT)
+     rclpy.init()
+     node = rclpy.create_node('vector_guidance_probe')
+--- EGO1P2/tools/run_navigation_benchmark.py
++++ EGO1P3/tools/run_navigation_benchmark.py
+@@ -9,7 +9,7 @@
+ 
+ parser = argparse.ArgumentParser(description=__doc__)
+ parser.add_argument('label')
+-parser.add_argument('algorithms', nargs='+', choices=['ego1p2', 'ego1p1', 'ego1p0', 'user_ego'])
++parser.add_argument('algorithms', nargs='+', choices=['ego1p3', 'ego1p2', 'ego1p1', 'ego1p0', 'user_ego'])
+ parser.add_argument('--repeats', type=int, default=1)
+ parser.add_argument('--abort-stall', type=float, default=0.,
+     help='exploratory trials only: abort after this many stationary seconds; 0 keeps full protocol')
+@@ -17,7 +17,8 @@
+ root = Path(__file__).resolve().parents[1]
+ output = root / 'performance/navigation_benchmark_20260929'
+ for repeat in range(1, args.repeats+1):
+-    for algorithm in args.algorithms:
++    ordered=args.algorithms if repeat%2 else list(reversed(args.algorithms))
++    for algorithm in ordered:
+         run_id = f'{args.label}_{algorithm}_{repeat}'
+         result = output / f'{run_id}.json'
+         log = output / f'{run_id}.log'
+--- /dev/null
++++ EGO1P3/tools/run_omni_comparison.py
+@@ -0,0 +1,52 @@
++#!/usr/bin/env python3
++"""Repeat identical world-intent / independent-yaw traces, with unchanged P2 binary.
++
++Both algorithms use this project's main shell and identical simulator/scene.
++FOV_GVF_INSTALL chooses the algorithm's own installed launch and executable.
++"""
++import argparse
++import hashlib
++import json
++import os
++from pathlib import Path
++import subprocess
++import time
++
++p=argparse.ArgumentParser(description=__doc__)
++p.add_argument('label')
++p.add_argument('--case', choices=['sweep','spin','recovery'], default='sweep')
++p.add_argument('--repeats',type=int,default=1)
++p.add_argument('--algorithms',nargs='+',default=['ego1p2','ego1p3'],choices=['ego1p2','ego1p3'])
++a=p.parse_args()
++root=Path(__file__).resolve().parents[1]
++out=root/'performance/omni_20261006';out.mkdir(exist_ok=True)
++fixture=root/'src/pc_gvf/test/fixtures/paper'/('isaac_omni_'+a.case+'_trace.json')
++duration={'sweep':40,'spin':64,'recovery':72}[a.case]
++if a.case=='recovery':fixture=root/'src/pc_gvf/test/fixtures/paper/isaac_stall_repair_trace.json'
++for repeat in range(1,a.repeats+1):
++    algorithms=a.algorithms if repeat%2 else list(reversed(a.algorithms))
++    for algorithm in algorithms:
++        name=f'{a.label}_{a.case}_{algorithm}_{repeat}'
++        env=dict(os.environ,PYTHONNOUSERSITE='1',ISAAC_MANUAL_INPUT_MODE='trace',ISAAC_HEADLESS='1',
++            FOV_GVF_RVIZ='false',FOV_GVF_SCENE_MODE='cloud',ISAAC_INTENT_TRACE=str(fixture),
++            ISAAC_ACCEPTANCE_TRACE=str(out/(name+'.csv')),ISAAC_MANUAL_TIMEOUT=str(duration),
++            FOV_GVF_RUN_ID=name,FOV_GVF_REPLAY_DIR=str(out/(name+'_replays')),
++            FOV_GVF_PERFORMANCE_LOG=str(out/(name+'_performance.md')),ROS_DOMAIN_ID='42',
++            FOV_GVF_INSTALL=f'/tmp/fov_gvf_{algorithm}_isaac_install')
++        prefix=Path(env['FOV_GVF_INSTALL']);binary=prefix/'pc_gvf/lib/pc_gvf/depth_angular_controller'
++        launch=prefix/'pc_gvf/share/pc_gvf/launch/isaac_cloud_navigation.launch.py'
++        sha=lambda f:hashlib.sha256(f.read_bytes()).hexdigest()
++        metadata={'algorithm':algorithm,'case':a.case,'duration_s':duration,'trace_sha256':sha(fixture),
++            'controller_sha256':sha(binary),'launch_sha256':sha(launch),
++            'shared_simulator_sha256':sha(root/'scripts/isaac/run_fov_gvf_navigation.py'),
++            'scene_sha256':sha(root/'scenes/ego_swarm_cloud/ego_swarm_cloud_navigation.usd')}
++        start=time.monotonic();print('START',name,flush=True)
++        with (out/(name+'.log')).open('x') as log:
++            result=subprocess.run(['bash','scripts/run_isaac_fov_gvf_navigation.sh'],cwd=root,env=env,stdout=log,stderr=subprocess.STDOUT)
++        metadata.update(returncode=result.returncode,process_wall_s=time.monotonic()-start)
++        (out/(name+'_process.json')).write_text(json.dumps(metadata,indent=2)+'\n')
++        if result.returncode:raise SystemExit(f'{name} failed: {result.returncode}')
++        audit=subprocess.run(['/usr/bin/python3','tools/analyze_envelope_trace.py',str(out/(name+'.csv'))],cwd=root,env=env,text=True,capture_output=True,check=True)
++        (out/(name+'_audit.json')).write_text(audit.stdout)
++        data=json.loads(audit.stdout)
++        print('END',name,json.dumps({k:data[k] for k in ('stopped_with_input_s','longest_stopped_with_input_s','distance_travelled_m','swept_sphere_overlap_segments','external_collision_blocks')}),flush=True)
+--- EGO1P2/tools/verify_navigation_replays.py
++++ EGO1P3/tools/verify_navigation_replays.py
+@@ -8,7 +8,7 @@
+ 
+ p = argparse.ArgumentParser(description=__doc__)
+ p.add_argument('directory', type=Path)
+-p.add_argument('--executable', type=Path, default=Path('/tmp/fov_gvf_ego1p2_isaac_install/pc_gvf/lib/pc_gvf/paper_replay'))
++p.add_argument('--executable', type=Path, default=Path('/tmp/fov_gvf_ego1p3_isaac_install/pc_gvf/lib/pc_gvf/paper_replay'))
+ a = p.parse_args()
+ results = []
+ for file in sorted(a.directory.glob('frame_*.bin')):

@@ -43,6 +43,11 @@ class TimingSeries:
         return max(self.values, default=0.0)
 
 
+def command_stamp_is_fresh(now_ns, stamp_ns, timeout):
+    age=(now_ns-stamp_ns)/1e9
+    return math.isfinite(age) and -.02 <= age <= timeout
+
+
 def convert(vx, vy, yaw, mode, max_vx, max_vy, max_w, yaw_kp, deadband,
             yaw_dot=0.0, vz=0.0, max_vz=0.0):
     out = Twist()
@@ -53,10 +58,14 @@ def convert(vx, vy, yaw, mode, max_vx, max_vy, max_w, yaw_kp, deadband,
         out.angular.z = min(max_w, max(-max_w, yaw_kp * error + yaw_dot))
     else:
         c, s = math.cos(yaw), math.sin(yaw)
-        out.linear.x = min(max_vx, max(-max_vx, c * vx + s * vy))
-        out.linear.y = min(max_vy, max(-max_vy, -s * vx + c * vy))
+        body = (c * vx + s * vy, -s * vx + c * vy, vz)
+        scale = min([1.0] + [max(0.0, limit) / abs(value)
+                    for value, limit in zip(body, (max_vx, max_vy, max_vz))
+                    if abs(value) > 1.0e-12])
+        out.linear.x, out.linear.y, out.linear.z = (scale * value for value in body)
         out.angular.z = min(max_w, max(-max_w, yaw_dot))
-    out.linear.z = min(max_vz, max(-max_vz, vz))
+    if mode == "diff_drive":
+        out.linear.z = min(max_vz, max(-max_vz, vz))
     return out
 
 
@@ -74,6 +83,9 @@ class CommandBridge(Node):
             1.0, float(p("performance_report_interval", 5.0)))
         self.performance_log_path = str(p("performance_log_path", ""))
         self.performance_run_id = str(p("performance_run_id", "unspecified"))
+        self.command_timeout = max(.02, float(p("command_timeout", .10)))
+        self.last_valid_command_wall = None
+        self.watchdog_stops = 0
         self.yaw = None
         self.performance_start = time.perf_counter()
         self.last_command_wall = None
@@ -90,9 +102,16 @@ class CommandBridge(Node):
         self.create_subscription(Odometry, p("odom_topic", "/sim/odom"), self.odom, 10)
         self.create_subscription(PositionCommand, p("cmd_in_topic", "/position_cmd"), self.command, 10)
         self.create_timer(self.performance_report_interval, self.report_performance)
+        self.create_timer(.02, self.watchdog)
 
     def odom(self, msg):
         self.yaw = yaw_from_quaternion(msg.pose.pose.orientation)
+
+    def watchdog(self):
+        if self.last_valid_command_wall is not None and time.perf_counter()-self.last_valid_command_wall > self.command_timeout:
+            self.pub.publish(Twist())
+            self.last_valid_command_wall = None
+            self.watchdog_stops += 1
 
     def command(self, msg):
         callback_start = time.perf_counter()
@@ -112,6 +131,11 @@ class CommandBridge(Node):
             self.last_command_stamp_ns = stamp_ns
             self.controller_to_bridge_ms.add(max(
                 0.0, (self.get_clock().now().nanoseconds - stamp_ns) / 1.0e6))
+        if not command_stamp_is_fresh(self.get_clock().now().nanoseconds,stamp_ns,self.command_timeout):
+            self.pub.publish(Twist())
+            self.last_valid_command_wall = None
+            return
+        self.last_valid_command_wall=callback_start
         if self.yaw is not None:
             self.pub.publish(convert(msg.velocity.x, msg.velocity.y, self.yaw, self.mode,
                                      self.max_vx, self.max_vy, self.max_w, self.yaw_kp,
@@ -195,6 +219,9 @@ def main(args=None):
         rclpy.spin(node)
     except (KeyboardInterrupt, ExternalShutdownException):
         pass
+    except rclpy._rclpy_pybind11.RCLError:
+        if rclpy.ok():
+            raise
     finally:
         try:
             node.report_performance(final=True)

@@ -38,44 +38,6 @@ int roundedClampedPixel(double value, int limit)
     return static_cast<int>(std::nearbyint(clipped));
 }
 
-std::vector<double> euclideanDistanceToBlocked(
-    const BinaryMask& blocked_mask, int width, int height)
-{
-    std::vector<Eigen::Vector2i> blocked;
-    for (int v = 0; v < height; ++v) {
-        for (int u = 0; u < width; ++u) {
-            if (blocked_mask[gridIndex(u, v, width)] != 0) {
-                blocked.emplace_back(u, v);
-            }
-        }
-    }
-
-    std::vector<double> distance(blocked_mask.size(), 0.0);
-    for (int v = 0; v < height; ++v) {
-        for (int u = 0; u < width; ++u) {
-            const std::size_t index = gridIndex(u, v, width);
-            if (blocked_mask[index] != 0) {
-                continue;
-            }
-            if (blocked.empty()) {
-                // scipy.ndimage.distance_transform_edt treats an all-foreground
-                // array as if its nearest background sample were at (-1, 0).
-                distance[index] = std::hypot(static_cast<double>(u),
-                                             static_cast<double>(v + 1));
-                continue;
-            }
-            int nearest_squared = std::numeric_limits<int>::max();
-            for (const Eigen::Vector2i& point : blocked) {
-                const int du = u - point.x();
-                const int dv = v - point.y();
-                nearest_squared = std::min(nearest_squared, du * du + dv * dv);
-            }
-            distance[index] = std::sqrt(static_cast<double>(nearest_squared));
-        }
-    }
-    return distance;
-}
-
 double dotProduct(const std::vector<double>& left, const std::vector<double>& right)
 {
     double result = 0.0;
@@ -86,6 +48,84 @@ double dotProduct(const std::vector<double>& left, const std::vector<double>& ri
 }
 
 }  // namespace
+
+std::vector<double> euclideanDistanceToBlocked(
+    const BinaryMask& blocked_mask, int width, int height)
+{
+    validateGridSize(blocked_mask.size(), width, height);
+    const double infinity = std::numeric_limits<double>::infinity();
+    std::vector<double> distance(blocked_mask.size(), infinity);
+    const auto blocked_count = std::count_if(blocked_mask.begin(), blocked_mask.end(),
+        [](std::uint8_t value) { return value != 0; });
+    if (blocked_count == static_cast<std::ptrdiff_t>(blocked_mask.size()))
+        return std::vector<double>(blocked_mask.size(), 0.0);
+    if (blocked_count == 0) {
+        for (int v = 0; v < height; ++v)
+            for (int u = 0; u < width; ++u)
+                distance[gridIndex(u, v, width)] =
+                    std::hypot(static_cast<double>(u), static_cast<double>(v) + 1.0);
+        return distance;
+    }
+
+    // The row pass gives exact horizontal squared distances. Empty rows stay
+    // infinite and are excluded from the column envelope below.
+    for (int v = 0; v < height; ++v) {
+        int nearest = -1;
+        for (int u = 0; u < width; ++u) {
+            const auto index = gridIndex(u, v, width);
+            if (blocked_mask[index] != 0) {
+                nearest = u;
+            }
+            if (nearest >= 0) {
+                const double delta = static_cast<double>(u) - nearest;
+                distance[index] = delta * delta;
+            }
+        }
+        nearest = -1;
+        for (int u = width - 1; u >= 0; --u) {
+            const auto index = gridIndex(u, v, width);
+            if (blocked_mask[index] != 0) nearest = u;
+            if (nearest >= 0) {
+                const double delta = static_cast<double>(nearest) - u;
+                distance[index] = std::min(distance[index], delta * delta);
+            }
+        }
+    }
+    // For each column, minimize f(q) + (v-q)^2 over rows q using its lower
+    // parabola envelope. Each row is pushed/popped at most once: O(width*height).
+    // This is exact Euclidean pixel clearance, not a chamfer approximation.
+    std::vector<double> column(height), boundaries(static_cast<std::size_t>(height) + 1);
+    std::vector<int> sites(height);
+    for (int u = 0; u < width; ++u) {
+        for (int v = 0; v < height; ++v)
+            column[v] = distance[gridIndex(u, v, width)];
+        int last = -1;
+        for (int q = 0; q < height; ++q) {
+            if (!std::isfinite(column[q])) continue;
+            double crossing = -infinity;
+            while (last >= 0) {
+                const int previous = sites[last];
+                crossing = ((column[q] + static_cast<double>(q) * q) -
+                    (column[previous] + static_cast<double>(previous) * previous)) /
+                    (2.0 * (q - previous));
+                if (crossing > boundaries[last]) break;
+                --last;
+            }
+            ++last;
+            sites[last] = q;
+            boundaries[last] = last == 0 ? -infinity : crossing;
+            boundaries[last + 1] = infinity;
+        }
+        int active = 0;
+        for (int v = 0; v < height; ++v) {
+            while (active < last && boundaries[active + 1] < v) ++active;
+            const int q = sites[active];
+            const double delta = static_cast<double>(v) - q;
+            distance[gridIndex(u, v, width)] = std::sqrt(column[q] + delta * delta);
+        }
+    }
+    return distance;
+}
 
 void applyObstacleReleaseHysteresis(
     const BinaryMask& observed_mask,
@@ -169,21 +209,6 @@ std::size_t selectClosestYaw(
         }
     }
     return best;
-}
-
-Eigen::Vector3d composeHorizontalVerticalCommand(
-    const Eigen::Vector3d& horizontal_command,
-    double vertical_command,
-    double max_vertical_speed)
-{
-    if (!horizontal_command.allFinite() || !std::isfinite(vertical_command) ||
-        !std::isfinite(max_vertical_speed) || max_vertical_speed < 0.0) {
-        throw std::invalid_argument("invalid horizontal/vertical command");
-    }
-    return Eigen::Vector3d(
-        horizontal_command.x(), horizontal_command.y(),
-        std::max(-max_vertical_speed,
-            std::min(max_vertical_speed, vertical_command)));
 }
 
 Eigen::Matrix3d fixedCameraRotation()
@@ -375,33 +400,34 @@ std::vector<double> collisionConeFreeDistance(
         return free;
     }
 
-    std::vector<double> point_norm_squared;
-    point_norm_squared.reserve(points_camera.size());
-    for (const Eigen::Vector3d& point : points_camera) {
-        point_norm_squared.push_back(point.squaredNorm());
-    }
     const double radius_squared = effective_radius * effective_radius;
-
-    for (std::size_t start = 0; start < camera.rays().size();
-         start += static_cast<std::size_t>(chunk_size)) {
-        const std::size_t stop = std::min(
-            start + static_cast<std::size_t>(chunk_size), camera.rays().size());
-        for (std::size_t ray_index = start; ray_index < stop; ++ray_index) {
-            double nearest = std::numeric_limits<double>::infinity();
-            const Eigen::Vector3d& ray = camera.rays()[ray_index];
-            for (std::size_t point_index = 0;
-                 point_index < points_camera.size(); ++point_index) {
-                const double longitudinal = ray.dot(points_camera[point_index]);
-                const double lateral_squared = std::max(
-                    0.0,
-                    point_norm_squared[point_index] - longitudinal * longitudinal);
-                if (longitudinal > 0.0 && lateral_squared < radius_squared) {
-                    const double root = std::sqrt(std::max(
-                        0.0, radius_squared - lateral_squared));
-                    nearest = std::min(nearest, longitudinal - root);
-                }
+    // Project each sphere's exact tangent bounds before testing rays. Rays
+    // outside this rectangle cannot meet the sphere; the original quadratic
+    // intersection remains the narrow phase. This avoids a full N*M scan.
+    for (const Eigen::Vector3d& point : points_camera) {
+        int x0=0, x1=camera.width()-1, y0=0, y1=camera.height()-1;
+        if (point.z() > effective_radius + 1e-9) {
+            const double denominator=point.z()*point.z()-radius_squared;
+            auto bounds=[&](double value,double focal,double center,int count,int* lo,int* hi) {
+                const double root=effective_radius*std::sqrt(std::max(0.,value*value+denominator));
+                const double a=focal*(value*point.z()-root)/denominator+center;
+                const double b=focal*(value*point.z()+root)/denominator+center;
+                // Extra pixel padding also covers roundoff at grazing rays.
+                *lo=std::max(0,static_cast<int>(std::floor(std::max(-2.,std::min(double(count+1),a))))-1);
+                *hi=std::min(count-1,static_cast<int>(std::ceil(std::max(-2.,std::min(double(count+1),b))))+1);
+            };
+            bounds(point.x(),camera.fx(),camera.cx(),camera.width(),&x0,&x1);
+            bounds(point.y(),camera.fy(),camera.cy(),camera.height(),&y0,&y1);
+        }
+        const double norm_squared=point.squaredNorm();
+        for(int y=y0;y<=y1;++y)for(int x=x0;x<=x1;++x) {
+            const std::size_t index=gridIndex(x,y,camera.width());
+            const double longitudinal=camera.rays()[index].dot(point);
+            const double lateral_squared=std::max(0.,norm_squared-longitudinal*longitudinal);
+            if(longitudinal>0. && lateral_squared<radius_squared) {
+                const double root=std::sqrt(std::max(0.,radius_squared-lateral_squared));
+                free[index]=std::min(free[index],longitudinal-root);
             }
-            free[ray_index] = std::min(free[ray_index], nearest);
         }
     }
     return free;
@@ -512,7 +538,8 @@ GoalSelection chooseSafeGoal(
     int width,
     int height,
     const Eigen::Vector2d* previous_goal,
-    const SimConfig& config)
+    const SimConfig& config,
+    const Camera* angular_camera)
 {
     validateGridSize(blocked_mask.size(), width, height);
     BinaryMask free_mask(blocked_mask.size(), 0);
@@ -549,24 +576,41 @@ GoalSelection chooseSafeGoal(
     bool found = false;
     double best_cost = std::numeric_limits<double>::infinity();
     Eigen::Vector2d best_goal = Eigen::Vector2d::Zero();
+    const auto candidate_cost=[&](int u,int v) {
+        const auto index=gridIndex(u,v,width);
+        const double du = (u - reference.x()) / width;
+        const double dv = (v - reference.y()) / height;
+        double cost = du * du + dv * dv;
+        // A pixel fraction is not a physical angle when horizontal and
+        // vertical FoV differ. Use the true 3-D ray separation for the
+        // paper-style proposal, retaining the legacy cost by default.
+        const Eigen::Vector2d candidate(u,v);
+        if(angular_camera) {
+            const double angle=angularDistance(*angular_camera,candidate,reference);
+            cost=.25*angle*angle;
+        }
+        const double rewarded_clearance=config.goal_clearance_cap>0.?
+            std::min(clearance[index],config.goal_clearance_cap):clearance[index];
+        cost -= config.clearance_reward * rewarded_clearance;
+        if (previous_goal != nullptr) {
+            const double previous_du = (u - previous_goal->x()) / width;
+            const double previous_dv = (v - previous_goal->y()) / height;
+            const double separation=angular_camera?
+                .25*std::pow(angularDistance(*angular_camera,candidate,*previous_goal),2):
+                previous_du*previous_du+previous_dv*previous_dv;
+            cost += config.hysteresis_weight*separation;
+        }
+        cost += config.deterministic_left_bias *
+            (u - reference.x()) / width;
+        return cost;
+    };
     for (int v = 0; v < height; ++v) {
         for (int u = 0; u < width; ++u) {
             const std::size_t index = gridIndex(u, v, width);
             if (selection.labels[index] != component) {
                 continue;
             }
-            const double du = (u - reference.x()) / width;
-            const double dv = (v - reference.y()) / height;
-            double cost = du * du + dv * dv;
-            cost -= config.clearance_reward * clearance[index];
-            if (previous_goal != nullptr) {
-                const double previous_du = (u - previous_goal->x()) / width;
-                const double previous_dv = (v - previous_goal->y()) / height;
-                cost += config.hysteresis_weight * (
-                    previous_du * previous_du + previous_dv * previous_dv);
-            }
-            cost += config.deterministic_left_bias *
-                (u - reference.x()) / width;
+            const double cost=candidate_cost(u,v);
             if (!found || cost < best_cost) {
                 found = true;
                 best_cost = cost;
@@ -580,6 +624,21 @@ GoalSelection chooseSafeGoal(
     selection.valid = true;
     selection.source = safe_source;
     selection.goal = best_goal;
+    if(config.subpixel_goal) {
+        const int u=static_cast<int>(best_goal.x()),v=static_cast<int>(best_goal.y());
+        // Refine only inside a wholly free 3x3 neighborhood. Each fitted
+        // coordinate stays in the selected pixel, preserving its component.
+        bool interior=u>0&&v>0&&u+1<width&&v+1<height;
+        for(int y=v-1;interior&&y<=v+1;++y)for(int x=u-1;interior&&x<=u+1;++x)
+            interior=selection.labels[gridIndex(x,y,width)]==component;
+        if(interior)for(int axis=0;axis<2;++axis) {
+            const double low=candidate_cost(u-(axis==0),v-(axis==1));
+            const double high=candidate_cost(u+(axis==0),v+(axis==1));
+            const double curvature=low+high-2.*best_cost;
+            if(std::isfinite(curvature)&&curvature>1e-10)
+                selection.goal[axis]+=std::max(-.49,std::min(.49,.5*(low-high)/curvature));
+        }
+    }
     return selection;
 }
 
@@ -1222,14 +1281,33 @@ GuidanceResult computeGuidance(
     int obstacle_clear_frames,
     bool advance_obstacle_frame,
     bool retain_previous_goal,
-    const std::vector<double>* initial_potential)
+    const std::vector<double>* initial_potential,
+    const std::vector<Eigen::Vector3d>* native_points_camera,
+    bool direction_proposal_only,
+    const std::function<bool(const Eigen::Vector2d&)>& goal_admissible,
+    bool target_proposal_only,
+    const Eigen::Vector3d* camera_origin_world)
 {
     GuidanceResult result;
     result.solution.depth = depth;
     const Eigen::Matrix3d rotation_camera_from_world =
         rotation_world_from_camera.transpose();
-    const std::vector<Eigen::Vector3d> points_camera =
-        backprojectObstaclePoints(depth, camera, config.depth_point_stride);
+    const std::vector<Eigen::Vector3d> resized_points = native_points_camera?
+        std::vector<Eigen::Vector3d>():backprojectObstaclePoints(depth,camera,config.depth_point_stride);
+    const auto& sensor_points=native_points_camera?*native_points_camera:resized_points;
+    // Collision cones and the goal ray must share the current vehicle center.
+    // Keep optical axes, but translate hits from the captured sensor origin;
+    // this also accounts for translation since image acquisition. Physical
+    // camera frusta remain unchanged in the external motion certificate.
+    std::vector<Eigen::Vector3d> centered_points;
+    if(camera_origin_world) {
+        if(!camera_origin_world->allFinite())
+            throw std::invalid_argument("camera origin must be finite");
+        const Eigen::Vector3d offset=rotation_camera_from_world*(*camera_origin_world-position_world);
+        centered_points.reserve(sensor_points.size());
+        for(const auto& point:sensor_points)centered_points.push_back(point+offset);
+    }
+    const auto& points_camera=camera_origin_world?centered_points:sensor_points;
     const double effective_radius = config.body_radius + config.safety_margin;
     result.solution.free_distance = collisionConeFreeDistance(
         points_camera, camera, effective_radius, config.cone_chunk_size);
@@ -1271,9 +1349,10 @@ GuidanceResult computeGuidance(
 
     const double stop_distance = reference_speed * config.delay +
         reference_speed * reference_speed / (2.0 * config.brake_accel);
-    const double planning_distance = std::min(
+    double planning_distance = std::min(
         camera.maxDepth() - effective_radius,
         reference_speed * config.planning_horizon + stop_distance + 0.35);
+    if(config.finite_goal)planning_distance=std::min(planning_distance,goal_delta.norm());
     result.solution.planning_mask.resize(result.solution.free_distance.size(), 0);
     for (std::size_t index = 0;
          index < result.solution.free_distance.size(); ++index) {
@@ -1319,7 +1398,7 @@ GuidanceResult computeGuidance(
 
     GoalSelection selection = chooseSafeGoal(
         reference_pixel, planning_previous_pixel, result.solution.planning_mask,
-        camera.width(), camera.height(), previous_goal_pixel, config);
+        camera.width(), camera.height(), previous_goal_pixel, config,config.angular_goal_cost?&camera:nullptr);
     if (selection.valid && retain_previous_goal && previous_goal_pixel != nullptr) {
         const int previous_u = roundedClampedPixel(
             previous_goal_pixel->x(), camera.width());
@@ -1336,13 +1415,82 @@ GuidanceResult computeGuidance(
         if (result.solution.planning_mask[previous_index] == 0 &&
             selection.labels[previous_index] > 0 &&
             selection.labels[previous_index] == selection.labels[source_index]) {
-            selection.goal = Eigen::Vector2d(previous_u, previous_v);
+            selection.goal = config.subpixel_goal?*previous_goal_pixel:Eigen::Vector2d(previous_u, previous_v);
+        }
+    }
+    // Reclaim the continuous operator direction once its complete angular
+    // segment is clear. Goal hysteresis must not prolong an obsolete detour.
+    // This only generates a proposal; the paper path still certifies the
+    // actual 3-D motion and full braking trajectory after output shaping.
+    bool direct_reference = selection.valid && config.recapture_reference;
+    if (direct_reference) {
+        const Eigen::Vector2d delta = reference_pixel - planning_previous_pixel;
+        const int steps = std::max(1, static_cast<int>(std::ceil(delta.norm()*4.)));
+        for (int i=0; i<=steps && direct_reference; ++i) {
+            const Eigen::Vector2d p = planning_previous_pixel + (double(i)/steps)*delta;
+            const int x0=static_cast<int>(std::floor(p.x())), y0=static_cast<int>(std::floor(p.y()));
+            for(int y=y0;y<=y0+1;++y)for(int x=x0;x<=x0+1;++x)
+                if(x<0||y<0||x>=camera.width()||y>=camera.height()||
+                   result.solution.planning_mask[gridIndex(x,y,camera.width())])direct_reference=false;
+        }
+        if(direct_reference)selection.goal=reference_pixel;
+    }
+    if(goal_admissible) {
+        for(int attempt=0;selection.valid && attempt<12;++attempt) {
+            if(goal_admissible(selection.goal))break;
+            direct_reference=false;
+            const int u=roundedClampedPixel(selection.goal.x(),camera.width());
+            const int v=roundedClampedPixel(selection.goal.y(),camera.height());
+            for(int y=std::max(0,v-1);y<=std::min(camera.height()-1,v+1);++y)
+                for(int x=std::max(0,u-1);x<=std::min(camera.width()-1,u+1);++x)
+                    result.solution.planning_mask[gridIndex(x,y,camera.width())]=1;
+            selection=chooseSafeGoal(reference_pixel,planning_previous_pixel,result.solution.planning_mask,
+                camera.width(),camera.height(),nullptr,config,config.angular_goal_cost?&camera:nullptr);
+            if(attempt==11)selection.valid=false;
+        }
+    }
+    // Keep the selected detour side, but remove its unnecessary clearance
+    // bias toward the middle of a wide opening. Project toward q only inside
+    // the same free component, with a pixel margin and a fresh volume proof.
+    if(selection.valid&&config.goal_projection_clearance>0.&&goal_admissible) {
+        const auto clearance=euclideanDistanceToBlocked(result.solution.planning_mask,camera.width(),camera.height());
+        const Eigen::Vector2d delta=selection.goal-reference_pixel;
+        const int steps=std::max(1,static_cast<int>(std::ceil(delta.norm()*4.)));
+        const int goal_u=roundedClampedPixel(selection.goal.x(),camera.width());
+        const int goal_v=roundedClampedPixel(selection.goal.y(),camera.height());
+        const int component=selection.labels[gridIndex(goal_u,goal_v,camera.width())];
+        int queries=0;
+        for(int i=0;i<steps&&queries<4;++i) {
+            const Eigen::Vector2d point=reference_pixel+(double(i)/steps)*delta;
+            const int u=roundedClampedPixel(point.x(),camera.width()),v=roundedClampedPixel(point.y(),camera.height());
+            bool room=true;
+            const int x0=static_cast<int>(std::floor(point.x())),y0=static_cast<int>(std::floor(point.y()));
+            for(int y=y0;room&&y<=y0+1;++y)for(int x=x0;room&&x<=x0+1;++x)
+                room=x>=0&&y>=0&&x<camera.width()&&y<camera.height()&&
+                    !result.solution.planning_mask[gridIndex(x,y,camera.width())]&&
+                    clearance[gridIndex(x,y,camera.width())]>=config.goal_projection_clearance;
+            if(room&&selection.labels[gridIndex(u,v,camera.width())]==component) {
+                ++queries;if(goal_admissible(point)){selection.goal=point;break;}
+            }
         }
     }
     result.goal_reanchored = selection.valid &&
         (previous_goal_pixel == nullptr ||
          angularDistance(camera, selection.goal, *previous_goal_pixel) >
             0.5 * kPi / 180.0);
+    result.goal_valid=selection.valid;
+    if(target_proposal_only) {
+        result.solution.source_pixel=selection.valid?selection.source:planning_previous_pixel;
+        result.solution.goal_pixel=selection.valid?selection.goal:planning_previous_pixel;
+        result.solution.command_pixel=result.solution.goal_pixel;
+        result.solution.potential.assign(result.solution.planning_mask.size(),std::numeric_limits<double>::quiet_NaN());
+        result.returned_goal_pixel=result.solution.goal_pixel;
+        if(selection.valid)result.command_world=reference_speed*rotation_world_from_camera*
+            camera.rayFromPixel(selection.goal);
+        // No harmonic field was computed: goal validity and field validity are
+        // deliberately separate. The returned vector is not motion-authorized.
+        return result;
+    }
     Eigen::Vector2d command_pixel;
     if (!selection.valid) {
         result.solution.source_pixel = planning_previous_pixel;
@@ -1355,7 +1503,7 @@ GuidanceResult computeGuidance(
     } else {
         result.solution.source_pixel = selection.source;
         result.solution.goal_pixel = selection.goal;
-        if (angularDistance(camera, selection.source, selection.goal) <
+        if (direct_reference || angularDistance(camera, selection.source, selection.goal) <
             0.4 * kPi / 180.0) {
             result.solution.potential.assign(
                 result.solution.planning_mask.size(),
@@ -1428,6 +1576,11 @@ GuidanceResult computeGuidance(
     }
     result.solution.command_pixel = command_pixel;
 
+    if(direction_proposal_only) {
+        result.command_world=reference_speed*ray_world;
+        result.returned_goal_pixel=result.solution.goal_pixel;
+        return result;
+    }
     const double free_distance = bilinearSample(
         result.solution.free_distance, camera.width(), camera.height(),
         command_pixel, 0.0);

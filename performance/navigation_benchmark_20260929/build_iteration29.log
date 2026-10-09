@@ -1,0 +1,63 @@
+Starting >>> pc_gvf_msgs
+Finished <<< pc_gvf_msgs [0.16s]
+Starting >>> pc_gvf_platforms
+Finished <<< pc_gvf_platforms [0.32s]
+Starting >>> pc_gvf
+--- stderr: pc_gvf
+/home/starry/isaac-data/EGO1P1/src/pc_gvf/src/depth_angular_controller_node.cpp: In constructor ‘pc_gvf::depth_angular::DepthAngularControllerNode::DepthAngularControllerNode()’:
+/home/starry/isaac-data/EGO1P1/src/pc_gvf/src/depth_angular_controller_node.cpp:196:45: error: no matching function for call to ‘max(int, long int)’
+  196 |             native_proposal_stride_=std::max(0,declare_parameter<int>("paper_native_proposal_stride",0));
+      |                                     ~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+In file included from /usr/include/c++/11/array:40,
+                 from /usr/include/c++/11/tuple:39,
+                 from /usr/include/c++/11/functional:54,
+                 from /home/starry/isaac-data/EGO1P1/src/pc_gvf/include/pc_gvf/depth_angular_core.hpp:5,
+                 from /home/starry/isaac-data/EGO1P1/src/pc_gvf/src/depth_angular_controller_node.cpp:1:
+/usr/include/c++/11/bits/stl_algobase.h:254:5: note: candidate: ‘template<class _Tp> constexpr const _Tp& std::max(const _Tp&, const _Tp&)’
+  254 |     max(const _Tp& __a, const _Tp& __b)
+      |     ^~~
+/usr/include/c++/11/bits/stl_algobase.h:254:5: note:   template argument deduction/substitution failed:
+/home/starry/isaac-data/EGO1P1/src/pc_gvf/src/depth_angular_controller_node.cpp:196:45: note:   deduced conflicting types for parameter ‘const _Tp’ (‘int’ and ‘long int’)
+  196 |             native_proposal_stride_=std::max(0,declare_parameter<int>("paper_native_proposal_stride",0));
+      |                                     ~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+In file included from /usr/include/c++/11/array:40,
+                 from /usr/include/c++/11/tuple:39,
+                 from /usr/include/c++/11/functional:54,
+                 from /home/starry/isaac-data/EGO1P1/src/pc_gvf/include/pc_gvf/depth_angular_core.hpp:5,
+                 from /home/starry/isaac-data/EGO1P1/src/pc_gvf/src/depth_angular_controller_node.cpp:1:
+/usr/include/c++/11/bits/stl_algobase.h:300:5: note: candidate: ‘template<class _Tp, class _Compare> constexpr const _Tp& std::max(const _Tp&, const _Tp&, _Compare)’
+  300 |     max(const _Tp& __a, const _Tp& __b, _Compare __comp)
+      |     ^~~
+/usr/include/c++/11/bits/stl_algobase.h:300:5: note:   template argument deduction/substitution failed:
+/home/starry/isaac-data/EGO1P1/src/pc_gvf/src/depth_angular_controller_node.cpp:196:45: note:   deduced conflicting types for parameter ‘const _Tp’ (‘int’ and ‘long int’)
+  196 |             native_proposal_stride_=std::max(0,declare_parameter<int>("paper_native_proposal_stride",0));
+      |                                     ~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+In file included from /usr/include/c++/11/functional:65,
+                 from /home/starry/isaac-data/EGO1P1/src/pc_gvf/include/pc_gvf/depth_angular_core.hpp:5,
+                 from /home/starry/isaac-data/EGO1P1/src/pc_gvf/src/depth_angular_controller_node.cpp:1:
+/usr/include/c++/11/bits/stl_algo.h:3461:5: note: candidate: ‘template<class _Tp> constexpr _Tp std::max(std::initializer_list<_Tp>)’
+ 3461 |     max(initializer_list<_Tp> __l)
+      |     ^~~
+/usr/include/c++/11/bits/stl_algo.h:3461:5: note:   template argument deduction/substitution failed:
+/home/starry/isaac-data/EGO1P1/src/pc_gvf/src/depth_angular_controller_node.cpp:196:45: note:   mismatched types ‘std::initializer_list<_Tp>’ and ‘int’
+  196 |             native_proposal_stride_=std::max(0,declare_parameter<int>("paper_native_proposal_stride",0));
+      |                                     ~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+In file included from /usr/include/c++/11/functional:65,
+                 from /home/starry/isaac-data/EGO1P1/src/pc_gvf/include/pc_gvf/depth_angular_core.hpp:5,
+                 from /home/starry/isaac-data/EGO1P1/src/pc_gvf/src/depth_angular_controller_node.cpp:1:
+/usr/include/c++/11/bits/stl_algo.h:3467:5: note: candidate: ‘template<class _Tp, class _Compare> constexpr _Tp std::max(std::initializer_list<_Tp>, _Compare)’
+ 3467 |     max(initializer_list<_Tp> __l, _Compare __comp)
+      |     ^~~
+/usr/include/c++/11/bits/stl_algo.h:3467:5: note:   template argument deduction/substitution failed:
+/home/starry/isaac-data/EGO1P1/src/pc_gvf/src/depth_angular_controller_node.cpp:196:45: note:   mismatched types ‘std::initializer_list<_Tp>’ and ‘int’
+  196 |             native_proposal_stride_=std::max(0,declare_parameter<int>("paper_native_proposal_stride",0));
+      |                                     ~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+gmake[2]: *** [CMakeFiles/depth_angular_controller.dir/build.make:76：CMakeFiles/depth_angular_controller.dir/src/depth_angular_controller_node.cpp.o] 错误 1
+gmake[1]: *** [CMakeFiles/Makefile2:221：CMakeFiles/depth_angular_controller.dir/all] 错误 2
+gmake: *** [Makefile:146：all] 错误 2
+---
+Failed   <<< pc_gvf [9.59s, exited with code 2]
+
+Summary: 2 packages finished [10.2s]
+  1 package failed: pc_gvf
+  1 package had stderr output: pc_gvf

@@ -1,0 +1,706 @@
+--- before/src/pc_gvf/src/paper_guidance.cpp
++++ after/src/pc_gvf/src/paper_guidance.cpp
+@@ -324,7 +324,7 @@
+ }
+ bool FlowBox::initialize(const AngularField& f,const Eigen::Vector2d& a,const PaperConfig& cfg) {
+     anchor=a;section_value=f.value(a);Eigen::Vector2d u=f.flow(a);
+-    valid=smoothCell(f,a)&&std::isfinite(section_value)&&u.norm()>=cfg.minimum_gradient;
++    valid=smoothCell(f,a)&&f.segmentFree(a,a)&&std::isfinite(section_value)&&u.norm()>=cfg.minimum_gradient;
+     if(valid) tangent=Eigen::Vector2d(-u.y(),u.x()).normalized();
+     return valid;
+ }
+@@ -337,6 +337,16 @@
+ }
+ bool FlowBox::evaluate(const AngularField& f,const Eigen::Vector2d& y,const PaperConfig& cfg,double* chi,Eigen::Vector2d* j) const {
+     if(!smoothCell(f,y)||!coordinate(f,y,cfg,chi)) return false;
++    // At the anchor, chi=0 and Dchi is exactly the unit section tangent:
++    // Dchi annihilates the flow and is identity along the section. A fixed
++    // +/-0.04 finite-difference stencil may leave a narrow but OPEN free
++    // neighborhood and falsely reject this regular initialization.
++    if((y-anchor).norm()<1e-10 && f.segmentFree(y,y)) {
++        *chi=0;*j=tangent;
++        const Eigen::Vector2d u=f.flow(y);
++        return j->allFinite()&&u.norm()>=cfg.minimum_gradient&&
++            std::abs(j->dot(u.normalized()))<1e-8;
++    }
+     const double eps=0.04;
+     for(int axis=0;axis<2;++axis) {Eigen::Vector2d d=Eigen::Vector2d::Zero();d[axis]=eps;double a,b;
+         if(!coordinate(f,y+d,cfg,&a)||!coordinate(f,y-d,cfg,&b)) return false;
+@@ -400,6 +410,22 @@
+ bool observedEnvelope(const DepthObservation& o,const Eigen::Vector3d& center,double radius) {
+     return sphereObserved(o,center,radius);
+ }
++Camera intentChartCamera(const Camera& physical) {
++    // A virtual angular domain is not a physical camera. Retain front/lateral
++    // candidates when q is blocked; every ray still needs real free-space proof.
++    return Camera(physical.width(),physical.height(),140.,140.,physical.maxDepth());
++}
++Eigen::Matrix3d intentChartRotation(const Eigen::Vector3d& velocity,const Eigen::Vector3d& intent) {
++    const Eigen::Vector3d desired=intent.normalized();
++    Eigen::Vector3d forward=desired;
++    // The chart follows the measured state while moving. Biasing its center
++    // toward q distorts the finite source/goal geometry on every refresh.
++    // At rest q alone selects the chart; there is no blind rearward search.
++    if(velocity.norm()>.03)forward=velocity.normalized();
++    const Eigen::Vector3d up=std::abs(forward.z())<.95?Eigen::Vector3d::UnitZ():Eigen::Vector3d::UnitY();
++    Eigen::Matrix3d chart;chart.col(2)=forward;chart.col(0)=forward.cross(up).normalized();
++    chart.col(1)=forward.cross(chart.col(0));return chart;
++}
+ PaperGuidance::PaperGuidance(const PaperConfig& config) : cfg_(config) {
+     const double positive[] = {cfg_.field_interval, cfg_.observation_timeout,
+         cfg_.max_speed, cfg_.transverse_gain, cfg_.chart_speed, cfg_.minimum_lookahead,
+@@ -422,6 +448,10 @@
+ void PaperGuidance::reset() {
+     diagnostic_valid_=false; target_holding_=false; observation_.reset(); field_=AngularField(); box_=FlowBox(); reference_world_.clear();
+     previous_command_.setZero(); previous_intent_.setZero(); reference_intent_.setZero(); last_update_=-1;
++}
++void PaperGuidance::confirmPublishedCommand(const Eigen::Vector3d& command) {
++    previous_command_=command.allFinite()?command:Eigen::Vector3d::Zero();
++    if(previous_command_.norm()<1e-8)diagnostic_valid_=false;
+ }
+ void PaperGuidance::ingestObservation(const DepthObservation& observation) {
+     if(cfg_.history_duration<=0||!std::isfinite(observation.stamp)||
+@@ -977,12 +1007,14 @@
+     for(int y=0;y<coarse.height;++y) for(int x=0;x<coarse.width;++x) {
+         int i=idx(x,y,coarse.width);if(coarse.blocked[i]) continue;
+         Eigen::Vector2d p=coarse.offset+factor*Eigen::Vector2d(x,y);
+-        double angle=std::acos(clip((o.rotation*o.camera.rayFromPixel(p)).dot(direction),-1,1));
++        const double alignment=(o.rotation*o.camera.rayFromPixel(p)).dot(direction);
++        if(cfg_.intent_guard&&alignment<=1e-6)continue;
++        double angle=std::acos(clip(alignment,-1,1));
+         double history=goal_hint?(p-*goal_hint).squaredNorm():0;
+         if(angle<best_angle-1e-9||(std::abs(angle-best_angle)<1e-9&&history<best_history))
+             {goal=i;best_angle=angle;best_history=history;}
+     }
+-    if(goal<0)return false;
++    if(goal<0){build_reason_="NO_INTENT_PROGRESS";return false;}
+     // Source and target must be disjoint. Put the source upstream when the
+     // requested state already lies in the target neighborhood.
+     const bool separate_source=source==goal;
+@@ -1088,6 +1120,12 @@
+ }
+ PaperResult PaperGuidance::step(const DepthObservation& input,const Eigen::Vector3d& position,
+     const Eigen::Vector3d& velocity,const Eigen::Vector3d& intent,double now,double dt) {
++    PaperResult result=stepImpl(input,position,velocity,intent,now,dt);
++    confirmPublishedCommand(result.command);
++    return result;
++}
++PaperResult PaperGuidance::stepImpl(const DepthObservation& input,const Eigen::Vector3d& position,
++    const Eigen::Vector3d& velocity,const Eigen::Vector3d& intent,double now,double dt) {
+     for(auto& cache:envelope_caches_)cache.clear();
+     cache_enabled_=true;
+     struct CacheScope {bool& enabled;~CacheScope(){enabled=false;}} cache_scope{cache_enabled_};
+@@ -1101,6 +1139,11 @@
+     if(intent.norm()<1e-5){reset();out.status="ZERO_INTENT";return out;}
+     if(now-next.stamp>cfg_.observation_timeout||now<next.stamp-0.02){out.status="STALE_DEPTH";return out;}
+     Eigen::Vector3d direction=intent.normalized();
++    if(cfg_.intent_guard&&velocity.norm()>.03&&velocity.dot(direction)<-1e-6) {
++        // Intent reversal or drift behind the operator: brake before reseeding
++        // from q. Do not keep commanding a long arc in the old hemisphere.
++        reset();out.status="INTENT_REVERSAL_BRAKE";return out;
++    }
+     Eigen::Vector3d measured=velocity.norm()>0.03?velocity.normalized():
+         (previous_command_.norm()>1e-5?previous_command_.normalized():direction);
+     Eigen::Vector2d requested,new_state;
+@@ -1216,7 +1259,16 @@
+     }
+     out.state=state;out.field_residual=field_.residual;out.coupling_error=coupling_error_;
+     Eigen::Vector2d candidate=state;
+-    if((target_holding_ || (state-field_.goal).norm()<=2.0) && field_.segmentFree(state,field_.goal)) {
++    const bool direct_intent=cfg_.intent_guard &&
++        (o.rotation*o.camera.rayFromPixel(field_.goal)).dot(direction)>1.-1e-10 &&
++        field_.segmentFree(state,field_.goal);
++    if(direct_intent) {
++        // Teleoperation goal capture: when q itself and the entire angular
++        // approach are certified, stop following a now-unnecessary detour.
++        // This remains one planned direction, rate-limited below and subject
++        // to the same complete motion/braking proof as harmonic candidates.
++        target_holding_=true;candidate=field_.goal;out.status="INTENT_DIRECT";
++    } else if((target_holding_ || (state-field_.goal).norm()<=2.0) && field_.segmentFree(state,field_.goal)) {
+         target_holding_=true; candidate=field_.goal;out.status="TARGET_HOLD";
+     }
+     else {
+@@ -1255,9 +1307,16 @@
+             box_.valid=false;reference_world_.clear();
+             candidate=state+std::min(0.5,cfg_.chart_speed*dt)*u.normalized();
+             out.status="REFERENCE_INITIALIZATION";
+-        } else if(!box_.evaluate(field_,state,cfg_,&chi,&j)) {
+-            out.status="OUTSIDE_FLOW_BOX";return out;
+         } else {
++            if(!box_.evaluate(field_,state,cfg_,&chi,&j)) {
++                // Eq. (24): a lost local flow box need not invalidate a safe,
++                // regular current state. Re-anchor before demanding a stop.
++                if(!box_.initialize(field_,state,cfg_)||!box_.evaluate(field_,state,cfg_,&chi,&j)) {
++                    out.status="OUTSIDE_FLOW_BOX";return out;
++                }
++                reference_world_=referenceCurve(field_,state,o,cfg_.minimum_gradient);
++                reference_intent_=direction;out.continued=false;out.reset_reason="TRACKING_RECOVERY";
++            }
+             out.tracking=true;out.chi=chi;out.ju=j.dot(u.normalized());out.jacobian_norm=j.norm();
+             Eigen::Vector2d rate=cfg_.chart_speed*u.normalized();
+             if(cfg_.feedback)rate-=j*(cfg_.transverse_gain*chi/j.squaredNorm());
+@@ -1265,37 +1324,80 @@
+             diagnostic_state_=state;diagnostic_rate_=rate;diagnostic_time_=now;
+         }
+     }
++    // Eq. (20): choose h <= dt continuously at the angular-rate bound.
++    // Repeated halving made the effective turning rate jump by a factor of two
++    // whenever a chart refresh moved an otherwise safe step across that bound.
++    const double angular_limit=cfg_.motion.max_direction_rate*dt;
++    if(angularDistance(o.camera,state,candidate)>angular_limit) {
++        const Eigen::Vector2d delta=candidate-state;
++        double low=0,high=1;
++        for(int i=0;i<12;++i) {
++            const double middle=.5*(low+high);
++            if(angularDistance(o.camera,state,state+middle*delta)<=angular_limit)low=middle;
++            else high=middle;
++        }
++        candidate=state+low*delta;
++    }
+     bool safe_angle=false;
+     for(int attempt=0;attempt<12;++attempt) {
+-        if(field_.segmentFree(state,candidate)&&angularDistance(o.camera,state,candidate)<=cfg_.motion.max_direction_rate*dt+1e-8)
++        if(field_.segmentFree(state,candidate)&&angularDistance(o.camera,state,candidate)<=angular_limit+1e-8)
+             {safe_angle=true;break;}
+         candidate=0.5*(candidate+state);
+     }
+     if(!safe_angle){out.status="ANGULAR_STEP_BLOCKED";return out;}
+     out.command_pixel=candidate;
+     Eigen::Vector3d ray=o.rotation*o.camera.rayFromPixel(candidate);
++    if(cfg_.intent_guard&&ray.dot(direction)<=1e-6) {
++        out.status="INTENT_PROGRESS_BLOCKED";return out;
++    }
+     const double requested_speed=std::min(intent.norm(),cfg_.max_speed);
+-    const double speed_certificate=std::max(.5,requested_speed*cfg_.motion.delay+
+-        requested_speed*requested_speed/(2*cfg_.motion.brake_accel)+.05);
++    const double scalar_step=cfg_.motion.max_accel*std::min(dt,.1);
++    const double desired_speed=cfg_.smooth_speed?
++        clip(requested_speed,std::max(0.,previous_command_.norm()-scalar_step),previous_command_.norm()+scalar_step):requested_speed;
++    const double speed_certificate=std::max(.5,desired_speed*cfg_.motion.delay+
++        desired_speed*desired_speed/(2*cfg_.motion.brake_accel)+.05);
+     out.clearance=directionalClearance(o,position,ray,now,speed_certificate);
+     const double residual=cfg_.adaptive_lookahead?cfg_.certificate_resolution:.05;
+     const double available=std::max(0.,out.clearance-residual);
+     const double at=cfg_.motion.brake_accel*cfg_.motion.delay;
+-    double speed=std::min(requested_speed,-at+std::sqrt(at*at+2*cfg_.motion.brake_accel*available));
++    double speed=std::min(desired_speed,-at+std::sqrt(at*at+2*cfg_.motion.brake_accel*available));
+     if(std::abs(ray.z())>1e-9)speed=std::min(speed,cfg_.max_vertical_speed/std::abs(ray.z()));
+-    // Recheck the actual published vector, including its braking continuation.
+-    for(int attempt=0;attempt<12;++attempt) {
+-        if(speed<std::min(.05,requested_speed)-1e-9)break;
+-        Eigen::Vector3d command=speed*ray;
+-        std::vector<std::pair<Eigen::Vector3d,double>> certified_prefix;
+-        if(certifyMotion(o,position,velocity,command,now,
+-                cfg_.retain_verified_travel?&certified_prefix:nullptr)) {
+-            if(cfg_.retain_verified_travel)pending_motion_=std::move(certified_prefix);
+-            out.command=command;out.accepted=true;previous_command_=command;
+-            diagnostic_valid_=out.tracking && velocity.norm()>.03;return out;
+-        }
+-        speed*=0.5;
+-    }
+-    out.status="BRAKING_FALLBACK";previous_command_.setZero();return out;
++    // Limit scalar speed before safety validation; never smooth XYZ after
++    // certification. Safety can always demand a faster reduction or a stop.
++    const double minimum=cfg_.smooth_speed?1e-4:std::min(.05,requested_speed);
++    auto accept=[&](double candidate_speed)->bool {
++        if(candidate_speed<minimum-1e-9)return false;
++        std::vector<std::pair<Eigen::Vector3d,double>> prefix;
++        const Eigen::Vector3d command=candidate_speed*ray;
++        if(!certifyMotion(o,position,velocity,command,now,cfg_.retain_verified_travel?&prefix:nullptr))return false;
++        if(cfg_.retain_verified_travel)pending_motion_=std::move(prefix);
++        out.command=command;out.accepted=true;
++        diagnostic_valid_=out.tracking&&velocity.norm()>.03;return true;
++    };
++    if(accept(speed))return out;
++    if(cfg_.smooth_speed) {
++        // Prefer maintaining the last scalar speed to a needless 50% jump.
++        double high=speed,low=std::min(speed,previous_command_.norm());
++        bool found=low<high&&accept(low);
++        if(!found) {
++            low=.5*high;
++            for(int i=0;i<10&&low>=minimum;++i) {
++                if(accept(low)){found=true;break;}
++                high=low;low*=.5;
++            }
++        }
++        if(found) {
++            // Feasibility need not be monotone: only explicitly certified
++            // samples can replace the current safe result.
++            for(int i=0;i<5&&high-low>.005;++i) {
++                const double middle=.5*(low+high);
++                if(accept(middle))low=middle;else high=middle;
++            }
++            return out;
++        }
++    } else {
++        for(int i=0;i<11;++i){speed*=.5;if(accept(speed))return out;}
++    }
++    out.status="BRAKING_FALLBACK";return out;
+ }
+ } }
+--- before/src/pc_gvf/include/pc_gvf/paper_guidance.hpp
++++ after/src/pc_gvf/include/pc_gvf/paper_guidance.hpp
+@@ -34,6 +34,9 @@
+ // the exact truncated unknown cones and the camera visibility planes.
+ bool observedEnvelope(const DepthObservation& observation,
+     const Eigen::Vector3d& center_world, double radius);
++// Virtual chart follows measured motion; at rest only operator intent selects it.
++Camera intentChartCamera(const Camera& physical);
++Eigen::Matrix3d intentChartRotation(const Eigen::Vector3d& velocity,const Eigen::Vector3d& intent);
+ struct PaperConfig {
+     SimConfig motion;
+     double field_interval = 0.05;
+@@ -65,6 +68,9 @@
+     double certificate_resolution = .005;
+     // Extra observed room at the predicted stop, retained on measured arrival.
+     double restart_clearance = 0.0;
++    // Teleoperation policies; ROS enables them, pure-paper baselines do not.
++    bool intent_guard = false;
++    bool smooth_speed = false;
+ };
+ // A capsule proven to lie in observed free volume along a measured segment.
+ struct CertifiedTube {
+@@ -120,6 +126,8 @@
+     PaperResult step(const DepthObservation& observation, const Eigen::Vector3d& position,
+         const Eigen::Vector3d& velocity, const Eigen::Vector3d& intent, double now, double dt);
+     void reset();
++    // Synchronize post-planning watchdog overrides with the next planning step.
++    void confirmPublishedCommand(const Eigen::Vector3d& command);
+     void ingestObservation(const DepthObservation& observation);
+     bool setVerifiedSeed(const Eigen::Vector3d& center,double radius);
+     bool setVerifiedNeighborhood(const std::vector<Eigen::Vector3d>& centers,double radius);
+@@ -136,7 +144,7 @@
+     void saveReplay(std::ostream& out, const DepthObservation& observation,
+         const Eigen::Vector3d& position, const Eigen::Vector3d& velocity,
+         const Eigen::Vector3d& intent, double now, double dt) const;
+-    static PaperResult replay(std::istream& in);
++    static PaperResult replay(std::istream& in,std::ostream* audit = nullptr);
+     std::size_t revokedBalls() const { return revoked_balls_; }
+     std::size_t expiredViews() const { return expired_views_; }
+     std::size_t evictedViews() const { return evicted_views_; }
+@@ -155,6 +163,8 @@
+         const Eigen::Vector3d& velocity, const Eigen::Vector3d& command, double now) const;
+ private:
+     friend struct PaperReplayCodec;
++    PaperResult stepImpl(const DepthObservation& observation,const Eigen::Vector3d& position,
++        const Eigen::Vector3d& velocity,const Eigen::Vector3d& intent,double now,double dt);
+     bool certifyMotion(const DepthObservation& observation, const Eigen::Vector3d& position,
+         const Eigen::Vector3d& velocity, const Eigen::Vector3d& command, double now,
+         std::vector<std::pair<Eigen::Vector3d,double>>* prefix) const;
+--- before/src/pc_gvf/src/depth_angular_controller_node.cpp
++++ after/src/pc_gvf/src/depth_angular_controller_node.cpp
+@@ -205,6 +205,8 @@
+             seed_radius_=declare_parameter<double>("paper_seed_radius", 2.5);
+             paper_config.field_interval = declare_parameter<double>("paper_field_interval", 0.05);
+             paper_config.command_change_angle = declare_parameter<double>("paper_command_change_angle", 0.05);
++            paper_config.intent_guard=declare_parameter<bool>("paper_intent_guard",true);
++            paper_config.smooth_speed=declare_parameter<bool>("paper_smooth_speed",true);
+             paper_config.transverse_gain = declare_parameter<double>("paper_transverse_gain", 1.0);
+             paper_config.minimum_lookahead=declare_parameter<double>("paper_minimum_lookahead", .50);
+             paper_config.chart_speed = declare_parameter<double>("paper_chart_speed", 32.0);
+@@ -1054,13 +1056,8 @@
+         // The direction chart can rotate independently of physical sensors.
+         // Its depth is unknown: all geometric evidence remains in the actual
+         // camera frusta below. This avoids gaps between four chart boundaries.
+-        if(velocity.norm()>.03)chart_search_=0;
+-        const Eigen::Vector3d forward=velocity.norm()>.03?velocity.normalized():
+-            Eigen::AngleAxisd(chart_search_*kPi/2,Eigen::Vector3d::UnitZ())*intent.normalized();
+-        const Eigen::Vector3d up=std::abs(forward.z())<.95?Eigen::Vector3d::UnitZ():Eigen::Vector3d::UnitY();
+-        Eigen::Matrix3d chart;chart.col(2)=forward;chart.col(0)=forward.cross(up).normalized();
+-        chart.col(1)=forward.cross(chart.col(0));
+-        DepthObservation observation(camera,std::vector<double>(depth.size(),0),position,
++        const Eigen::Matrix3d chart=intentChartRotation(velocity,intent);
++        DepthObservation observation(intentChartCamera(camera),std::vector<double>(depth.size(),0),position,
+             chart,depth_time.seconds(),version,0);
+         observation.supporting_views=current_views;
+         auto start = std::chrono::steady_clock::now();
+@@ -1073,15 +1070,10 @@
+         PaperResult result = paper_->step(observation,position,velocity,intent,stamp.seconds(),dt);
+         const PaperResult replay_result=result;
+         auto finish = std::chrono::steady_clock::now();
+-        if(velocity.norm()<=.03 && !result.accepted && (result.status=="NO_REGULAR_FIELD"||
+-            result.status=="ANGULAR_STEP_BLOCKED"||result.status=="SINGULAR_FIELD"||
+-            result.status=="OUTSIDE_FLOW_BOX"||result.status=="STATE_OUTSIDE_FREE_DOMAIN"||
+-            result.status=="BRAKING_FALLBACK")) {
+-            chart_search_=(chart_search_+1)%4;paper_->reset();
+-        }
+         if(std::chrono::duration<double>(finish-current_control_wall_start_).count()>.08) {
+             result.command.setZero();result.accepted=false;result.status="COMPUTE_DEADLINE";
+         }
++        paper_->confirmPublishedCommand(result.command);
+         consecutive_rejections_=result.accepted?0:std::min(100,consecutive_rejections_+1);
+         avoidance_compute_ms_.add(std::chrono::duration<double,std::milli>(finish-start).count());
+         depth_to_command_ms_.add(std::max(0.0, (stamp-depth_time).seconds()*1000.0));
+@@ -1553,7 +1545,6 @@
+     int target_width_;
+     int target_height_;
+     int obstacle_clear_frames_;
+-    int chart_search_=0;
+     std::string replay_directory_;
+     int consecutive_rejections_=0;
+     std::size_t replay_sequence_=0;
+--- before/src/pc_gvf/src/paper_replay.cpp
++++ after/src/pc_gvf/src/paper_replay.cpp
+@@ -3,6 +3,7 @@
+ #include <ostream>
+ #include <stdexcept>
+ #include <type_traits>
++#include <cmath>
+ namespace pc_gvf { namespace depth_angular {
+ namespace {
+ // Versioned local binary format: scalar fields, not compiler struct padding.
+@@ -67,7 +68,7 @@
+ };
+ }
+ struct PaperReplayCodec {
+-    static void config(Archive& io,PaperConfig& c,bool modern=true) {
++    static void config(Archive& io,PaperConfig& c,bool modern=true,bool teleop=true) {
+         io.number(c.motion.body_radius);
+         io.number(c.motion.safety_margin);
+         io.number(c.motion.reference_speed);
+@@ -128,6 +129,7 @@
+         io.number(c.adaptive_grid);
+         io.number(c.certificate_resolution);
+         if(modern)io.number(c.restart_clearance);
++        if(teleop){io.number(c.intent_guard);io.number(c.smooth_speed);}
+     }
+     static void state(Archive& io,PaperGuidance& p,bool modern=true,bool reference_intent=true) {
+         std::uint32_t n=static_cast<std::uint32_t>(p.history_.size());io.number(n);
+@@ -174,23 +176,39 @@
+ };
+ void PaperGuidance::saveReplay(std::ostream& out,const DepthObservation& observation,
+     const Eigen::Vector3d& position,const Eigen::Vector3d& velocity,const Eigen::Vector3d& intent,double now,double dt) const {
+-    out.write("EGOPAPR5",8);Archive io(out);
++    out.write("EGOPAPR6",8);Archive io(out);
+     // Output archives never mutate any scalar or collection.
+     PaperReplayCodec::config(io,const_cast<PaperConfig&>(cfg_));
+     PaperReplayCodec::state(io,const_cast<PaperGuidance&>(*this));
+     auto o=observation;io.observation(o);
+     auto p=position,v=velocity,q=intent;io.eigen(p);io.eigen(v);io.eigen(q);io.number(now);io.number(dt);
+ }
+-PaperResult PaperGuidance::replay(std::istream& in) {
++PaperResult PaperGuidance::replay(std::istream& in,std::ostream* audit) {
+     char magic[8]={};in.read(magic,8);
+     const std::string version(magic,8);
+-    if(version!="EGOPAPR3"&&version!="EGOPAPR4"&&version!="EGOPAPR5")throw std::runtime_error("unsupported replay format");
++    if(version!="EGOPAPR3"&&version!="EGOPAPR4"&&version!="EGOPAPR5"&&version!="EGOPAPR6")throw std::runtime_error("unsupported replay format");
+     Archive io(in);const bool modern=version!="EGOPAPR3";
+-    PaperConfig config;PaperReplayCodec::config(io,config,modern);PaperGuidance p(config);
+-    PaperReplayCodec::state(io,p,modern,version=="EGOPAPR5");
++    PaperConfig config;PaperReplayCodec::config(io,config,modern,version=="EGOPAPR6");PaperGuidance p(config);
++    PaperReplayCodec::state(io,p,modern,version=="EGOPAPR5"||version=="EGOPAPR6");
+     DepthObservation o(Camera(),{},Eigen::Vector3d::Zero(),Eigen::Matrix3d::Identity(),0);io.observation(o);
+     Eigen::Vector3d position,velocity,intent;double now,dt;
+     io.eigen(position);io.eigen(velocity);io.eigen(intent);io.number(now);io.number(dt);
++    if(audit) {
++        DepthObservation evidence=o;
++        evidence.supporting_views.insert(evidence.supporting_views.end(),p.history_.begin(),p.history_.end());
++        *audit<<"time "<<now<<" position "<<position.transpose()<<" velocity "<<velocity.transpose()
++              <<" intent "<<intent.transpose()<<" envelope "<<p.envelopeRadius()<<'\n';
++        for(double margin:{0.,.005,.01,.02,.03})
++            *audit<<"known_body_plus "<<margin<<' '<<p.envelopeKnown(evidence,position,p.envelopeRadius()+margin,now)<<'\n';
++        *audit<<"yaw_deg,pitch_deg,intent_cosine,prefix_m\n";
++        const double radians=std::acos(-1.)/180.;
++        for(int pitch:{-60,-30,0,30,60})for(int yaw=-180;yaw<180;yaw+=15) {
++            Eigen::Vector3d ray(std::cos(pitch*radians)*std::cos(yaw*radians),
++                std::cos(pitch*radians)*std::sin(yaw*radians),std::sin(pitch*radians));
++            *audit<<yaw<<','<<pitch<<','<<(intent.norm()>0?ray.dot(intent.normalized()):0.)<<','
++                <<p.directionalClearance(evidence,position,ray,now,.5)<<'\n';
++        }
++    }
+     return p.step(o,position,velocity,intent,now,dt);
+ }
+ } }
+--- before/src/pc_gvf/tools/paper_replay.cpp
++++ after/src/pc_gvf/tools/paper_replay.cpp
+@@ -3,10 +3,10 @@
+ #include <iomanip>
+ #include <iostream>
+ int main(int argc,char** argv) {
+-    if(argc!=2){std::cerr<<"usage: paper_replay SNAPSHOT.bin\n";return 2;}
++    if(argc<2||argc>3||(argc==3&&std::string(argv[2])!="--audit")){std::cerr<<"usage: paper_replay SNAPSHOT.bin [--audit]\n";return 2;}
+     try {
+         std::ifstream in(argv[1],std::ios::binary);
+-        const auto r=pc_gvf::depth_angular::PaperGuidance::replay(in);
++        const auto r=pc_gvf::depth_angular::PaperGuidance::replay(in,argc==3?&std::cerr:nullptr);
+         std::cout<<std::setprecision(17)<<"{\"status\":\""<<r.status<<"\",\"reason\":\""<<r.build_reason
+             <<"\",\"accepted\":"<<(r.accepted?"true":"false")<<",\"command\":["<<r.command.x()<<','<<r.command.y()<<','<<r.command.z()
+             <<"],\"required_prefix\":"<<r.required_prefix<<",\"best_prefix\":"<<r.best_prefix
+--- before/src/pc_gvf/test/cpp/paper_guidance_check.cpp
++++ after/src/pc_gvf/test/cpp/paper_guidance_check.cpp
+@@ -48,6 +48,15 @@
+         require(last<initial*0.40,"transverse error did not decay at expected rate");
+         std::cout<<"analytic curved="<<curved<<" initial="<<initial<<" final="<<last<<'\n';
+     }
++    // A regular point can be closer to a blocked boundary than the numerical
++    // derivative stencil. Its anchor derivative is still known analytically.
++    auto narrow=analytic(false);
++    for(int y=0;y<narrow.height;++y)for(int x=0;x<=40;++x)narrow.blocked[y*narrow.width+x]=1;
++    FlowBox narrow_box;Eigen::Vector2d nj;double nc=1;
++    require(narrow_box.initialize(narrow,Eigen::Vector2d(40.51,30),cfg),"open narrow anchor rejected");
++    require(narrow_box.evaluate(narrow,Eigen::Vector2d(40.51,30),cfg,&nc,&nj)&&nc==0&&
++        std::abs(nj.dot(narrow.flow(Eigen::Vector2d(40.51,30))))<1e-12,"exact anchor derivative lost");
++    require(!narrow_box.initialize(narrow,Eigen::Vector2d(40.5,30),cfg),"blocked-boundary anchor accepted");
+     // A non-polynomial field exercises matching derivatives at patch seams.
+     auto seam=analytic(false);
+     for(int y=0;y<seam.height;++y)for(int x=0;x<seam.width;++x)
+--- before/src/pc_gvf/test/cpp/intent_response_check.cpp
++++ after/src/pc_gvf/test/cpp/intent_response_check.cpp
+@@ -67,7 +67,7 @@
+     // Capture with 2deg accumulated, then cross the 0.05rad threshold before the next field interval.
+     std::stringstream replay(std::ios::in|std::ios::out|std::ios::binary);
+     retained.saveReplay(replay,o,Eigen::Vector3d::Zero(),heading(2),heading(3),1.14,.02);
+-    require(replay.str().substr(0,8)=="EGOPAPR5","cumulative state replay version missing");
++    require(replay.str().substr(0,8)=="EGOPAPR6","cumulative state replay version missing");
+     auto expected=retained.step(o,Eigen::Vector3d::Zero(),heading(2),heading(3),1.14,.02);
+     replay.seekg(0);auto actual=PaperGuidance::replay(replay);
+     require(expected.command_changed&&expected.refreshed&&!expected.continued,"cumulative change delayed by field interval");
+@@ -81,7 +81,7 @@
+         try{PaperGuidance bad(c);}catch(const std::invalid_argument&){rejected=true;}
+         require(rejected,"invalid command-change threshold accepted");
+     }
+-    std::cout<<"jitter/magnitude, same-depth updates, immediate reset, release, V5 replay: PASS\n";
++    std::cout<<"jitter/magnitude, same-depth updates, immediate reset, release, V6 replay: PASS\n";
+     std::ofstream csv;if(argc>1){csv.open(argv[1]);csv<<"case,t,qx,qy,qz,vx,vy,vz,error_deg,changed,reset,status\n";}
+     for(double turn:{90.0,180.0}) {
+         PaperGuidance p(config());p.setVerifiedSeed(Eigen::Vector3d::Zero(),100);
+--- before/src/pc_gvf/test/cpp/motion_consistency_check.cpp
++++ after/src/pc_gvf/test/cpp/motion_consistency_check.cpp
+@@ -0,0 +1,100 @@
++#include "pc_gvf/paper_guidance.hpp"
++#include <Eigen/Geometry>
++#include <cmath>
++#include <cstdlib>
++#include <iostream>
++#include <sstream>
++using namespace pc_gvf::depth_angular;
++void check(bool ok,const char* why){if(!ok){std::cerr<<why<<'\n';std::exit(1);}}
++PaperConfig config(){PaperConfig c;c.intent_guard=true;c.smooth_speed=true;c.adaptive_lookahead=true;
++ c.adaptive_grid=true;c.field_interval=.1;c.chart_speed=16;c.minimum_lookahead=.1;c.observation_timeout=.3;
++ c.motion.body_radius=.48;c.motion.safety_margin=.02;c.motion.rollout_margin=.02;
++ c.motion.max_accel=1.2;c.motion.brake_accel=1.2;c.motion.delay=.2;c.motion.rollout_horizon=.2;return c;}
++DepthObservation observation(double t,const Eigen::Vector3d& p,const Eigen::Vector3d& v,const Eigen::Vector3d& q){
++ Camera camera=intentChartCamera(Camera(24,18,90,68,10));return DepthObservation(camera,std::vector<double>(24*18,0),p,intentChartRotation(v,q),t,static_cast<std::uint64_t>(t*1000));}
++double error(const Eigen::Vector3d& v,const Eigen::Vector3d& q){if(v.norm()<.05)return 180;
++ return std::atan2(v.cross(q).norm(),v.dot(q))*180/std::acos(-1);}
++int main(){
++ const auto cfg=config();const auto origin=Eigen::Vector3d::Zero().eval();
++ const auto forward=Eigen::Vector3d::UnitX().eval();
++ PaperGuidance wrong(cfg);wrong.setVerifiedSeed(origin,100);
++ auto rear=observation(1,origin,origin,-forward);
++ auto rejected=wrong.step(rear,origin,origin,forward,1,.02);
++ check(!rejected.accepted&&rejected.build_reason=="NO_INTENT_PROGRESS","rear-facing chart converted forward intent into reverse flight");
++ // A real frustum plane leaves only steep forward/downward directions.
++ // The body is observed but +X intersects unknown space almost immediately.
++ // A narrow virtual chart must not hide the certified >60deg pitch option.
++ Camera depth_camera(80,60,60,60,10);Eigen::Matrix3d down=Eigen::Matrix3d::Identity();down(1,1)=-1;down(2,2)=-1;
++ PaperGuidance slope(cfg);const double radius=slope.envelopeRadius();
++ const double x0=2*std::tan(std::acos(-1.)/6)-(radius+.003)/std::cos(std::acos(-1.)/6);
++ auto observed=std::make_shared<DepthObservation>(depth_camera,std::vector<double>(80*60,10),Eigen::Vector3d(-x0,0,2),down,1,1);
++ auto steep=observation(1,origin,origin,forward);steep.supporting_views.push_back(observed);
++ check(slope.envelopeKnown(steep,origin,radius,1),"steep fixture body is not observed");
++ auto descend=slope.step(steep,origin,origin,forward,1,.02);
++ std::cout<<"steep status="<<descend.status<<" build="<<descend.build_reason<<" cmd="<<descend.command.transpose()<<" best="<<descend.best_prefix<<std::endl;
++ check(descend.accepted&&descend.command.x()>0&&descend.command.z() < -1.5*descend.command.x(),"virtual chart lost safe steep forward direction");
++ check(slope.motionSafe(steep,origin,origin,descend.command,1),"steep candidate skipped motion certificate");
++ std::cout<<"observed steep forward direction accepted: "<<descend.command.transpose()<<'\n';
++ PaperGuidance ramp(cfg);ramp.setVerifiedSeed(origin,100);
++ Eigen::Vector3d p=origin,v=origin;double previous=0,max_step=0;
++ for(int i=0;i<180;++i){double t=1+.02*i;auto o=observation(t,p,v,forward);auto r=ramp.step(o,p,v,2*forward,t,.02);
++  check(r.accepted&&r.command.dot(forward)>0&&r.status=="INTENT_DIRECT","clear straight intent was not recaptured");
++  check(r.command.norm()<=previous+cfg.motion.max_accel*.02+1e-10,"scalar speed jumped above acceleration ramp");
++  check(ramp.motionSafe(o,p,v,r.command,t),"smoothed command bypassed full braking certification");
++  max_step=std::max(max_step,r.command.norm()-previous);previous=r.command.norm();
++  v+=.02*clampNorm((r.command-v)/cfg.motion.velocity_tau,cfg.motion.max_accel);p+=.02*v;
++ }
++ check(previous>1.9,"speed ramp never reached requested speed");
++ // Nonzero magnitude changes use the same scalar ramp in both directions.
++ for(int i=0;i<100;++i){double t=4.6+.02*i;auto r=ramp.step(observation(t,p,v,forward),p,v,.2*forward,t,.02);
++  check(r.accepted&&r.command.norm()>=previous-cfg.motion.max_accel*.02-1e-10,"normal speed reduction jumped");
++  check(ramp.motionSafe(observation(t,p,v,forward),p,v,r.command,t),"deceleration skipped certification");
++  previous=r.command.norm();v+=.02*clampNorm((r.command-v)/cfg.motion.velocity_tau,cfg.motion.max_accel);p+=.02*v;
++ }
++ check(std::abs(previous-.2)<1e-9,"normal deceleration did not reach requested magnitude");
++ ramp.confirmPublishedCommand(origin);
++ auto resumed=ramp.step(observation(7,p,v,forward),p,v,2*forward,7,.02);
++ check(resumed.command.norm()<=.024+1e-10,"discarded watchdog output survived as next-frame speed history");
++ const auto released=ramp.step(observation(7.02,p,v,forward),p,v,origin,7.02,.02);
++ check(released.command.isZero()&&released.status=="ZERO_INTENT","scalar ramp delayed operator release");
++ PaperGuidance capture(cfg);capture.setVerifiedSeed(origin,100);
++ Eigen::Vector3d angled(std::cos(std::acos(-1.)/6),std::sin(std::acos(-1.)/6),0);
++ auto cap_obs=observation(1,origin,forward,angled);auto cap=capture.step(cap_obs,origin,forward,angled,1,.02);
++ check(cap.accepted&&cap.status=="INTENT_DIRECT"&&std::abs(cap.command.z())<1e-10&&
++     error(cap.command.normalized(),angled)<30,"certified direct intent retained vertical avoidance drift");
++ check(capture.motionSafe(cap_obs,origin,forward,cap.command,1),"direct intent bypassed braking proof");
++ std::cout<<"rear chart rejected; scalar start/restart max increase="<<max_step<<"m/s per20ms; final vectors certified\n";
++ for(double turn:{90.,180.}){
++  PaperGuidance control(cfg);control.setVerifiedSeed(origin,100);p=origin;v=origin;double settle=-1;int reverse_commands=0,brake_frames=0;
++  for(int i=0;i<1100;++i){double t=1+.02*i,a=(i<100?0:turn)*std::acos(-1)/180;
++   Eigen::Vector3d q(std::cos(a),std::sin(a),0);auto o=observation(t,p,v,q);auto r=control.step(o,p,v,q,t,.02);
++   if(r.accepted&&r.command.dot(q)<-1e-9)++reverse_commands;
++   brake_frames+=r.status=="INTENT_REVERSAL_BRAKE";
++   if(i==100&&turn==180)check(!r.accepted&&r.status=="INTENT_REVERSAL_BRAKE","operator reversal kept pushing along old direction");
++   if(r.accepted)check(control.motionSafe(o,p,v,r.command,t),"turn command lost motion certificate");
++   const Eigen::Vector3d delta=r.command-v;
++   if(r.command.norm()<1e-8)v+=clampNorm(-v,cfg.motion.brake_accel*.02);
++   else v+=.02*clampNorm(delta/cfg.motion.velocity_tau,cfg.motion.max_accel);
++   p+=.02*v;
++   if(i>=100&&settle<0&&error(v,q)<10)settle=(i-100)*.02;
++
++  }
++  check(reverse_commands==0,"accepted motion made negative progress toward operator intent");
++
++  std::cout<<turn<<"deg guarded turn: settle="<<settle<<"s braking_frames="<<brake_frames<<" reverse_commands="<<reverse_commands<<'\n';
++  check(settle>=0&&settle<(turn==180?3:18),"guarded turn failed bounded recovery");
++ }
++ // Unknown remains unknown, and both teleoperation policy bits survive replay.
++ PaperGuidance unknown(cfg);auto o=observation(1,origin,origin,forward);
++ std::stringstream stream(std::ios::in|std::ios::out|std::ios::binary);
++ unknown.saveReplay(stream,o,origin,origin,forward,1,.02);auto expected=unknown.step(o,origin,origin,forward,1,.02);
++ stream.seekg(0);auto actual=PaperGuidance::replay(stream);
++ check(!actual.accepted&&actual.status==expected.status&&actual.command.isZero(),"unknown or replay safety regression");
++ PaperGuidance replayed(cfg);replayed.setVerifiedSeed(origin,100);
++ for(int i=0;i<5;++i)replayed.step(observation(1+.02*i,origin,origin,forward),origin,origin,forward,1+.02*i,.02);
++ std::stringstream moving(std::ios::in|std::ios::out|std::ios::binary);o=observation(1.1,origin,origin,forward);
++ replayed.saveReplay(moving,o,origin,origin,forward,1.1,.02);expected=replayed.step(o,origin,origin,forward,1.1,.02);
++ moving.seekg(0);actual=PaperGuidance::replay(moving);
++ check((expected.command-actual.command).norm()<1e-12&&actual.command.norm()<.15,"replay lost scalar ramp history");
++ std::cout<<"intent hemisphere, turning, unknown rejection, publication override and V6 replay: PASS\n";
++}
+--- before/tools/analyze_motion_consistency.py
++++ after/tools/analyze_motion_consistency.py
+@@ -0,0 +1,110 @@
++#!/usr/bin/env python3
++"""Compare intent alignment and command continuity in recorded Isaac traces.
++
++Commands use matching diagnostic input (not asynchronous joystick samples).
++Measured reverse travel is reported both raw and excluding two seconds after
++an input turn >=45 degrees, during which physical braking is expected.
++"""
++import argparse
++import csv
++import json
++import math
++from pathlib import Path
++
++
++def vec(row, names):
++    return tuple(float(row.get(k) or 0) for k in names)
++
++
++def norm(v):
++    return math.sqrt(sum(x*x for x in v))
++
++
++def dot(a, b):
++    return sum(x*y for x, y in zip(a, b))
++
++
++def subtract(a, b):
++    return tuple(x-y for x, y in zip(a, b))
++
++
++def percentile(values, fraction):
++    if not values:
++        return None
++    values = sorted(values)
++    return values[min(len(values)-1, int(fraction*(len(values)-1)))]
++
++
++def analyze(path):
++    rows = list(csv.DictReader(path.open()))
++    reverse_time = reverse_streak = reverse_longest = stable_reverse = 0.
++    intended_progress = active_distance = 0.
++    previous_q = (0., 0., 0.)
++    last_turn = -100.
++    stamps = set()
++    commands = []
++    acceleration = []
++    acceleration_vectors = []
++    jerk = []
++    for i, row in enumerate(rows):
++        t = float(row['t'])
++        dt = float(rows[i+1]['t'])-t if i+1 < len(rows) else 0
++        q, v = vec(row, ('qx', 'qy', 'qz')), vec(row, ('vx', 'vy', 'vz'))
++        if norm(q) > .05 and norm(previous_q) > .05:
++            if dot(q, previous_q)/(norm(q)*norm(previous_q)) < math.cos(math.pi/4):
++                last_turn = t
++        previous_q = q
++        if norm(q) > .05:
++            intended_progress += dt*dot(v, q)/norm(q)
++            active_distance += dt*norm(v)
++        reverse = norm(q) > .05 and norm(v) > .05 and dot(q, v) < -1e-6
++        if reverse:
++            reverse_time += dt
++            reverse_streak += dt
++            reverse_longest = max(reverse_longest, reverse_streak)
++            if t-last_turn >= 2:
++                stable_reverse += dt
++        else:
++            reverse_streak = 0.
++        stamp = row.get('diagnostic_stamp')
++        if stamp and stamp not in stamps:
++            stamps.add(stamp)
++            command = vec(row, ('command_x', 'command_y', 'command_z'))
++            intent = vec(row, ('input_x', 'input_y', 'input_z'))
++            commands.append((float(stamp), command, intent))
++        if i > 0:
++            dt_measured = t-float(rows[i-1]['t'])
++            previous_v = vec(rows[i-1], ('vx', 'vy', 'vz'))
++            if dt_measured > 0:
++                a = tuple(x/dt_measured for x in subtract(v, previous_v))
++                acceleration.append(norm(a))
++                if acceleration_vectors:
++                    jerk.append(norm(subtract(a, acceleration_vectors[-1]))/dt_measured)
++                acceleration_vectors.append(a)
++    steps = [norm(subtract(b[1], a[1])) for a, b in zip(commands, commands[1:])]
++    moving_commands = [r for r in commands if norm(r[1]) > .001 and norm(r[2]) > .05]
++    negative = [r for r in moving_commands if dot(r[1], r[2]) < -1e-6]
++    return {'trace': str(path), 'diagnostic_samples': len(commands),
++            'moving_command_samples': len(moving_commands),
++            'negative_intent_command_samples': len(negative),
++            'intended_direction_progress_m': intended_progress,
++            'active_distance_m': active_distance,
++            'direction_progress_per_distance': intended_progress/max(1e-12, active_distance),
++            'measured_reverse_seconds': reverse_time,
++            'longest_measured_reverse_seconds': reverse_longest,
++            'measured_reverse_outside_turn_braking_2s': stable_reverse,
++            'command_vector_step_max_mps': max(steps, default=0.),
++            'command_vector_step_p95_mps': percentile(steps, .95),
++            'command_vector_step_rms_mps': math.sqrt(sum(s*s for s in steps)/max(1, len(steps))),
++            'command_steps_over_025_mps': sum(s > .25 for s in steps),
++            'measured_acceleration_max_mps2': max(acceleration, default=0.),
++            'measured_jerk_rms_mps3': math.sqrt(sum(j*j for j in jerk)/max(1, len(jerk))),
++            'measured_jerk_p95_mps3': percentile(jerk, .95),
++            'measured_jerk_max_mps3': max(jerk, default=0.)}
++
++
++if __name__ == '__main__':
++    parser = argparse.ArgumentParser(description=__doc__)
++    parser.add_argument('traces', type=Path, nargs='+')
++    args = parser.parse_args()
++    print(json.dumps([analyze(p) for p in args.traces], indent=2))
+--- before/src/pc_gvf/launch/isaac_cloud_navigation.launch.py
++++ after/src/pc_gvf/launch/isaac_cloud_navigation.launch.py
+@@ -34,6 +34,8 @@
+                 "right_camera_info_topic": "/sim/depth_right/camera_info",
+                 "horizontal_360_enabled": True,
+                 "paper_enabled": True,
++                "paper_intent_guard": True,
++                "paper_smooth_speed": True,
+                 "angular_width": 24, "angular_height": 18,
+                 "paper_depth_contract": "isaac_rendered_z",
+                 "paper_observation_history": 60.0,
+--- before/src/pc_gvf/CMakeLists.txt
++++ after/src/pc_gvf/CMakeLists.txt
+@@ -137,6 +137,10 @@
+   target_link_libraries(continuous_recovery_check PRIVATE pc_gvf_depth_angular_core)
+   add_test(NAME continuous_recovery_check COMMAND continuous_recovery_check)
+ 
++  add_executable(motion_consistency_check test/cpp/motion_consistency_check.cpp)
++  target_link_libraries(motion_consistency_check PRIVATE pc_gvf_depth_angular_core)
++  add_test(NAME motion_consistency_check COMMAND motion_consistency_check)
++
+   add_executable(intent_response_check test/cpp/intent_response_check.cpp)
+   target_link_libraries(intent_response_check PRIVATE pc_gvf_depth_angular_core)
+   add_test(NAME intent_response_check COMMAND intent_response_check)

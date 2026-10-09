@@ -1,0 +1,113 @@
+--- src/pc_gvf/src/paper_guidance.cpp
++++ src/pc_gvf/src/paper_guidance.cpp
+@@ -1396,16 +1396,9 @@
+     }
+     return Eigen::Vector3d::Zero();
+ }
+-PaperResult PaperGuidance::stepWithProposal(const DepthObservation& input,const Eigen::Vector3d& position,
+-    const Eigen::Vector3d& velocity,const Eigen::Vector3d& intent,const Eigen::Vector3d& supplied_proposal,double now,double dt) {
+-    Eigen::Vector3d proposal=supplied_proposal;
+-    bool reused_goal=false;
+-    // A completed field may outlive its expensive build callback. If the
+-    // primary depth chart has no candidate, reuse only its goal as a proposal
+-    // for at most 0.5 s. Ego translation is applied to the world-space target;
+-    // current evidence must still certify the entire shaped motion and stop.
+-    // No old mask or potential becomes free-space evidence.
+-    if(cfg_.incremental_field&&proposal.allFinite()&&proposal.norm()<1e-5&&
++Eigen::Vector3d PaperGuidance::incrementalGoalProposal(const Eigen::Vector3d& position,
++    const Eigen::Vector3d& intent,double now) const {
++    if(cfg_.incremental_field&&
+        position.allFinite()&&intent.allFinite()&&intent.norm()>1e-5&&
+        observation_&&field_.valid&&std::isfinite(now)&&
+        now>=observation_->stamp-.02&&now-observation_->stamp<=.5&&
+@@ -1416,8 +1409,18 @@
+             range*observation_->rotation*observation_->camera.rayFromPixel(field_.goal);
+         const Eigen::Vector3d delta=target-position;
+         if(delta.allFinite()&&delta.norm()>1e-5&&delta.dot(intent)>1e-6) {
+-            proposal=std::min(intent.norm(),cfg_.max_speed)*delta.normalized();reused_goal=true;
+-        }
++            return std::min(intent.norm(),cfg_.max_speed)*delta.normalized();
++        }
++    }
++    return Eigen::Vector3d::Zero();
++}
++PaperResult PaperGuidance::stepWithProposal(const DepthObservation& input,const Eigen::Vector3d& position,
++    const Eigen::Vector3d& velocity,const Eigen::Vector3d& intent,const Eigen::Vector3d& supplied_proposal,double now,double dt) {
++    Eigen::Vector3d proposal=supplied_proposal;
++    bool reused_goal=false;
++    if(proposal.allFinite()&&proposal.norm()<1e-5) {
++        const auto cached=incrementalGoalProposal(position,intent,now);
++        if(cached.norm()>1e-5){proposal=cached;reused_goal=true;}
+     }
+     if(!position.allFinite()||!velocity.allFinite()||!intent.allFinite()||!proposal.allFinite()||
+        !std::isfinite(now)||!std::isfinite(dt)||dt<=0||intent.norm()<1e-5||proposal.norm()<1e-5||
+--- src/pc_gvf/src/depth_angular_controller_node.cpp
++++ src/pc_gvf/src/depth_angular_controller_node.cpp
+@@ -232,6 +232,7 @@
+             uncertainty_config_.pose_bound=declare_parameter<double>("depth_uncertainty_pose_bound",.01);
+             uncertainty_config_.edge_radius=declare_parameter<int>("depth_uncertainty_edge_radius",1);
+             operator_assistance_=declare_parameter<bool>("operator_assistance",false);
++            incremental_frontend_=declare_parameter<bool>("paper_incremental_frontend",true);
+             shared_enabled_=declare_parameter<bool>("paper_shared_obstacles",false);
+             shared_robot_id_=declare_parameter<std::string>("shared_robot_id","ego1p5");
+             shared_frame_=declare_parameter<std::string>("shared_map_frame","world");
+@@ -1271,7 +1272,13 @@
+         AngularSolution proposal_solution;bool proposal_goal_valid=false;
+         OmniDepthResult omni_result;
+         double omni_corridor=0.;
+-        if(omni_depth_enabled_&&intent.norm()>1e-5) {
++        // After a compute watchdog, the last completed field already supplies
++        // a short-lived world target. Skip repeated expensive candidate search,
++        // then require the same current full-motion/braking proof below.
++        const bool incremental_frontend=incremental_frontend_&&incremental_recovery_pending_&&
++            paper_->incrementalGoalProposal(position,intent,stamp.seconds()).norm()>1e-5;
++
++        if(!incremental_frontend&&omni_depth_enabled_&&intent.norm()>1e-5) {
+             double speed=std::min(intent.norm(),max_reference_speed_);
+             omni_corridor=std::max(.25,velocity.norm()*.2+
+                 velocity.squaredNorm()/(2.*std::min(config_.brake_accel,config_.max_accel))+.25);
+@@ -1354,7 +1361,7 @@
+                 omni_result.fresh_views,cfg.azimuth_bins,cfg.elevation_bins,omni_result.valid,
+                 omni_result.certificates,omni_result.used_short_horizon,omni_result.retained_previous,local_candidates,std::atan2(proposal.y(),proposal.x())*180./kPi);
+         }
+-        if(paper_depth_proposal_&&!omni_depth_enabled_&&intent.norm()>1e-5) {
++        if(!incremental_frontend&&paper_depth_proposal_&&!omni_depth_enabled_&&intent.norm()>1e-5) {
+             const Eigen::Vector3d direction=intent.normalized();
+             if(!has_reference_direction_||(!use_fixed_goal_&&direction.dot(reference_direction_)<std::cos(.05))) {
+                 resetPlanningHistory();reference_direction_=direction;has_reference_direction_=true;
+@@ -1488,7 +1495,7 @@
+         // Preserve the fresh unified proposal. Consult recalled directions only
+         // when current views cannot propose a certified corridor.
+         Eigen::Vector3d memory_proposal=Eigen::Vector3d::Zero();
+-        if(proposal.norm()<1e-5)
++        if(!incremental_frontend&&proposal.norm()<1e-5)
+             memory_proposal=paper_->memoryProposal(observation,position,intent,stamp.seconds());
+         if(memory_proposal.norm()>1e-5)proposal=memory_proposal;
+         const bool use_proposal=paper_depth_proposal_||memory_proposal.norm()>1e-5;
+@@ -1502,8 +1509,10 @@
+             paper_->stepWithProposal(observation,position,velocity,intent,proposal,stamp.seconds(),dt):
+             paper_->step(observation,position,velocity,intent,stamp.seconds(),dt);
+         const PaperResult replay_result=result;
++        incremental_recovery_pending_=incremental_frontend&&result.status=="INCREMENTAL_GOAL_CERTIFIED";
+         auto finish = std::chrono::steady_clock::now();
+         if(std::chrono::duration<double>(finish-current_control_wall_start_).count()>.08) {
++            incremental_recovery_pending_=paper_->field().valid;
+             result.command.setZero();result.accepted=false;result.status="COMPUTE_DEADLINE";
+         }
+         paper_->confirmPublishedCommand(result.command);
+@@ -1560,6 +1569,7 @@
+             << ",\"jump_bound\":" << result.jump_bound
+             << ",\"shared_packets_accepted\":" << shared_accepted_
+             << ",\"shared_packets_rejected\":" << shared_rejected_
++            << ",\"incremental_frontend\":" << (incremental_frontend?"true":"false")
+             << ",\"operator_assistance\":" << (operator_assistance_?"true":"false")
+             << ",\"operator_filter_delta\":" << (raw_operator_intent_-intent).norm()
+             << ",\"envelope_radius\":" << paper_->envelopeRadius()
+@@ -1987,6 +1997,7 @@
+     double shared_last_stamp_=-1.;
+     rclcpp::Publisher<pc_gvf_msgs::msg::SharedObstacles>::SharedPtr shared_publisher_;
+     rclcpp::Subscription<pc_gvf_msgs::msg::SharedObstacles>::SharedPtr shared_subscription_;
++    bool incremental_frontend_=true,incremental_recovery_pending_=false;
+     OperatorIntent operator_intent_;
+     bool operator_assistance_=false;
+     Eigen::Vector3d raw_operator_intent_=Eigen::Vector3d::Zero();

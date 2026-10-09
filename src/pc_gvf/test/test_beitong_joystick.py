@@ -75,6 +75,19 @@ class BeitongProfileTests(unittest.TestCase):
         self.addCleanup(controller.close)
         self.assertEqual(controller.profile, "xinput")
 
+    def test_simultaneous_sticks_preserve_3d_direction(self):
+        controller, fake = self.make_controller(8, 11, "xinput")
+        self.addCleanup(controller.close)
+        controller.enabled = True
+        fake.axis_values[4] = -0.8
+        fake.axis_values[3] = 0.4
+        fake.axis_values[1] = -0.3
+        translation, _, _, channels = controller.sample(yaw=0.0)
+        axes = (channels["pitch"], -channels["roll"], channels["throttle"])
+        scale = translation[0] / axes[0]
+        for actual, requested in zip(translation, axes):
+            self.assertAlmostEqual(actual, scale * requested)
+
     def test_mismatched_profile_dimensions_fail_closed(self):
         fake = FakeJoystick(8, 16)
         with mock.patch.dict(

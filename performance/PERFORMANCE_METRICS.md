@@ -1596,3 +1596,730 @@ interval and actual applied-command changes.
 - Controller publish stamp to bridge receive mean / P50 / P95 / max: 0.000 / 0.000 / 0.000 / 0.000 ms (ROS simulation time)
 - Command receive interval mean / P50 / P95 / max: 14.346 / 10.210 / 28.706 / 86.303 ms (steady clock)
 - Bridge conversion and `/sim/cmd_vel` publish mean / P50 / P95 / max: 0.075 / 0.072 / 0.095 / 0.165 ms (steady clock)
+
+### Run 20260923_201829
+
+- Started: 2026-09-23 20:18:29 CST
+- Scene: `/home/starry/isaac-data/EGO1P1/scenes/ego_swarm_cloud/ego_swarm_cloud_navigation.usd`
+- ROS domain: `42`
+- Manual input: `joystick`
+
+#### Isaac command application — 20260923_201829
+
+- Result: USER_EXIT
+- Wall duration / simulation duration: 112.990 / 153.317 s
+- Applied simulation control frames: 9201
+- Runtime FPS (simulation time / wall time): 60.013 / 81.432 Hz
+- Isaac frame interval mean / P50 / P95 / max: 12.256 / 11.068 / 13.545 / 74.940 ms
+- Distinct applied command values: 2125
+- ESDF-blocked simulation frames: 0
+- Applied-command change interval mean / P50 / P95 / max: 50.525 / 12.835 / 139.965 / 18251.578 ms (sampled on the 60 Hz OmniGraph tick)
+
+#### Controller — 20260923_201829
+
+- Wall duration: 127.076 s
+- Timer callbacks / command frames / guidance frames: 7667 / 7666 / 5014
+- Command FPS (ROS simulation time / active wall time): 50.000 / 68.003 Hz
+- Guidance FPS (active wall time): 56.288 Hz
+- Command interval in ROS time mean / P50 / P95 / max: 20.000 / 16.667 / 33.333 / 33.333 ms
+- Avoidance compute mean / P50 / P95 / max: 1.056 / 1.050 / 1.453 / 3.937 ms
+- Command interval mean / P50 / P95 / max: 14.705 / 11.559 / 24.624 / 149.581 ms
+- Latest-depth stamp to command mean / P50 / P95 / max: 31.196 / 33.333 / 33.333 / 66.667 ms (ROS simulation time)
+- Control callback to publish mean / P50 / P95 / max: 0.860 / 0.973 / 1.946 / 4.338 ms (steady clock)
+- DDS publish call mean / P95 / max: 0.063 / 0.359 / 2.644 ms (steady clock)
+
+#### Command bridge — 20260923_201829
+
+- Wall duration: 126.963 s
+- Received / published control frames: 7666 / 7666
+- Published control FPS (ROS simulation time / active wall time): 50.000 / 68.003 Hz
+- Command stamp interval mean / P50 / P95 / max: 20.000 / 16.667 / 33.333 / 33.333 ms (ROS simulation time)
+- Controller publish stamp to bridge receive mean / P50 / P95 / max: 0.000 / 0.000 / 0.000 / 0.000 ms (ROS simulation time)
+- Command receive interval mean / P50 / P95 / max: 14.705 / 11.571 / 24.615 / 149.599 ms (steady clock)
+- Bridge conversion and `/sim/cmd_vel` publish mean / P50 / P95 / max: 0.085 / 0.081 / 0.106 / 1.555 ms (steady clock)
+
+### Run 20260924_153932
+
+- Started: 2026-09-24 15:39:32 CST
+- Scene: `/home/starry/isaac-data/EGO1P1/scenes/ego_swarm_cloud/ego_swarm_cloud_navigation.usd`
+- ROS domain: `42`
+- Manual input: `joystick`
+
+#### Isaac command application — 20260924_153932
+
+- Result: USER_EXIT
+- Wall duration / simulation duration: 34.750 / 45.567 s
+- Applied simulation control frames: 2736
+- Runtime FPS (simulation time / wall time): 60.044 / 78.733 Hz
+- Isaac frame interval mean / P50 / P95 / max: 12.608 / 11.128 / 14.917 / 96.133 ms
+- Distinct applied command values: 1
+- ESDF-blocked simulation frames: 0
+- Applied-command change interval mean / P50 / P95 / max: 0.000 / 0.000 / 0.000 / 0.000 ms (sampled on the 60 Hz OmniGraph tick)
+
+#### Controller — 20260924_153932
+
+- Wall duration: 52.120 s
+- Timer callbacks / command frames / guidance frames: 2279 / 2278 / 846
+- Command FPS (ROS simulation time / active wall time): 49.989 / 66.110 Hz
+- Guidance FPS (active wall time): 35.254 Hz
+- Command interval in ROS time mean / P50 / P95 / max: 20.004 / 16.667 / 33.333 / 33.333 ms
+- Avoidance compute mean / P50 / P95 / max: 0.002 / 0.002 / 0.003 / 0.014 ms
+- Command interval mean / P50 / P95 / max: 15.126 / 11.824 / 25.963 / 95.598 ms
+- Latest-depth stamp to command mean / P50 / P95 / max: 43.519 / 50.000 / 50.000 / 50.000 ms (ROS simulation time)
+- Control callback to publish mean / P50 / P95 / max: 0.057 / 0.041 / 0.090 / 1.592 ms (steady clock)
+- DDS publish call mean / P95 / max: 0.041 / 0.062 / 1.582 ms (steady clock)
+
+#### Command bridge — 20260924_153932
+
+- Wall duration: 52.008 s
+- Received / published control frames: 2278 / 2278
+- Published control FPS (ROS simulation time / active wall time): 49.989 / 66.110 Hz
+- Command stamp interval mean / P50 / P95 / max: 20.004 / 16.667 / 33.333 / 33.333 ms (ROS simulation time)
+- Controller publish stamp to bridge receive mean / P50 / P95 / max: 0.000 / 0.000 / 0.000 / 0.000 ms (ROS simulation time)
+- Command receive interval mean / P50 / P95 / max: 15.126 / 11.826 / 25.896 / 95.915 ms (steady clock)
+- Bridge conversion and `/sim/cmd_vel` publish mean / P50 / P95 / max: 0.073 / 0.071 / 0.090 / 0.664 ms (steady clock)
+
+### Run 20260928_104603
+
+- Started: 2026-09-28 10:46:03 CST
+- Scene: `/home/starry/isaac-data/EGO1P1/scenes/ego_swarm_cloud/ego_swarm_cloud_navigation.usd`
+- ROS domain: `42`
+- Manual input: `joystick`
+
+#### Isaac command application — 20260928_104603
+
+- Result: USER_EXIT
+- Wall duration / simulation duration: 140.779 / 167.033 s
+- Applied simulation control frames: 10024
+- Runtime FPS (simulation time / wall time): 60.012 / 71.204 Hz
+- Isaac frame interval mean / P50 / P95 / max: 14.019 / 12.101 / 15.303 / 78.308 ms
+- Distinct applied command values: 2791
+- ESDF-blocked simulation frames: 0
+- Applied-command change interval mean / P50 / P95 / max: 39.926 / 14.119 / 87.418 / 4344.379 ms (sampled on the 60 Hz OmniGraph tick)
+
+#### Controller — 20260928_104603
+
+- Wall duration: 157.653 s
+- Timer callbacks / command frames / guidance frames: 6300 / 6300 / 5256
+- Command FPS (ROS simulation time / active wall time): 37.711 / 44.764 Hz
+- Guidance FPS (active wall time): 38.875 Hz
+- Command interval in ROS time mean / P50 / P95 / max: 26.517 / 16.667 / 66.667 / 150.000 ms
+- Avoidance compute mean / P50 / P95 / max: 8.174 / 0.543 / 41.724 / 95.122 ms
+- Command interval mean / P50 / P95 / max: 22.340 / 14.929 / 62.820 / 300.630 ms
+- Latest-depth stamp to command mean / P50 / P95 / max: 22.847 / 16.667 / 33.333 / 66.667 ms (ROS simulation time)
+- Control callback to publish mean / P50 / P95 / max: 18.215 / 13.562 / 49.638 / 107.935 ms (steady clock)
+- DDS publish call mean / P95 / max: 0.076 / 0.413 / 3.461 ms (steady clock)
+
+#### Command bridge — 20260928_104603
+
+- Wall duration: 157.539 s
+- Received / published control frames: 6300 / 6274
+- Published control FPS (ROS simulation time / active wall time): 37.711 / 44.579 Hz
+- Command stamp interval mean / P50 / P95 / max: 26.517 / 16.667 / 66.667 / 150.000 ms (ROS simulation time)
+- Controller publish stamp to bridge receive mean / P50 / P95 / max: 21.093 / 16.667 / 66.667 / 150.000 ms (ROS simulation time)
+- Command receive interval mean / P50 / P95 / max: 22.339 / 14.980 / 62.892 / 300.358 ms (steady clock)
+- Bridge conversion and `/sim/cmd_vel` publish mean / P50 / P95 / max: 0.103 / 0.093 / 0.138 / 3.567 ms (steady clock)
+
+### Run 20260928_112831
+
+- Started: 2026-09-28 11:28:31 CST
+- Scene: `/home/starry/isaac-data/EGO1P1/scenes/ego_swarm_cloud/ego_swarm_cloud_navigation.usd`
+- ROS domain: `42`
+- Manual input: `joystick`
+
+#### Isaac command application — 20260928_112831
+
+- Result: USER_EXIT
+- Wall duration / simulation duration: 68.887 / 87.217 s
+- Applied simulation control frames: 5235
+- Runtime FPS (simulation time / wall time): 60.023 / 75.994 Hz
+- Isaac frame interval mean / P50 / P95 / max: 13.116 / 11.618 / 14.626 / 104.752 ms
+- Distinct applied command values: 227
+- ESDF-blocked simulation frames: 0
+- Applied-command change interval mean / P50 / P95 / max: 80.370 / 13.786 / 379.944 / 3147.566 ms (sampled on the 60 Hz OmniGraph tick)
+
+#### Controller — 20260928_112831
+
+- Wall duration: 83.205 s
+- Timer callbacks / command frames / guidance frames: 4326 / 4326 / 2231
+- Command FPS (ROS simulation time / active wall time): 49.589 / 62.792 Hz
+- Guidance FPS (active wall time): 37.384 Hz
+- Command interval in ROS time mean / P50 / P95 / max: 20.166 / 16.667 / 33.333 / 50.000 ms
+- Avoidance compute mean / P50 / P95 / max: 0.738 / 0.296 / 2.435 / 23.181 ms
+- Command interval mean / P50 / P95 / max: 15.926 / 13.064 / 27.535 / 253.382 ms
+- Latest-depth stamp to command mean / P50 / P95 / max: 25.049 / 16.667 / 33.333 / 66.667 ms (ROS simulation time)
+- Control callback to publish mean / P50 / P95 / max: 10.866 / 11.768 / 15.036 / 36.954 ms (steady clock)
+- DDS publish call mean / P95 / max: 0.081 / 0.432 / 1.871 ms (steady clock)
+
+#### Command bridge — 20260928_112831
+
+- Wall duration: 83.095 s
+- Received / published control frames: 4326 / 4326
+- Published control FPS (ROS simulation time / active wall time): 49.589 / 62.792 Hz
+- Command stamp interval mean / P50 / P95 / max: 20.166 / 16.667 / 33.333 / 50.000 ms (ROS simulation time)
+- Controller publish stamp to bridge receive mean / P50 / P95 / max: 10.680 / 16.667 / 16.667 / 50.000 ms (ROS simulation time)
+- Command receive interval mean / P50 / P95 / max: 15.926 / 13.064 / 27.681 / 254.017 ms (steady clock)
+- Bridge conversion and `/sim/cmd_vel` publish mean / P50 / P95 / max: 0.096 / 0.091 / 0.120 / 2.378 ms (steady clock)
+
+### Run 20260928_113114
+
+- Started: 2026-09-28 11:31:14 CST
+- Scene: `/home/starry/isaac-data/EGO1P1/scenes/ego_swarm_cloud/ego_swarm_cloud_navigation.usd`
+- ROS domain: `42`
+- Manual input: `joystick`
+
+#### Isaac command application — 20260928_113114
+
+- Result: USER_EXIT
+- Wall duration / simulation duration: 71.816 / 88.867 s
+- Applied simulation control frames: 5334
+- Runtime FPS (simulation time / wall time): 60.023 / 74.273 Hz
+- Isaac frame interval mean / P50 / P95 / max: 13.422 / 11.839 / 14.702 / 75.525 ms
+- Distinct applied command values: 1014
+- ESDF-blocked simulation frames: 0
+- Applied-command change interval mean / P50 / P95 / max: 38.514 / 13.932 / 86.385 / 1776.725 ms (sampled on the 60 Hz OmniGraph tick)
+
+#### Controller — 20260928_113114
+
+- Wall duration: 86.179 s
+- Timer callbacks / command frames / guidance frames: 3918 / 3917 / 3237
+- Command FPS (ROS simulation time / active wall time): 44.074 / 54.727 Hz
+- Guidance FPS (active wall time): 45.831 Hz
+- Command interval in ROS time mean / P50 / P95 / max: 22.689 / 16.667 / 50.000 / 116.667 ms
+- Avoidance compute mean / P50 / P95 / max: 3.611 / 0.028 / 25.899 / 64.445 ms
+- Command interval mean / P50 / P95 / max: 18.272 / 13.294 / 49.385 / 146.673 ms
+- Latest-depth stamp to command mean / P50 / P95 / max: 24.812 / 16.667 / 33.333 / 66.667 ms (ROS simulation time)
+- Control callback to publish mean / P50 / P95 / max: 13.827 / 11.989 / 35.877 / 76.506 ms (steady clock)
+- DDS publish call mean / P95 / max: 0.078 / 0.423 / 1.527 ms (steady clock)
+
+#### Command bridge — 20260928_113114
+
+- Wall duration: 86.069 s
+- Received / published control frames: 3917 / 3916
+- Published control FPS (ROS simulation time / active wall time): 44.074 / 54.714 Hz
+- Command stamp interval mean / P50 / P95 / max: 22.689 / 16.667 / 50.000 / 116.667 ms (ROS simulation time)
+- Controller publish stamp to bridge receive mean / P50 / P95 / max: 15.097 / 16.667 / 50.000 / 116.667 ms (ROS simulation time)
+- Command receive interval mean / P50 / P95 / max: 18.272 / 13.307 / 49.530 / 146.716 ms (steady clock)
+- Bridge conversion and `/sim/cmd_vel` publish mean / P50 / P95 / max: 0.099 / 0.091 / 0.130 / 2.821 ms (steady clock)
+
+### Run 20260928_161515
+
+- Started: 2026-09-28 16:15:15 CST
+- Scene: `/home/starry/isaac-data/EGO1P1/scenes/ego_swarm_cloud/ego_swarm_cloud_navigation.usd`
+- ROS domain: `42`
+- Manual input: `joystick`
+
+#### Controller — 20260928_161515
+
+- Wall duration: 136.640 s
+- Timer callbacks / command frames / guidance frames: 6783 / 6782 / 4895
+- Command FPS (ROS simulation time / active wall time): 47.025 / 55.280 Hz
+- Guidance FPS (active wall time): 46.723 Hz
+- Command interval in ROS time mean / P50 / P95 / max: 21.265 / 16.667 / 33.333 / 166.667 ms
+- Avoidance compute mean / P50 / P95 / max: 4.732 / 0.909 / 26.663 / 118.974 ms
+- Command interval mean / P50 / P95 / max: 18.090 / 12.985 / 49.388 / 144.188 ms
+- Latest-depth stamp to command mean / P50 / P95 / max: 22.993 / 16.667 / 33.333 / 50.000 ms (ROS simulation time)
+- Control callback to publish mean / P50 / P95 / max: 11.075 / 8.845 / 29.931 / 126.238 ms (steady clock)
+- DDS publish call mean / P95 / max: 0.083 / 0.450 / 2.356 ms (steady clock)
+
+#### Command bridge — 20260928_161515
+
+- Wall duration: 136.529 s
+- Received / published control frames: 6781 / 6775
+- Published control FPS (ROS simulation time / active wall time): 47.023 / 55.228 Hz
+- Command stamp interval mean / P50 / P95 / max: 21.266 / 16.667 / 33.333 / 166.667 ms (ROS simulation time)
+- Controller publish stamp to bridge receive mean / P50 / P95 / max: 7.042 / 0.000 / 33.333 / 166.667 ms (ROS simulation time)
+- Command receive interval mean / P50 / P95 / max: 18.091 / 13.005 / 49.614 / 144.090 ms (steady clock)
+- Bridge conversion and `/sim/cmd_vel` publish mean / P50 / P95 / max: 0.101 / 0.094 / 0.127 / 5.070 ms (steady clock)
+
+### Run 20260928_210259
+
+- Started: 2026-09-28 21:02:59 CST
+- Scene: `/home/starry/isaac-data/EGO1P1/scenes/ego_swarm_cloud/ego_swarm_cloud_navigation.usd`
+- ROS domain: `42`
+- Manual input: `joystick`
+
+#### Isaac command application — 20260928_210259
+
+- Result: USER_EXIT
+- Wall duration / simulation duration: 96.353 / 109.450 s
+- Applied simulation control frames: 6569
+- Runtime FPS (simulation time / wall time): 60.018 / 68.176 Hz
+- Isaac frame interval mean / P50 / P95 / max: 14.629 / 12.819 / 16.000 / 77.573 ms
+- Distinct applied command values: 2066
+- ESDF-blocked simulation frames: 0
+- Applied-command change interval mean / P50 / P95 / max: 42.517 / 14.140 / 99.304 / 4216.307 ms (sampled on the 60 Hz OmniGraph tick)
+
+#### Controller — 20260928_210259
+
+- Wall duration: 113.494 s
+- Timer callbacks / command frames / guidance frames: 4828 / 4827 / 4085
+- Command FPS (ROS simulation time / active wall time): 44.107 / 50.248 Hz
+- Guidance FPS (active wall time): 44.767 Hz
+- Command interval in ROS time mean / P50 / P95 / max: 22.672 / 16.667 / 33.333 / 133.333 ms
+- Avoidance compute mean / P50 / P95 / max: 6.036 / 0.359 / 30.284 / 85.181 ms
+- Command interval mean / P50 / P95 / max: 19.901 / 13.623 / 58.041 / 144.605 ms
+- Latest-depth stamp to command mean / P50 / P95 / max: 21.518 / 16.667 / 33.333 / 50.000 ms (ROS simulation time)
+- Control callback to publish mean / P50 / P95 / max: 12.639 / 8.598 / 37.015 / 96.319 ms (steady clock)
+- DDS publish call mean / P95 / max: 0.073 / 0.419 / 2.821 ms (steady clock)
+
+#### Command bridge — 20260928_210259
+
+- Wall duration: 113.381 s
+- Received / published control frames: 4827 / 4822
+- Published control FPS (ROS simulation time / active wall time): 44.107 / 50.196 Hz
+- Command stamp interval mean / P50 / P95 / max: 22.672 / 16.667 / 33.333 / 133.333 ms (ROS simulation time)
+- Controller publish stamp to bridge receive mean / P50 / P95 / max: 9.809 / 0.000 / 33.333 / 133.333 ms (ROS simulation time)
+- Command receive interval mean / P50 / P95 / max: 19.901 / 13.616 / 58.232 / 144.610 ms (steady clock)
+- Bridge conversion and `/sim/cmd_vel` publish mean / P50 / P95 / max: 0.102 / 0.094 / 0.129 / 3.299 ms (steady clock)
+
+### Run 20260929_183510
+
+- Started: 2026-09-29 18:35:10 CST
+- Scene: `/home/starry/isaac-data/EGO1P1/scenes/ego_swarm_cloud/ego_swarm_cloud_navigation.usd`
+- ROS domain: `42`
+- Manual input: `joystick`
+
+#### Isaac command application — 20260929_183510
+
+- Result: USER_EXIT
+- Wall duration / simulation duration: 68.800 / 67.083 s
+- Applied simulation control frames: 4027
+- Runtime FPS (simulation time / wall time): 60.030 / 58.532 Hz
+- Isaac frame interval mean / P50 / P95 / max: 17.030 / 12.952 / 72.619 / 78.814 ms
+- Distinct applied command values: 1341
+- ESDF-blocked simulation frames: 0
+- Applied-command change interval mean / P50 / P95 / max: 46.765 / 25.020 / 117.176 / 2301.298 ms (sampled on the 60 Hz OmniGraph tick)
+
+#### Controller — 20260929_183510
+
+- Wall duration: 83.542 s
+- Timer callbacks / command frames / guidance frames: 2314 / 2313 / 1940
+- Command FPS (ROS simulation time / active wall time): 34.473 / 33.733 Hz
+- Guidance FPS (active wall time): 31.230 Hz
+- Command interval in ROS time mean / P50 / P95 / max: 29.008 / 16.667 / 83.333 / 366.667 ms
+- Avoidance compute mean / P50 / P95 / max: 10.984 / 1.230 / 49.585 / 304.821 ms
+- Command interval mean / P50 / P95 / max: 29.645 / 18.344 / 79.058 / 326.096 ms
+- Latest-depth stamp to command mean / P50 / P95 / max: 25.146 / 33.333 / 33.333 / 50.000 ms (ROS simulation time)
+- Control callback to publish mean / P50 / P95 / max: 22.152 / 15.845 / 64.975 / 325.752 ms (steady clock)
+- DDS publish call mean / P95 / max: 0.073 / 0.399 / 2.129 ms (steady clock)
+
+#### Command bridge — 20260929_183510
+
+- Wall duration: 83.430 s
+- Received / published control frames: 2313 / 2295
+- Published control FPS (ROS simulation time / active wall time): 34.473 / 33.470 Hz
+- Command stamp interval mean / P50 / P95 / max: 29.008 / 16.667 / 83.333 / 366.667 ms (ROS simulation time)
+- Controller publish stamp to bridge receive mean / P50 / P95 / max: 21.797 / 16.667 / 83.333 / 366.667 ms (ROS simulation time)
+- Command receive interval mean / P50 / P95 / max: 29.645 / 18.503 / 78.903 / 326.263 ms (steady clock)
+- Bridge conversion and `/sim/cmd_vel` publish mean / P50 / P95 / max: 0.104 / 0.097 / 0.137 / 2.780 ms (steady clock)
+
+### Run 20261005_192504
+
+- Started: 2026-10-05 19:25:04 CST
+- Scene: `/home/starry/isaac-data/EGO1P1/scenes/ego_swarm_cloud/ego_swarm_cloud_navigation.usd`
+- ROS domain: `42`
+- Manual input: `joystick`
+
+#### Isaac command application — 20261005_192504
+
+- Result: USER_EXIT
+- Wall duration / simulation duration: 118.159 / 135.517 s
+- Applied simulation control frames: 8133
+- Runtime FPS (simulation time / wall time): 60.015 / 68.831 Hz
+- Isaac frame interval mean / P50 / P95 / max: 14.497 / 13.037 / 15.606 / 77.175 ms
+- Distinct applied command values: 5215
+- ESDF-blocked simulation frames: 1
+- Applied-command change interval mean / P50 / P95 / max: 22.181 / 13.472 / 28.133 / 5494.280 ms (sampled on the 60 Hz OmniGraph tick)
+
+#### Controller — 20261005_192504
+
+- Wall duration: 135.476 s
+- Timer callbacks / command frames / guidance frames: 7605 / 7604 / 6036
+- Command FPS (ROS simulation time / active wall time): 56.111 / 64.526 Hz
+- Guidance FPS (active wall time): 54.782 Hz
+- Command interval in ROS time mean / P50 / P95 / max: 17.822 / 16.667 / 16.667 / 1116.667 ms
+- Avoidance compute mean / P50 / P95 / max: 2.530 / 1.020 / 4.616 / 830.986 ms
+- Command interval mean / P50 / P95 / max: 15.498 / 12.992 / 20.890 / 839.917 ms
+- Latest-depth stamp to command mean / P50 / P95 / max: 72.300 / 66.667 / 116.667 / 133.333 ms (ROS simulation time)
+- Control callback to publish mean / P50 / P95 / max: 4.207 / 2.723 / 8.578 / 839.485 ms (steady clock)
+- DDS publish call mean / P95 / max: 0.085 / 0.448 / 2.422 ms (steady clock)
+
+#### Command bridge — 20261005_192504
+
+- Wall duration: 135.354 s
+- Received / published control frames: 7604 / 7576
+- Published control FPS (ROS simulation time / active wall time): 56.111 / 64.288 Hz
+- Command stamp interval mean / P50 / P95 / max: 17.822 / 16.667 / 16.667 / 1116.667 ms (ROS simulation time)
+- Controller publish stamp to bridge receive mean / P50 / P95 / max: 1.493 / 0.000 / 0.000 / 1116.667 ms (ROS simulation time)
+- Command receive interval mean / P50 / P95 / max: 15.498 / 13.000 / 20.938 / 839.959 ms (steady clock)
+- Bridge conversion and `/sim/cmd_vel` publish mean / P50 / P95 / max: 0.094 / 0.090 / 0.121 / 2.621 ms (steady clock)
+
+### Run 20261006_205620
+
+- Started: 2026-10-06 20:56:20 CST
+- Scene: `/home/starry/isaac-data/EGO1P2/scenes/ego_swarm_cloud/ego_swarm_cloud_navigation.usd`
+- ROS domain: `42`
+- Manual input: `joystick`
+
+#### Isaac command application — 20261006_205620
+
+- Result: USER_EXIT
+- Wall duration / simulation duration: 41.162 / 52.817 s
+- Applied simulation control frames: 3171
+- Runtime FPS (simulation time / wall time): 60.038 / 77.036 Hz
+- Isaac frame interval mean / P50 / P95 / max: 12.911 / 11.586 / 14.189 / 74.430 ms
+- Distinct applied command values: 1226
+- ESDF-blocked simulation frames: 0
+- Applied-command change interval mean / P50 / P95 / max: 26.018 / 12.741 / 65.121 / 2146.889 ms (sampled on the 60 Hz OmniGraph tick)
+
+#### Controller — 20261006_205620
+
+- Wall duration: 55.202 s
+- Timer callbacks / command frames / guidance frames: 3049 / 3048 / 1981
+- Command FPS (ROS simulation time / active wall time): 57.708 / 74.514 Hz
+- Guidance FPS (active wall time): 63.391 Hz
+- Command interval in ROS time mean / P50 / P95 / max: 17.329 / 16.667 / 16.667 / 166.667 ms
+- Avoidance compute mean / P50 / P95 / max: 4.418 / 1.703 / 12.397 / 111.790 ms
+- Command interval mean / P50 / P95 / max: 13.420 / 11.627 / 19.507 / 120.810 ms
+- Latest-depth stamp to command mean / P50 / P95 / max: 62.334 / 66.667 / 100.000 / 133.333 ms (ROS simulation time)
+- Control callback to publish mean / P50 / P95 / max: 4.623 / 2.424 / 13.409 / 112.106 ms (steady clock)
+- DDS publish call mean / P95 / max: 0.062 / 0.353 / 1.311 ms (steady clock)
+
+#### Command bridge — 20261006_205620
+
+- Wall duration: 55.092 s
+- Received / published control frames: 3048 / 3044
+- Published control FPS (ROS simulation time / active wall time): 57.708 / 74.417 Hz
+- Command stamp interval mean / P50 / P95 / max: 17.329 / 16.667 / 16.667 / 166.667 ms (ROS simulation time)
+- Controller publish stamp to bridge receive mean / P50 / P95 / max: 2.280 / 0.000 / 16.667 / 166.667 ms (ROS simulation time)
+- Command receive interval mean / P50 / P95 / max: 13.420 / 11.635 / 19.663 / 121.022 ms (steady clock)
+- Bridge conversion and `/sim/cmd_vel` publish mean / P50 / P95 / max: 0.083 / 0.080 / 0.108 / 0.948 ms (steady clock)
+
+### Run 20261006_213850
+
+- Started: 2026-10-06 21:38:50 CST
+- Scene: `/home/starry/isaac-data/EGO1P2/scenes/ego_swarm_cloud/ego_swarm_cloud_navigation.usd`
+- ROS domain: `42`
+- Manual input: `joystick`
+
+#### Isaac command application — 20261006_213850
+
+- Result: USER_EXIT
+- Wall duration / simulation duration: 198.146 / 217.500 s
+- Applied simulation control frames: 13052
+- Runtime FPS (simulation time / wall time): 60.009 / 65.871 Hz
+- Isaac frame interval mean / P50 / P95 / max: 15.165 / 12.989 / 16.012 / 80.214 ms
+- Distinct applied command values: 8405
+- ESDF-blocked simulation frames: 0
+- Applied-command change interval mean / P50 / P95 / max: 23.548 / 13.556 / 72.406 / 11555.128 ms (sampled on the 60 Hz OmniGraph tick)
+
+#### Controller — 20261006_213850
+
+- Wall duration: 212.353 s
+- Timer callbacks / command frames / guidance frames: 12112 / 12112 / 10378
+- Command FPS (ROS simulation time / active wall time): 55.683 / 61.146 Hz
+- Guidance FPS (active wall time): 55.703 Hz
+- Command interval in ROS time mean / P50 / P95 / max: 17.959 / 16.667 / 16.667 / 683.333 ms
+- Avoidance compute mean / P50 / P95 / max: 2.345 / 0.573 / 4.152 / 601.651 ms
+- Command interval mean / P50 / P95 / max: 16.354 / 12.974 / 31.448 / 667.889 ms
+- Latest-depth stamp to command mean / P50 / P95 / max: 64.707 / 66.667 / 116.667 / 133.333 ms (ROS simulation time)
+- Control callback to publish mean / P50 / P95 / max: 4.356 / 2.227 / 10.532 / 602.031 ms (steady clock)
+- DDS publish call mean / P95 / max: 0.086 / 0.441 / 2.041 ms (steady clock)
+
+#### Command bridge — 20261006_213850
+
+- Wall duration: 212.242 s
+- Received / published control frames: 12112 / 12056
+- Published control FPS (ROS simulation time / active wall time): 55.683 / 60.863 Hz
+- Command stamp interval mean / P50 / P95 / max: 17.959 / 16.667 / 16.667 / 683.333 ms (ROS simulation time)
+- Controller publish stamp to bridge receive mean / P50 / P95 / max: 1.807 / 0.000 / 0.000 / 683.333 ms (ROS simulation time)
+- Command receive interval mean / P50 / P95 / max: 16.354 / 12.972 / 31.302 / 667.827 ms (steady clock)
+- Bridge conversion and `/sim/cmd_vel` publish mean / P50 / P95 / max: 0.086 / 0.082 / 0.112 / 1.516 ms (steady clock)
+
+### Run 20261007_160119
+
+- Started: 2026-10-07 16:01:19 CST
+- Scene: `/home/starry/isaac-data/EGO1P3/scenes/ego_swarm_cloud/ego_swarm_cloud_navigation.usd`
+- ROS domain: `42`
+- Manual input: `joystick`
+
+#### Isaac command application — 20261007_160119
+
+- Result: USER_EXIT
+- Wall duration / simulation duration: 154.500 / 147.500 s
+- Applied simulation control frames: 8852
+- Runtime FPS (simulation time / wall time): 60.014 / 57.294 Hz
+- Isaac frame interval mean / P50 / P95 / max: 17.429 / 15.525 / 18.543 / 96.031 ms
+- Distinct applied command values: 5389
+- ESDF-blocked simulation frames: 0
+- Applied-command change interval mean / P50 / P95 / max: 28.087 / 16.458 / 54.211 / 9627.833 ms (sampled on the 60 Hz OmniGraph tick)
+
+#### Controller — 20261007_160119
+
+- Wall duration: 168.834 s
+- Timer callbacks / command frames / guidance frames: 8386 / 8385 / 6690
+- Command FPS (ROS simulation time / active wall time): 56.847 / 54.362 Hz
+- Guidance FPS (active wall time): 45.709 Hz
+- Command interval in ROS time mean / P50 / P95 / max: 17.591 / 16.667 / 16.667 / 633.333 ms
+- Avoidance compute mean / P50 / P95 / max: 4.144 / 0.759 / 14.848 / 633.340 ms
+- Command interval mean / P50 / P95 / max: 18.395 / 15.553 / 33.965 / 645.668 ms
+- Latest-depth stamp to command mean / P50 / P95 / max: 33.012 / 33.333 / 66.667 / 66.667 ms (ROS simulation time)
+- Control callback to publish mean / P50 / P95 / max: 5.615 / 3.314 / 17.278 / 645.596 ms (steady clock)
+- DDS publish call mean / P95 / max: 0.082 / 0.439 / 2.104 ms (steady clock)
+
+#### Command bridge — 20261007_160119
+
+- Wall duration: 168.720 s
+- Received / published control frames: 8385 / 8374
+- Published control FPS (ROS simulation time / active wall time): 56.847 / 54.291 Hz
+- Command stamp interval mean / P50 / P95 / max: 17.591 / 16.667 / 16.667 / 633.333 ms (ROS simulation time)
+- Controller publish stamp to bridge receive mean / P50 / P95 / max: 1.954 / 0.000 / 16.667 / 633.333 ms (ROS simulation time)
+- Command receive interval mean / P50 / P95 / max: 18.395 / 15.536 / 34.011 / 645.679 ms (steady clock)
+- Bridge conversion and `/sim/cmd_vel` publish mean / P50 / P95 / max: 0.089 / 0.086 / 0.115 / 1.330 ms (steady clock)
+
+### Run 20261007_210752
+
+- Started: 2026-10-07 21:07:52 CST
+- Scene: `/home/starry/isaac-data/EGO1P5/scenes/ego_swarm_cloud/ego_swarm_cloud_navigation.usd`
+- ROS domain: `42`
+- Manual input: `joystick`
+
+#### Isaac command application — 20261007_210752
+
+- Result: USER_EXIT
+- Wall duration / simulation duration: 220.093 / 253.817 s
+- Applied simulation control frames: 15231
+- Runtime FPS (simulation time / wall time): 60.008 / 69.202 Hz
+- Isaac frame interval mean / P50 / P95 / max: 14.436 / 12.750 / 15.205 / 82.276 ms
+- Distinct applied command values: 10998
+- ESDF-blocked simulation frames: 16
+- Applied-command change interval mean / P50 / P95 / max: 19.714 / 13.213 / 36.567 / 6343.797 ms (sampled on the 60 Hz OmniGraph tick)
+
+#### Controller — 20261007_210752
+
+- Wall duration: 234.385 s
+- Timer callbacks / command frames / guidance frames: 13954 / 13953 / 12956
+- Command FPS (ROS simulation time / active wall time): 54.972 / 63.470 Hz
+- Guidance FPS (active wall time): 60.369 Hz
+- Command interval in ROS time mean / P50 / P95 / max: 18.191 / 16.667 / 16.667 / 900.000 ms
+- Avoidance compute mean / P50 / P95 / max: 3.530 / 0.580 / 11.467 / 724.041 ms
+- Command interval mean / P50 / P95 / max: 15.755 / 13.046 / 30.336 / 739.187 ms
+- Latest-depth stamp to command mean / P50 / P95 / max: 38.061 / 33.333 / 66.667 / 83.333 ms (ROS simulation time)
+- Control callback to publish mean / P50 / P95 / max: 5.611 / 3.707 / 15.330 / 739.076 ms (steady clock)
+- DDS publish call mean / P95 / max: 0.072 / 0.409 / 3.565 ms (steady clock)
+
+#### Command bridge — 20261007_210752
+
+- Wall duration: 234.269 s
+- Received / published control frames: 13953 / 13918
+- Published control FPS (ROS simulation time / active wall time): 54.972 / 63.311 Hz
+- Command stamp interval mean / P50 / P95 / max: 18.191 / 16.667 / 16.667 / 900.000 ms (ROS simulation time)
+- Controller publish stamp to bridge receive mean / P50 / P95 / max: 2.685 / 0.000 / 16.667 / 900.000 ms (ROS simulation time)
+- Command receive interval mean / P50 / P95 / max: 15.755 / 13.062 / 30.197 / 739.074 ms (steady clock)
+- Bridge conversion and `/sim/cmd_vel` publish mean / P50 / P95 / max: 0.087 / 0.084 / 0.114 / 1.793 ms (steady clock)
+
+### Run 20261008_125647
+
+- Started: 2026-10-08 12:56:47 CST
+- Scene: `/home/starry/isaac-data/EGO1P5/scenes/ego_swarm_cloud/ego_swarm_cloud_navigation.usd`
+- ROS domain: `42`
+- Manual input: `joystick`
+
+#### Isaac command application — 20261008_125647
+
+- Result: USER_EXIT
+- Wall duration / simulation duration: 67.289 / 78.217 s
+- Applied simulation control frames: 4695
+- Runtime FPS (simulation time / wall time): 60.026 / 69.773 Hz
+- Isaac frame interval mean / P50 / P95 / max: 14.285 / 12.974 / 15.289 / 76.208 ms
+- Distinct applied command values: 3466
+- ESDF-blocked simulation frames: 0
+- Applied-command change interval mean / P50 / P95 / max: 18.817 / 13.505 / 27.822 / 4839.752 ms (sampled on the 60 Hz OmniGraph tick)
+
+#### Command bridge — 20261008_125647
+
+- Wall duration: 81.474 s
+- Received / published control frames: 4691 / 4691
+- Published control FPS (ROS simulation time / active wall time): 59.974 / 69.986 Hz
+- Command stamp interval mean / P50 / P95 / max: 16.674 / 16.667 / 16.667 / 33.333 ms (ROS simulation time)
+- Controller publish stamp to bridge receive mean / P50 / P95 / max: 0.480 / 0.000 / 0.000 / 16.667 ms (ROS simulation time)
+- Command receive interval mean / P50 / P95 / max: 14.289 / 12.970 / 23.559 / 85.649 ms (steady clock)
+- Bridge conversion and `/sim/cmd_vel` publish mean / P50 / P95 / max: 0.089 / 0.087 / 0.114 / 1.236 ms (steady clock)
+
+#### Controller — 20261008_125647
+
+- Wall duration: 81.589 s
+- Timer callbacks / command frames / guidance frames: 4692 / 4691 / 4068
+- Command FPS (ROS simulation time / active wall time): 59.974 / 69.985 Hz
+- Guidance FPS (active wall time): 67.372 Hz
+- Command interval in ROS time mean / P50 / P95 / max: 16.674 / 16.667 / 16.667 / 33.333 ms
+- Avoidance compute mean / P50 / P95 / max: 1.668 / 0.540 / 4.906 / 9.704 ms
+- Command interval mean / P50 / P95 / max: 14.289 / 13.009 / 23.681 / 85.684 ms
+- Latest-depth stamp to command mean / P50 / P95 / max: 38.938 / 33.333 / 66.667 / 83.333 ms (ROS simulation time)
+- Control callback to publish mean / P50 / P95 / max: 4.828 / 4.870 / 11.156 / 22.546 ms (steady clock)
+- DDS publish call mean / P95 / max: 0.053 / 0.321 / 1.316 ms (steady clock)
+
+### Run 20261008_141320
+
+- Started: 2026-10-08 14:13:20 CST
+- Scene: `/home/starry/isaac-data/EGO1P5/scenes/ego_swarm_cloud/ego_swarm_cloud_navigation.usd`
+- ROS domain: `42`
+- Manual input: `joystick`
+
+#### Isaac command application — 20261008_141320
+
+- Result: USER_EXIT
+- Wall duration / simulation duration: 90.470 / 90.250 s
+- Applied simulation control frames: 5417
+- Runtime FPS (simulation time / wall time): 60.022 / 59.876 Hz
+- Isaac frame interval mean / P50 / P95 / max: 16.585 / 14.479 / 20.365 / 94.200 ms
+- Distinct applied command values: 3250
+- ESDF-blocked simulation frames: 0
+- Applied-command change interval mean / P50 / P95 / max: 25.845 / 15.193 / 47.919 / 11024.147 ms (sampled on the 60 Hz OmniGraph tick)
+
+#### Controller — 20261008_141320
+
+- Wall duration: 112.242 s
+- Timer callbacks / command frames / guidance frames: 5345 / 5344 / 4015
+- Command FPS (ROS simulation time / active wall time): 59.213 / 59.518 Hz
+- Guidance FPS (active wall time): 54.660 Hz
+- Command interval in ROS time mean / P50 / P95 / max: 16.888 / 16.667 / 16.667 / 100.000 ms
+- Avoidance compute mean / P50 / P95 / max: 2.193 / 0.535 / 6.631 / 79.918 ms
+- Command interval mean / P50 / P95 / max: 16.802 / 14.340 / 33.362 / 116.792 ms
+- Latest-depth stamp to command mean / P50 / P95 / max: 48.377 / 50.000 / 83.333 / 100.000 ms (ROS simulation time)
+- Control callback to publish mean / P50 / P95 / max: 5.218 / 3.737 / 15.998 / 83.340 ms (steady clock)
+- DDS publish call mean / P95 / max: 0.075 / 0.396 / 4.044 ms (steady clock)
+
+#### Command bridge — 20261008_141320
+
+- Wall duration: 112.048 s
+- Received / published control frames: 5344 / 5344
+- Published control FPS (ROS simulation time / active wall time): 59.213 / 59.518 Hz
+- Command stamp interval mean / P50 / P95 / max: 16.888 / 16.667 / 16.667 / 100.000 ms (ROS simulation time)
+- Controller publish stamp to bridge receive mean / P50 / P95 / max: 1.400 / 0.000 / 16.667 / 100.000 ms (ROS simulation time)
+- Command receive interval mean / P50 / P95 / max: 16.802 / 14.327 / 33.325 / 116.920 ms (steady clock)
+- Bridge conversion and `/sim/cmd_vel` publish mean / P50 / P95 / max: 0.102 / 0.097 / 0.138 / 2.825 ms (steady clock)
+
+### Run 20261008_204506
+
+- Started: 2026-10-08 20:45:06 CST
+- Scene: `/home/starry/isaac-data/EGO1P5/scenes/ego_swarm_cloud/ego_swarm_cloud_navigation.usd`
+- ROS domain: `42`
+- Manual input: `joystick`
+
+#### Isaac command application — 20261008_204506
+
+- Result: USER_EXIT
+- Wall duration / simulation duration: 76.848 / 85.250 s
+- Applied simulation control frames: 5117
+- Runtime FPS (simulation time / wall time): 60.023 / 66.586 Hz
+- Isaac frame interval mean / P50 / P95 / max: 14.974 / 13.452 / 15.803 / 76.907 ms
+- Distinct applied command values: 4079
+- ESDF-blocked simulation frames: 0
+- Applied-command change interval mean / P50 / P95 / max: 18.178 / 13.781 / 29.273 / 931.551 ms (sampled on the 60 Hz OmniGraph tick)
+
+#### Controller — 20261008_204506
+
+- Wall duration: 91.073 s
+- Timer callbacks / command frames / guidance frames: 5003 / 5002 / 4785
+- Command FPS (ROS simulation time / active wall time): 58.674 / 65.315 Hz
+- Guidance FPS (active wall time): 65.351 Hz
+- Command interval in ROS time mean / P50 / P95 / max: 17.043 / 16.667 / 16.667 / 116.667 ms
+- Avoidance compute mean / P50 / P95 / max: 2.662 / 0.590 / 7.514 / 82.054 ms
+- Command interval mean / P50 / P95 / max: 15.310 / 13.347 / 26.250 / 92.172 ms
+- Latest-depth stamp to command mean / P50 / P95 / max: 43.762 / 33.333 / 83.333 / 116.667 ms (ROS simulation time)
+- Control callback to publish mean / P50 / P95 / max: 5.912 / 5.126 / 14.860 / 92.091 ms (steady clock)
+- DDS publish call mean / P95 / max: 0.064 / 0.377 / 1.764 ms (steady clock)
+
+#### Command bridge — 20261008_204506
+
+- Wall duration: 90.960 s
+- Received / published control frames: 5002 / 5001
+- Published control FPS (ROS simulation time / active wall time): 58.674 / 65.302 Hz
+- Command stamp interval mean / P50 / P95 / max: 17.043 / 16.667 / 16.667 / 116.667 ms (ROS simulation time)
+- Controller publish stamp to bridge receive mean / P50 / P95 / max: 1.696 / 0.000 / 16.667 / 116.667 ms (ROS simulation time)
+- Command receive interval mean / P50 / P95 / max: 15.310 / 13.348 / 26.191 / 92.150 ms (steady clock)
+- Bridge conversion and `/sim/cmd_vel` publish mean / P50 / P95 / max: 0.090 / 0.088 / 0.117 / 1.375 ms (steady clock)
+
+### Run 20261008_204641
+
+- Started: 2026-10-08 20:46:41 CST
+- Scene: `/home/starry/isaac-data/EGO1P5/scenes/ego_swarm_cloud/ego_swarm_cloud_navigation.usd`
+- ROS domain: `42`
+- Manual input: `joystick`
+
+#### Isaac command application — 20261008_204641
+
+- Result: USER_EXIT
+- Wall duration / simulation duration: 70.579 / 61.433 s
+- Applied simulation control frames: 3688
+- Runtime FPS (simulation time / wall time): 60.033 / 52.253 Hz
+- Isaac frame interval mean / P50 / P95 / max: 19.077 / 13.826 / 49.696 / 145.747 ms
+- Distinct applied command values: 599
+- ESDF-blocked simulation frames: 0
+- Applied-command change interval mean / P50 / P95 / max: 106.060 / 30.716 / 78.769 / 41102.221 ms (sampled on the 60 Hz OmniGraph tick)
+
+#### Controller — 20261008_204641
+
+- Wall duration: 85.189 s
+- Timer callbacks / command frames / guidance frames: 3632 / 3631 / 731
+- Command FPS (ROS simulation time / active wall time): 59.104 / 51.640 Hz
+- Guidance FPS (active wall time): 32.655 Hz
+- Command interval in ROS time mean / P50 / P95 / max: 16.919 / 16.667 / 16.667 / 83.333 ms
+- Avoidance compute mean / P50 / P95 / max: 5.818 / 2.971 / 23.744 / 87.949 ms
+- Command interval mean / P50 / P95 / max: 19.365 / 14.559 / 54.529 / 160.074 ms
+- Latest-depth stamp to command mean / P50 / P95 / max: 31.783 / 33.333 / 50.000 / 66.667 ms (ROS simulation time)
+- Control callback to publish mean / P50 / P95 / max: 4.761 / 2.971 / 17.577 / 101.376 ms (steady clock)
+- DDS publish call mean / P95 / max: 0.109 / 0.465 / 5.307 ms (steady clock)
+
+#### Command bridge — 20261008_204641
+
+- Wall duration: 85.075 s
+- Received / published control frames: 3631 / 3631
+- Published control FPS (ROS simulation time / active wall time): 59.104 / 51.640 Hz
+- Command stamp interval mean / P50 / P95 / max: 16.919 / 16.667 / 16.667 / 83.333 ms (ROS simulation time)
+- Controller publish stamp to bridge receive mean / P50 / P95 / max: 1.129 / 0.000 / 16.667 / 83.333 ms (ROS simulation time)
+- Command receive interval mean / P50 / P95 / max: 19.365 / 14.521 / 54.049 / 160.364 ms (steady clock)
+- Bridge conversion and `/sim/cmd_vel` publish mean / P50 / P95 / max: 0.097 / 0.083 / 0.137 / 3.609 ms (steady clock)
+
+### Run 20261008_204811
+
+- Started: 2026-10-08 20:48:11 CST
+- Scene: `/home/starry/isaac-data/EGO1P5/scenes/ego_swarm_cloud/ego_swarm_cloud_navigation.usd`
+- ROS domain: `42`
+- Manual input: `joystick`
+
+#### Isaac command application — 20261008_204811
+
+- Result: USER_EXIT
+- Wall duration / simulation duration: 193.467 / 133.133 s
+- Applied simulation control frames: 7990
+- Runtime FPS (simulation time / wall time): 60.015 / 41.299 Hz
+- Isaac frame interval mean / P50 / P95 / max: 24.188 / 18.872 / 57.853 / 142.732 ms
+- Distinct applied command values: 4102
+- ESDF-blocked simulation frames: 0
+- Applied-command change interval mean / P50 / P95 / max: 45.470 / 30.004 / 76.859 / 33096.150 ms (sampled on the 60 Hz OmniGraph tick)
+
+#### Controller — 20261008_204811
+
+- Wall duration: 208.479 s
+- Timer callbacks / command frames / guidance frames: 7770 / 7769 / 5015
+- Command FPS (ROS simulation time / active wall time): 58.355 / 40.207 Hz
+- Guidance FPS (active wall time): 32.692 Hz
+- Command interval in ROS time mean / P50 / P95 / max: 17.137 / 16.667 / 16.667 / 983.333 ms
+- Avoidance compute mean / P50 / P95 / max: 4.159 / 0.593 / 14.423 / 1733.236 ms
+- Command interval mean / P50 / P95 / max: 24.871 / 18.789 / 64.020 / 1752.795 ms
+- Latest-depth stamp to command mean / P50 / P95 / max: 35.723 / 33.333 / 66.667 / 100.000 ms (ROS simulation time)
+- Control callback to publish mean / P50 / P95 / max: 7.650 / 4.071 / 25.880 / 1752.661 ms (steady clock)
+- DDS publish call mean / P95 / max: 0.218 / 1.104 / 9.366 ms (steady clock)
+
+#### Command bridge — 20261008_204811
+
+- Wall duration: 208.469 s
+- Received / published control frames: 7769 / 7767
+- Published control FPS (ROS simulation time / active wall time): 58.355 / 40.196 Hz
+- Command stamp interval mean / P50 / P95 / max: 17.137 / 16.667 / 16.667 / 983.333 ms (ROS simulation time)
+- Controller publish stamp to bridge receive mean / P50 / P95 / max: 1.714 / 0.000 / 16.667 / 983.333 ms (ROS simulation time)
+- Command receive interval mean / P50 / P95 / max: 24.871 / 18.704 / 64.005 / 1753.160 ms (steady clock)
+- Bridge conversion and `/sim/cmd_vel` publish mean / P50 / P95 / max: 0.118 / 0.091 / 0.178 / 3.994 ms (steady clock)

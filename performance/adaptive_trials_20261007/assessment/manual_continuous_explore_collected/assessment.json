@@ -1,0 +1,1503 @@
+{
+  "stage": "explore",
+  "policy": {
+    "version": "adaptive_assessment_v1",
+    "metrics": {
+      "arrival_s": {
+        "unit": "s",
+        "direction": "lower",
+        "tolerance_abs": 0.2,
+        "tolerance_rel": 0.01,
+        "improve_abs": 0.3,
+        "improve_rel": 0.01
+      },
+      "path_efficiency": {
+        "unit": "ratio",
+        "direction": "higher",
+        "tolerance_abs": 0.01,
+        "tolerance_rel": 0.0,
+        "improve_abs": 0.005,
+        "improve_rel": 0.0
+      },
+      "stop_s": {
+        "unit": "s",
+        "direction": "lower",
+        "tolerance_abs": 0.05,
+        "tolerance_rel": 0.1,
+        "improve_abs": 0.1,
+        "improve_rel": 0.1
+      },
+      "longest_stop_s": {
+        "unit": "s",
+        "direction": "lower",
+        "tolerance_abs": 0.05,
+        "tolerance_rel": 0.1,
+        "improve_abs": 0.05,
+        "improve_rel": 0.1
+      },
+      "jerk_rms_mps3": {
+        "unit": "m/s^3",
+        "direction": "lower",
+        "tolerance_abs": 0.02,
+        "tolerance_rel": 0.05,
+        "improve_abs": 0.05,
+        "improve_rel": 0.1
+      },
+      "compute_p95_ms": {
+        "unit": "ms",
+        "direction": "lower",
+        "tolerance_abs": 0.2,
+        "tolerance_rel": 0.1,
+        "improve_abs": 0.2,
+        "improve_rel": 0.1
+      },
+      "angle_mean_deg": {
+        "unit": "degree",
+        "direction": "lower",
+        "tolerance_abs": 0.25,
+        "tolerance_rel": 0.03,
+        "improve_abs": 0.5,
+        "improve_rel": 0.05
+      },
+      "angle_p95_deg": {
+        "unit": "degree",
+        "direction": "lower",
+        "tolerance_abs": 1.0,
+        "tolerance_rel": 0.05,
+        "improve_abs": 1.0,
+        "improve_rel": 0.05
+      },
+      "progress_m": {
+        "unit": "m",
+        "direction": "higher",
+        "tolerance_abs": 0.1,
+        "tolerance_rel": 0.01,
+        "improve_abs": 0.2,
+        "improve_rel": 0.01
+      },
+      "vector_error_rms_mps": {
+        "unit": "m/s",
+        "direction": "lower",
+        "tolerance_abs": 0.005,
+        "tolerance_rel": 0.03,
+        "improve_abs": 0.01,
+        "improve_rel": 0.05
+      },
+      "release_target_p95_s": {
+        "unit": "s",
+        "direction": "lower",
+        "tolerance_abs": 0.016666666666666666,
+        "tolerance_rel": 0.05,
+        "improve_abs": 0.016666666666666666,
+        "improve_rel": 0.1
+      },
+      "release_brake_p95_s": {
+        "unit": "s",
+        "direction": "lower",
+        "tolerance_abs": 0.05,
+        "tolerance_rel": 0.05,
+        "improve_abs": 0.05,
+        "improve_rel": 0.1
+      }
+    },
+    "required": {
+      "goal": [
+        "arrival_s",
+        "path_efficiency",
+        "stop_s",
+        "longest_stop_s",
+        "jerk_rms_mps3",
+        "compute_p95_ms"
+      ],
+      "manual": [
+        "angle_mean_deg",
+        "angle_p95_deg",
+        "progress_m",
+        "vector_error_rms_mps",
+        "stop_s",
+        "longest_stop_s",
+        "jerk_rms_mps3",
+        "compute_p95_ms",
+        "release_target_p95_s",
+        "release_brake_p95_s"
+      ]
+    },
+    "exploration_pairs": 3,
+    "confirmation_pairs": 5,
+    "primary_sign_test_alpha": 0.05,
+    "goal_worst_run_absolute_margin_s": 1.0,
+    "goal_worst_run_relative_margin": 0.03,
+    "release_target_max_s": 0.05,
+    "contracts": [
+      "unknown_rejection",
+      "expired_depth_rejection",
+      "stale_command_rejection"
+    ]
+  },
+  "policy_sha256": "bc365b5624f9015d5879cbc20f41e0264b300a2dd61ee1741f648568246cf0a9",
+  "descriptive": {
+    "manual:jitter": {
+      "before_runs": 3,
+      "after_runs": 3,
+      "metrics": {
+        "angle_mean_deg": {
+          "before_n": 3,
+          "after_n": 3,
+          "before_mean": 9.20017770968337,
+          "after_mean": 9.34194630690426,
+          "before_std": 0.1385674306619522,
+          "after_std": 0.023213309115400836,
+          "incomplete": false
+        },
+        "angle_p95_deg": {
+          "before_n": 3,
+          "after_n": 3,
+          "before_mean": 28.149769022469332,
+          "after_mean": 28.803566043183643,
+          "before_std": 0.2131922423195506,
+          "after_std": 0.3864199318027922,
+          "incomplete": false
+        },
+        "progress_m": {
+          "before_n": 3,
+          "after_n": 3,
+          "before_mean": 16.51111516787264,
+          "after_mean": 16.489041993971234,
+          "before_std": 0.015204914439270805,
+          "after_std": 0.0013264703969763534,
+          "incomplete": false
+        },
+        "vector_error_rms_mps": {
+          "before_n": 3,
+          "after_n": 3,
+          "before_mean": 0.2586021717914394,
+          "after_mean": 0.26094436970016,
+          "before_std": 0.0010178409116181183,
+          "after_std": 0.0003746931090262484,
+          "incomplete": false
+        },
+        "stop_s": {
+          "before_n": 3,
+          "after_n": 3,
+          "before_mean": 0.9666666666666712,
+          "after_mean": 0.9666666666666712,
+          "before_std": 0.0,
+          "after_std": 0.0,
+          "incomplete": false
+        },
+        "longest_stop_s": {
+          "before_n": 3,
+          "after_n": 3,
+          "before_mean": 0.26666666666666927,
+          "after_mean": 0.26666666666666927,
+          "before_std": 0.0,
+          "after_std": 0.0,
+          "incomplete": false
+        },
+        "jerk_rms_mps3": {
+          "before_n": 3,
+          "after_n": 3,
+          "before_mean": 4.469190503665704,
+          "after_mean": 4.461912971628215,
+          "before_std": 0.009484012241340888,
+          "after_std": 0.015944004793670766,
+          "incomplete": false
+        },
+        "compute_p95_ms": {
+          "before_n": 3,
+          "after_n": 3,
+          "before_mean": 8.207666666666666,
+          "after_mean": 8.891666666666666,
+          "before_std": 0.7652485435029149,
+          "after_std": 1.3830236199477337,
+          "incomplete": false
+        },
+        "release_target_p95_s": {
+          "before_n": 3,
+          "after_n": 3,
+          "before_mean": 0.0,
+          "after_mean": 0.0,
+          "before_std": 0.0,
+          "after_std": 0.0,
+          "incomplete": false
+        },
+        "release_brake_p95_s": {
+          "before_n": 3,
+          "after_n": 3,
+          "before_mean": 0.6000000000000003,
+          "after_mean": 0.6000000000000003,
+          "before_std": 0.0,
+          "after_std": 0.0,
+          "incomplete": false
+        }
+      }
+    }
+  },
+  "safety_audit": {
+    "p5_manual_continuous_explore_20261007_jitter_jitter_before_1": {
+      "failed": [],
+      "missing": [],
+      "contract_evidence": [
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/assessment/contract_evidence/ctest_candidates_original.log",
+          "sha256": "1a8b2c5403fa2948c70ca63b65f9f74543634d9bc158c6febd07f2426f45a606"
+        },
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/assessment/contract_evidence/paper_guidance_check.cpp",
+          "sha256": "b7a8a5c026663c09bb460e7b5b8e3327a376181f3400bd36ec652a3bd7ffc449"
+        },
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/assessment/contract_evidence/paper_guidance.cpp",
+          "sha256": "b1cf1b0fce4e28dd8e398923613a1bc550cfac8236039b0943fadcae3b34621f"
+        },
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/assessment/contract_evidence/depth_angular_controller_node.cpp",
+          "sha256": "e836e1fbc4a51ea77d9b19307925ab7bbd31406c76d2dba8171a2185e435025e"
+        },
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/assessment/contracts_bc_reviewed.json",
+          "sha256": "a0fff8006fc5cd95a919c61dce4d7bec3514d4dc3cd6e90383cedeb6367043ce"
+        },
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/candidates_bc/source_sha256.json",
+          "sha256": "08bd451e7b66dae7ac923e06c6e0d6c73e8a3960b23e7678ce414b76db2295c1"
+        },
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/assessment/contract_evidence/ctest_candidates_original.log",
+          "sha256": "1a8b2c5403fa2948c70ca63b65f9f74543634d9bc158c6febd07f2426f45a606"
+        },
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/assessment/contract_evidence/paper_guidance_check.cpp",
+          "sha256": "b7a8a5c026663c09bb460e7b5b8e3327a376181f3400bd36ec652a3bd7ffc449"
+        },
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/assessment/contract_evidence/observed_space_check.cpp",
+          "sha256": "0a1724931ba76a18e933aa7d79fd304c738336f97d0e8251712d283432258f5e"
+        },
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/assessment/contract_evidence/paper_guidance.cpp",
+          "sha256": "b1cf1b0fce4e28dd8e398923613a1bc550cfac8236039b0943fadcae3b34621f"
+        },
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/assessment/contracts_bc_reviewed.json",
+          "sha256": "a0fff8006fc5cd95a919c61dce4d7bec3514d4dc3cd6e90383cedeb6367043ce"
+        },
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/candidates_bc/source_sha256.json",
+          "sha256": "08bd451e7b66dae7ac923e06c6e0d6c73e8a3960b23e7678ce414b76db2295c1"
+        },
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/assessment/contract_evidence/ctest_candidates_original.log",
+          "sha256": "1a8b2c5403fa2948c70ca63b65f9f74543634d9bc158c6febd07f2426f45a606"
+        },
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/assessment/contract_evidence/manual_control_math_39_passed.txt",
+          "sha256": "b6484b5eb3905e46337d48b26b9b5e15177ea73ecfecbdfd8c957dcf2aaeee14"
+        },
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/assessment/contract_evidence/manual_control_math_39_passed.xunit.xml",
+          "sha256": "57f670c0fc7d38e4200ca9d2ff8073c91ea9c2ab4e15400b0e0e5bd0135944b0"
+        },
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/assessment/contract_evidence/test_manual_control_math.py",
+          "sha256": "160b1e005a7661581b382fdf77bddd9fa5094d9ac43b32a802c1262d2160a2e3"
+        },
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/assessment/contract_evidence/manual_control_math.py",
+          "sha256": "4f5e16e63d2b830a1c077ae8ab2644d20b3563ff759605a5c15f48a878f2ac44"
+        },
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/assessment/contract_evidence/run_fov_gvf_navigation.py",
+          "sha256": "c085dcfedbc5bcad528e814f4e8a1fed5e73d6a0f35ccee975210645a0f67643"
+        },
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/assessment/contracts_bc_reviewed.json",
+          "sha256": "a0fff8006fc5cd95a919c61dce4d7bec3514d4dc3cd6e90383cedeb6367043ce"
+        },
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/candidates_bc/source_sha256.json",
+          "sha256": "08bd451e7b66dae7ac923e06c6e0d6c73e8a3960b23e7678ce414b76db2295c1"
+        }
+      ]
+    },
+    "p5_manual_continuous_explore_20261007_jitter_jitter_before_2": {
+      "failed": [],
+      "missing": [],
+      "contract_evidence": [
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/assessment/contract_evidence/ctest_candidates_original.log",
+          "sha256": "1a8b2c5403fa2948c70ca63b65f9f74543634d9bc158c6febd07f2426f45a606"
+        },
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/assessment/contract_evidence/paper_guidance_check.cpp",
+          "sha256": "b7a8a5c026663c09bb460e7b5b8e3327a376181f3400bd36ec652a3bd7ffc449"
+        },
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/assessment/contract_evidence/paper_guidance.cpp",
+          "sha256": "b1cf1b0fce4e28dd8e398923613a1bc550cfac8236039b0943fadcae3b34621f"
+        },
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/assessment/contract_evidence/depth_angular_controller_node.cpp",
+          "sha256": "e836e1fbc4a51ea77d9b19307925ab7bbd31406c76d2dba8171a2185e435025e"
+        },
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/assessment/contracts_bc_reviewed.json",
+          "sha256": "a0fff8006fc5cd95a919c61dce4d7bec3514d4dc3cd6e90383cedeb6367043ce"
+        },
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/candidates_bc/source_sha256.json",
+          "sha256": "08bd451e7b66dae7ac923e06c6e0d6c73e8a3960b23e7678ce414b76db2295c1"
+        },
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/assessment/contract_evidence/ctest_candidates_original.log",
+          "sha256": "1a8b2c5403fa2948c70ca63b65f9f74543634d9bc158c6febd07f2426f45a606"
+        },
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/assessment/contract_evidence/paper_guidance_check.cpp",
+          "sha256": "b7a8a5c026663c09bb460e7b5b8e3327a376181f3400bd36ec652a3bd7ffc449"
+        },
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/assessment/contract_evidence/observed_space_check.cpp",
+          "sha256": "0a1724931ba76a18e933aa7d79fd304c738336f97d0e8251712d283432258f5e"
+        },
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/assessment/contract_evidence/paper_guidance.cpp",
+          "sha256": "b1cf1b0fce4e28dd8e398923613a1bc550cfac8236039b0943fadcae3b34621f"
+        },
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/assessment/contracts_bc_reviewed.json",
+          "sha256": "a0fff8006fc5cd95a919c61dce4d7bec3514d4dc3cd6e90383cedeb6367043ce"
+        },
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/candidates_bc/source_sha256.json",
+          "sha256": "08bd451e7b66dae7ac923e06c6e0d6c73e8a3960b23e7678ce414b76db2295c1"
+        },
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/assessment/contract_evidence/ctest_candidates_original.log",
+          "sha256": "1a8b2c5403fa2948c70ca63b65f9f74543634d9bc158c6febd07f2426f45a606"
+        },
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/assessment/contract_evidence/manual_control_math_39_passed.txt",
+          "sha256": "b6484b5eb3905e46337d48b26b9b5e15177ea73ecfecbdfd8c957dcf2aaeee14"
+        },
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/assessment/contract_evidence/manual_control_math_39_passed.xunit.xml",
+          "sha256": "57f670c0fc7d38e4200ca9d2ff8073c91ea9c2ab4e15400b0e0e5bd0135944b0"
+        },
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/assessment/contract_evidence/test_manual_control_math.py",
+          "sha256": "160b1e005a7661581b382fdf77bddd9fa5094d9ac43b32a802c1262d2160a2e3"
+        },
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/assessment/contract_evidence/manual_control_math.py",
+          "sha256": "4f5e16e63d2b830a1c077ae8ab2644d20b3563ff759605a5c15f48a878f2ac44"
+        },
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/assessment/contract_evidence/run_fov_gvf_navigation.py",
+          "sha256": "c085dcfedbc5bcad528e814f4e8a1fed5e73d6a0f35ccee975210645a0f67643"
+        },
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/assessment/contracts_bc_reviewed.json",
+          "sha256": "a0fff8006fc5cd95a919c61dce4d7bec3514d4dc3cd6e90383cedeb6367043ce"
+        },
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/candidates_bc/source_sha256.json",
+          "sha256": "08bd451e7b66dae7ac923e06c6e0d6c73e8a3960b23e7678ce414b76db2295c1"
+        }
+      ]
+    },
+    "p5_manual_continuous_explore_20261007_jitter_jitter_before_3": {
+      "failed": [],
+      "missing": [],
+      "contract_evidence": [
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/assessment/contract_evidence/ctest_candidates_original.log",
+          "sha256": "1a8b2c5403fa2948c70ca63b65f9f74543634d9bc158c6febd07f2426f45a606"
+        },
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/assessment/contract_evidence/paper_guidance_check.cpp",
+          "sha256": "b7a8a5c026663c09bb460e7b5b8e3327a376181f3400bd36ec652a3bd7ffc449"
+        },
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/assessment/contract_evidence/paper_guidance.cpp",
+          "sha256": "b1cf1b0fce4e28dd8e398923613a1bc550cfac8236039b0943fadcae3b34621f"
+        },
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/assessment/contract_evidence/depth_angular_controller_node.cpp",
+          "sha256": "e836e1fbc4a51ea77d9b19307925ab7bbd31406c76d2dba8171a2185e435025e"
+        },
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/assessment/contracts_bc_reviewed.json",
+          "sha256": "a0fff8006fc5cd95a919c61dce4d7bec3514d4dc3cd6e90383cedeb6367043ce"
+        },
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/candidates_bc/source_sha256.json",
+          "sha256": "08bd451e7b66dae7ac923e06c6e0d6c73e8a3960b23e7678ce414b76db2295c1"
+        },
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/assessment/contract_evidence/ctest_candidates_original.log",
+          "sha256": "1a8b2c5403fa2948c70ca63b65f9f74543634d9bc158c6febd07f2426f45a606"
+        },
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/assessment/contract_evidence/paper_guidance_check.cpp",
+          "sha256": "b7a8a5c026663c09bb460e7b5b8e3327a376181f3400bd36ec652a3bd7ffc449"
+        },
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/assessment/contract_evidence/observed_space_check.cpp",
+          "sha256": "0a1724931ba76a18e933aa7d79fd304c738336f97d0e8251712d283432258f5e"
+        },
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/assessment/contract_evidence/paper_guidance.cpp",
+          "sha256": "b1cf1b0fce4e28dd8e398923613a1bc550cfac8236039b0943fadcae3b34621f"
+        },
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/assessment/contracts_bc_reviewed.json",
+          "sha256": "a0fff8006fc5cd95a919c61dce4d7bec3514d4dc3cd6e90383cedeb6367043ce"
+        },
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/candidates_bc/source_sha256.json",
+          "sha256": "08bd451e7b66dae7ac923e06c6e0d6c73e8a3960b23e7678ce414b76db2295c1"
+        },
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/assessment/contract_evidence/ctest_candidates_original.log",
+          "sha256": "1a8b2c5403fa2948c70ca63b65f9f74543634d9bc158c6febd07f2426f45a606"
+        },
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/assessment/contract_evidence/manual_control_math_39_passed.txt",
+          "sha256": "b6484b5eb3905e46337d48b26b9b5e15177ea73ecfecbdfd8c957dcf2aaeee14"
+        },
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/assessment/contract_evidence/manual_control_math_39_passed.xunit.xml",
+          "sha256": "57f670c0fc7d38e4200ca9d2ff8073c91ea9c2ab4e15400b0e0e5bd0135944b0"
+        },
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/assessment/contract_evidence/test_manual_control_math.py",
+          "sha256": "160b1e005a7661581b382fdf77bddd9fa5094d9ac43b32a802c1262d2160a2e3"
+        },
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/assessment/contract_evidence/manual_control_math.py",
+          "sha256": "4f5e16e63d2b830a1c077ae8ab2644d20b3563ff759605a5c15f48a878f2ac44"
+        },
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/assessment/contract_evidence/run_fov_gvf_navigation.py",
+          "sha256": "c085dcfedbc5bcad528e814f4e8a1fed5e73d6a0f35ccee975210645a0f67643"
+        },
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/assessment/contracts_bc_reviewed.json",
+          "sha256": "a0fff8006fc5cd95a919c61dce4d7bec3514d4dc3cd6e90383cedeb6367043ce"
+        },
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/candidates_bc/source_sha256.json",
+          "sha256": "08bd451e7b66dae7ac923e06c6e0d6c73e8a3960b23e7678ce414b76db2295c1"
+        }
+      ]
+    },
+    "p5_manual_continuous_explore_20261007_jitter_jitter_after_1": {
+      "failed": [],
+      "missing": [],
+      "contract_evidence": [
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/assessment/contract_evidence/ctest_candidates_original.log",
+          "sha256": "1a8b2c5403fa2948c70ca63b65f9f74543634d9bc158c6febd07f2426f45a606"
+        },
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/assessment/contract_evidence/paper_guidance_check.cpp",
+          "sha256": "b7a8a5c026663c09bb460e7b5b8e3327a376181f3400bd36ec652a3bd7ffc449"
+        },
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/assessment/contract_evidence/paper_guidance.cpp",
+          "sha256": "b1cf1b0fce4e28dd8e398923613a1bc550cfac8236039b0943fadcae3b34621f"
+        },
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/assessment/contract_evidence/depth_angular_controller_node.cpp",
+          "sha256": "e836e1fbc4a51ea77d9b19307925ab7bbd31406c76d2dba8171a2185e435025e"
+        },
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/assessment/contracts_bc_reviewed.json",
+          "sha256": "a0fff8006fc5cd95a919c61dce4d7bec3514d4dc3cd6e90383cedeb6367043ce"
+        },
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/candidates_bc/source_sha256.json",
+          "sha256": "08bd451e7b66dae7ac923e06c6e0d6c73e8a3960b23e7678ce414b76db2295c1"
+        },
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/assessment/contract_evidence/ctest_candidates_original.log",
+          "sha256": "1a8b2c5403fa2948c70ca63b65f9f74543634d9bc158c6febd07f2426f45a606"
+        },
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/assessment/contract_evidence/paper_guidance_check.cpp",
+          "sha256": "b7a8a5c026663c09bb460e7b5b8e3327a376181f3400bd36ec652a3bd7ffc449"
+        },
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/assessment/contract_evidence/observed_space_check.cpp",
+          "sha256": "0a1724931ba76a18e933aa7d79fd304c738336f97d0e8251712d283432258f5e"
+        },
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/assessment/contract_evidence/paper_guidance.cpp",
+          "sha256": "b1cf1b0fce4e28dd8e398923613a1bc550cfac8236039b0943fadcae3b34621f"
+        },
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/assessment/contracts_bc_reviewed.json",
+          "sha256": "a0fff8006fc5cd95a919c61dce4d7bec3514d4dc3cd6e90383cedeb6367043ce"
+        },
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/candidates_bc/source_sha256.json",
+          "sha256": "08bd451e7b66dae7ac923e06c6e0d6c73e8a3960b23e7678ce414b76db2295c1"
+        },
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/assessment/contract_evidence/ctest_candidates_original.log",
+          "sha256": "1a8b2c5403fa2948c70ca63b65f9f74543634d9bc158c6febd07f2426f45a606"
+        },
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/assessment/contract_evidence/manual_control_math_39_passed.txt",
+          "sha256": "b6484b5eb3905e46337d48b26b9b5e15177ea73ecfecbdfd8c957dcf2aaeee14"
+        },
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/assessment/contract_evidence/manual_control_math_39_passed.xunit.xml",
+          "sha256": "57f670c0fc7d38e4200ca9d2ff8073c91ea9c2ab4e15400b0e0e5bd0135944b0"
+        },
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/assessment/contract_evidence/test_manual_control_math.py",
+          "sha256": "160b1e005a7661581b382fdf77bddd9fa5094d9ac43b32a802c1262d2160a2e3"
+        },
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/assessment/contract_evidence/manual_control_math.py",
+          "sha256": "4f5e16e63d2b830a1c077ae8ab2644d20b3563ff759605a5c15f48a878f2ac44"
+        },
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/assessment/contract_evidence/run_fov_gvf_navigation.py",
+          "sha256": "c085dcfedbc5bcad528e814f4e8a1fed5e73d6a0f35ccee975210645a0f67643"
+        },
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/assessment/contracts_bc_reviewed.json",
+          "sha256": "a0fff8006fc5cd95a919c61dce4d7bec3514d4dc3cd6e90383cedeb6367043ce"
+        },
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/candidates_bc/source_sha256.json",
+          "sha256": "08bd451e7b66dae7ac923e06c6e0d6c73e8a3960b23e7678ce414b76db2295c1"
+        }
+      ]
+    },
+    "p5_manual_continuous_explore_20261007_jitter_jitter_after_2": {
+      "failed": [],
+      "missing": [],
+      "contract_evidence": [
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/assessment/contract_evidence/ctest_candidates_original.log",
+          "sha256": "1a8b2c5403fa2948c70ca63b65f9f74543634d9bc158c6febd07f2426f45a606"
+        },
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/assessment/contract_evidence/paper_guidance_check.cpp",
+          "sha256": "b7a8a5c026663c09bb460e7b5b8e3327a376181f3400bd36ec652a3bd7ffc449"
+        },
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/assessment/contract_evidence/paper_guidance.cpp",
+          "sha256": "b1cf1b0fce4e28dd8e398923613a1bc550cfac8236039b0943fadcae3b34621f"
+        },
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/assessment/contract_evidence/depth_angular_controller_node.cpp",
+          "sha256": "e836e1fbc4a51ea77d9b19307925ab7bbd31406c76d2dba8171a2185e435025e"
+        },
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/assessment/contracts_bc_reviewed.json",
+          "sha256": "a0fff8006fc5cd95a919c61dce4d7bec3514d4dc3cd6e90383cedeb6367043ce"
+        },
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/candidates_bc/source_sha256.json",
+          "sha256": "08bd451e7b66dae7ac923e06c6e0d6c73e8a3960b23e7678ce414b76db2295c1"
+        },
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/assessment/contract_evidence/ctest_candidates_original.log",
+          "sha256": "1a8b2c5403fa2948c70ca63b65f9f74543634d9bc158c6febd07f2426f45a606"
+        },
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/assessment/contract_evidence/paper_guidance_check.cpp",
+          "sha256": "b7a8a5c026663c09bb460e7b5b8e3327a376181f3400bd36ec652a3bd7ffc449"
+        },
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/assessment/contract_evidence/observed_space_check.cpp",
+          "sha256": "0a1724931ba76a18e933aa7d79fd304c738336f97d0e8251712d283432258f5e"
+        },
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/assessment/contract_evidence/paper_guidance.cpp",
+          "sha256": "b1cf1b0fce4e28dd8e398923613a1bc550cfac8236039b0943fadcae3b34621f"
+        },
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/assessment/contracts_bc_reviewed.json",
+          "sha256": "a0fff8006fc5cd95a919c61dce4d7bec3514d4dc3cd6e90383cedeb6367043ce"
+        },
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/candidates_bc/source_sha256.json",
+          "sha256": "08bd451e7b66dae7ac923e06c6e0d6c73e8a3960b23e7678ce414b76db2295c1"
+        },
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/assessment/contract_evidence/ctest_candidates_original.log",
+          "sha256": "1a8b2c5403fa2948c70ca63b65f9f74543634d9bc158c6febd07f2426f45a606"
+        },
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/assessment/contract_evidence/manual_control_math_39_passed.txt",
+          "sha256": "b6484b5eb3905e46337d48b26b9b5e15177ea73ecfecbdfd8c957dcf2aaeee14"
+        },
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/assessment/contract_evidence/manual_control_math_39_passed.xunit.xml",
+          "sha256": "57f670c0fc7d38e4200ca9d2ff8073c91ea9c2ab4e15400b0e0e5bd0135944b0"
+        },
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/assessment/contract_evidence/test_manual_control_math.py",
+          "sha256": "160b1e005a7661581b382fdf77bddd9fa5094d9ac43b32a802c1262d2160a2e3"
+        },
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/assessment/contract_evidence/manual_control_math.py",
+          "sha256": "4f5e16e63d2b830a1c077ae8ab2644d20b3563ff759605a5c15f48a878f2ac44"
+        },
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/assessment/contract_evidence/run_fov_gvf_navigation.py",
+          "sha256": "c085dcfedbc5bcad528e814f4e8a1fed5e73d6a0f35ccee975210645a0f67643"
+        },
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/assessment/contracts_bc_reviewed.json",
+          "sha256": "a0fff8006fc5cd95a919c61dce4d7bec3514d4dc3cd6e90383cedeb6367043ce"
+        },
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/candidates_bc/source_sha256.json",
+          "sha256": "08bd451e7b66dae7ac923e06c6e0d6c73e8a3960b23e7678ce414b76db2295c1"
+        }
+      ]
+    },
+    "p5_manual_continuous_explore_20261007_jitter_jitter_after_3": {
+      "failed": [],
+      "missing": [],
+      "contract_evidence": [
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/assessment/contract_evidence/ctest_candidates_original.log",
+          "sha256": "1a8b2c5403fa2948c70ca63b65f9f74543634d9bc158c6febd07f2426f45a606"
+        },
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/assessment/contract_evidence/paper_guidance_check.cpp",
+          "sha256": "b7a8a5c026663c09bb460e7b5b8e3327a376181f3400bd36ec652a3bd7ffc449"
+        },
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/assessment/contract_evidence/paper_guidance.cpp",
+          "sha256": "b1cf1b0fce4e28dd8e398923613a1bc550cfac8236039b0943fadcae3b34621f"
+        },
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/assessment/contract_evidence/depth_angular_controller_node.cpp",
+          "sha256": "e836e1fbc4a51ea77d9b19307925ab7bbd31406c76d2dba8171a2185e435025e"
+        },
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/assessment/contracts_bc_reviewed.json",
+          "sha256": "a0fff8006fc5cd95a919c61dce4d7bec3514d4dc3cd6e90383cedeb6367043ce"
+        },
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/candidates_bc/source_sha256.json",
+          "sha256": "08bd451e7b66dae7ac923e06c6e0d6c73e8a3960b23e7678ce414b76db2295c1"
+        },
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/assessment/contract_evidence/ctest_candidates_original.log",
+          "sha256": "1a8b2c5403fa2948c70ca63b65f9f74543634d9bc158c6febd07f2426f45a606"
+        },
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/assessment/contract_evidence/paper_guidance_check.cpp",
+          "sha256": "b7a8a5c026663c09bb460e7b5b8e3327a376181f3400bd36ec652a3bd7ffc449"
+        },
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/assessment/contract_evidence/observed_space_check.cpp",
+          "sha256": "0a1724931ba76a18e933aa7d79fd304c738336f97d0e8251712d283432258f5e"
+        },
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/assessment/contract_evidence/paper_guidance.cpp",
+          "sha256": "b1cf1b0fce4e28dd8e398923613a1bc550cfac8236039b0943fadcae3b34621f"
+        },
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/assessment/contracts_bc_reviewed.json",
+          "sha256": "a0fff8006fc5cd95a919c61dce4d7bec3514d4dc3cd6e90383cedeb6367043ce"
+        },
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/candidates_bc/source_sha256.json",
+          "sha256": "08bd451e7b66dae7ac923e06c6e0d6c73e8a3960b23e7678ce414b76db2295c1"
+        },
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/assessment/contract_evidence/ctest_candidates_original.log",
+          "sha256": "1a8b2c5403fa2948c70ca63b65f9f74543634d9bc158c6febd07f2426f45a606"
+        },
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/assessment/contract_evidence/manual_control_math_39_passed.txt",
+          "sha256": "b6484b5eb3905e46337d48b26b9b5e15177ea73ecfecbdfd8c957dcf2aaeee14"
+        },
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/assessment/contract_evidence/manual_control_math_39_passed.xunit.xml",
+          "sha256": "57f670c0fc7d38e4200ca9d2ff8073c91ea9c2ab4e15400b0e0e5bd0135944b0"
+        },
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/assessment/contract_evidence/test_manual_control_math.py",
+          "sha256": "160b1e005a7661581b382fdf77bddd9fa5094d9ac43b32a802c1262d2160a2e3"
+        },
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/assessment/contract_evidence/manual_control_math.py",
+          "sha256": "4f5e16e63d2b830a1c077ae8ab2644d20b3563ff759605a5c15f48a878f2ac44"
+        },
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/assessment/contract_evidence/run_fov_gvf_navigation.py",
+          "sha256": "c085dcfedbc5bcad528e814f4e8a1fed5e73d6a0f35ccee975210645a0f67643"
+        },
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/assessment/contracts_bc_reviewed.json",
+          "sha256": "a0fff8006fc5cd95a919c61dce4d7bec3514d4dc3cd6e90383cedeb6367043ce"
+        },
+        {
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/candidates_bc/source_sha256.json",
+          "sha256": "08bd451e7b66dae7ac923e06c6e0d6c73e8a3960b23e7678ce414b76db2295c1"
+        }
+      ]
+    }
+  },
+  "strata": {
+    "manual:jitter": {
+      "explore": {
+        "pairs": 3,
+        "metrics": {
+          "angle_mean_deg": {
+            "unit": "degree",
+            "direction": "lower",
+            "n": 3,
+            "before_mean": 9.20017770968337,
+            "after_mean": 9.34194630690426,
+            "before_std": 0.1385674306619522,
+            "after_std": 0.023213309115400836,
+            "before_min": 9.074171331532007,
+            "before_max": 9.348578365578254,
+            "after_min": 9.317596018539207,
+            "after_max": 9.363824817126014,
+            "oriented_paired_changes": [
+              0.28965348559400717,
+              0.16663465310770853,
+              -0.030982347039046232
+            ],
+            "mean_oriented_change": 0.14176859722088983,
+            "std_paired_change": 0.16175776594524804,
+            "mean_change_percent": 1.5409332481879796,
+            "paired_change_central90_t_interval": [
+              -0.13093149326569845,
+              0.41446868770747813
+            ],
+            "tolerance": 0.2760053312905011,
+            "improvement_threshold": 0.5,
+            "noninferiority": "UNCERTAIN",
+            "practical_improvement": false,
+            "improvement_pairs": 1,
+            "tie_pairs": 0,
+            "primary_one_sided_sign_p": 0.875
+          },
+          "angle_p95_deg": {
+            "unit": "degree",
+            "direction": "lower",
+            "n": 3,
+            "before_mean": 28.149769022469332,
+            "after_mean": 28.803566043183643,
+            "before_std": 0.2131922423195506,
+            "after_std": 0.3864199318027922,
+            "before_min": 27.90360895249063,
+            "before_max": 28.275050681018307,
+            "after_min": 28.367151167928956,
+            "after_max": 29.102252709105006,
+            "oriented_paired_changes": [
+              1.198643756614377,
+              0.09210048691064898,
+              0.6706468186179144
+            ],
+            "mean_oriented_change": 0.6537970207143134,
+            "std_paired_change": 0.553464035596441,
+            "mean_change_percent": 2.3225662000723557,
+            "paired_change_central90_t_interval": [
+              -0.27926292670922237,
+              1.5868569681378493
+            ],
+            "tolerance": 1.4074884511234667,
+            "improvement_threshold": 1.4074884511234667,
+            "noninferiority": "UNCERTAIN",
+            "practical_improvement": false,
+            "improvement_pairs": 0,
+            "tie_pairs": 0,
+            "primary_one_sided_sign_p": 1.0
+          },
+          "progress_m": {
+            "unit": "m",
+            "direction": "higher",
+            "n": 3,
+            "before_mean": 16.51111516787264,
+            "after_mean": 16.489041993971234,
+            "before_std": 0.015204914439270805,
+            "after_std": 0.0013264703969763534,
+            "before_min": 16.49571660531125,
+            "before_max": 16.526118737372443,
+            "after_min": 16.48754656032668,
+            "after_max": 16.490076559839366,
+            "oriented_paired_changes": [
+              0.038572177045761435,
+              0.02143360109485215,
+              0.006213743563595386
+            ],
+            "mean_oriented_change": 0.022073173901402992,
+            "std_paired_change": 0.01618869495623723,
+            "mean_change_percent": -0.1336867539047526,
+            "paired_change_central90_t_interval": [
+              -0.005218613628105457,
+              0.049364961430911444
+            ],
+            "tolerance": 0.1651111516787264,
+            "improvement_threshold": 0.2,
+            "noninferiority": "NONINFERIOR",
+            "practical_improvement": false,
+            "improvement_pairs": 0,
+            "tie_pairs": 0,
+            "primary_one_sided_sign_p": 1.0
+          },
+          "vector_error_rms_mps": {
+            "unit": "m/s",
+            "direction": "lower",
+            "n": 3,
+            "before_mean": 0.2586021717914394,
+            "after_mean": 0.26094436970016,
+            "before_std": 0.0010178409116181183,
+            "after_std": 0.0003746931090262484,
+            "before_min": 0.2577398856224351,
+            "before_max": 0.2597249412515386,
+            "after_min": 0.26067275640908233,
+            "after_max": 0.261371834692115,
+            "oriented_paired_changes": [
+              0.003631949069679896,
+              0.002331067908737827,
+              0.0010635767477439884
+            ],
+            "mean_oriented_change": 0.0023421979087205704,
+            "std_paired_change": 0.0012842223342148834,
+            "mean_change_percent": 0.9057147093913632,
+            "paired_change_central90_t_interval": [
+              0.000177185646719901,
+              0.00450721017072124
+            ],
+            "tolerance": 0.007758065153743182,
+            "improvement_threshold": 0.01293010858957197,
+            "noninferiority": "NONINFERIOR",
+            "practical_improvement": false,
+            "improvement_pairs": 0,
+            "tie_pairs": 0,
+            "primary_one_sided_sign_p": 1.0
+          },
+          "stop_s": {
+            "unit": "s",
+            "direction": "lower",
+            "n": 3,
+            "before_mean": 0.9666666666666712,
+            "after_mean": 0.9666666666666712,
+            "before_std": 0.0,
+            "after_std": 0.0,
+            "before_min": 0.9666666666666712,
+            "before_max": 0.9666666666666712,
+            "after_min": 0.9666666666666712,
+            "after_max": 0.9666666666666712,
+            "oriented_paired_changes": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "mean_oriented_change": 0.0,
+            "std_paired_change": 0.0,
+            "mean_change_percent": 0.0,
+            "paired_change_central90_t_interval": [
+              0.0,
+              0.0
+            ],
+            "tolerance": 0.09666666666666712,
+            "improvement_threshold": 0.1,
+            "noninferiority": "NONINFERIOR",
+            "practical_improvement": false,
+            "improvement_pairs": 0,
+            "tie_pairs": 3,
+            "primary_one_sided_sign_p": 1.0
+          },
+          "longest_stop_s": {
+            "unit": "s",
+            "direction": "lower",
+            "n": 3,
+            "before_mean": 0.26666666666666927,
+            "after_mean": 0.26666666666666927,
+            "before_std": 0.0,
+            "after_std": 0.0,
+            "before_min": 0.26666666666666927,
+            "before_max": 0.26666666666666927,
+            "after_min": 0.26666666666666927,
+            "after_max": 0.26666666666666927,
+            "oriented_paired_changes": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "mean_oriented_change": 0.0,
+            "std_paired_change": 0.0,
+            "mean_change_percent": 0.0,
+            "paired_change_central90_t_interval": [
+              0.0,
+              0.0
+            ],
+            "tolerance": 0.05,
+            "improvement_threshold": 0.05,
+            "noninferiority": "NONINFERIOR",
+            "practical_improvement": false,
+            "improvement_pairs": 0,
+            "tie_pairs": 3,
+            "primary_one_sided_sign_p": 1.0
+          },
+          "jerk_rms_mps3": {
+            "unit": "m/s^3",
+            "direction": "lower",
+            "n": 3,
+            "before_mean": 4.469190503665704,
+            "after_mean": 4.461912971628215,
+            "before_std": 0.009484012241340888,
+            "after_std": 0.015944004793670766,
+            "before_min": 4.461152966494734,
+            "before_max": 4.479650932391468,
+            "after_min": 4.448954277929769,
+            "after_max": 4.4797177536603785,
+            "oriented_paired_changes": [
+              -0.017813334181141727,
+              6.682126891011109e-05,
+              -0.004086083200236068
+            ],
+            "mean_oriented_change": -0.007277532037489228,
+            "std_paired_change": 0.009357563731554705,
+            "mean_change_percent": -0.1628378121612802,
+            "paired_change_central90_t_interval": [
+              -0.023053024864168867,
+              0.008497960789190413
+            ],
+            "tolerance": 0.2234595251832852,
+            "improvement_threshold": 0.4469190503665704,
+            "noninferiority": "NONINFERIOR",
+            "practical_improvement": false,
+            "improvement_pairs": 2,
+            "tie_pairs": 0,
+            "primary_one_sided_sign_p": 0.5
+          },
+          "compute_p95_ms": {
+            "unit": "ms",
+            "direction": "lower",
+            "n": 3,
+            "before_mean": 8.207666666666666,
+            "after_mean": 8.891666666666666,
+            "before_std": 0.7652485435029149,
+            "after_std": 1.3830236199477337,
+            "before_min": 7.389,
+            "before_max": 8.905,
+            "after_min": 7.504,
+            "after_max": 10.27,
+            "oriented_paired_changes": [
+              0.11499999999999932,
+              1.940999999999999,
+              -0.0039999999999995595
+            ],
+            "mean_oriented_change": 0.6839999999999996,
+            "std_paired_change": 1.0902187853820895,
+            "mean_change_percent": 8.333671770296055,
+            "paired_change_central90_t_interval": [
+              -1.1539504667770055,
+              2.5219504667770045
+            ],
+            "tolerance": 0.8207666666666666,
+            "improvement_threshold": 0.8207666666666666,
+            "noninferiority": "UNCERTAIN",
+            "practical_improvement": false,
+            "improvement_pairs": 1,
+            "tie_pairs": 0,
+            "primary_one_sided_sign_p": 0.875
+          },
+          "release_target_p95_s": {
+            "unit": "s",
+            "direction": "lower",
+            "n": 3,
+            "before_mean": 0.0,
+            "after_mean": 0.0,
+            "before_std": 0.0,
+            "after_std": 0.0,
+            "before_min": 0.0,
+            "before_max": 0.0,
+            "after_min": 0.0,
+            "after_max": 0.0,
+            "oriented_paired_changes": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "mean_oriented_change": 0.0,
+            "std_paired_change": 0.0,
+            "mean_change_percent": null,
+            "paired_change_central90_t_interval": [
+              0.0,
+              0.0
+            ],
+            "tolerance": 0.016666666666666666,
+            "improvement_threshold": 0.016666666666666666,
+            "noninferiority": "NONINFERIOR",
+            "practical_improvement": false,
+            "improvement_pairs": 0,
+            "tie_pairs": 3,
+            "primary_one_sided_sign_p": 1.0
+          },
+          "release_brake_p95_s": {
+            "unit": "s",
+            "direction": "lower",
+            "n": 3,
+            "before_mean": 0.6000000000000003,
+            "after_mean": 0.6000000000000003,
+            "before_std": 0.0,
+            "after_std": 0.0,
+            "before_min": 0.6000000000000003,
+            "before_max": 0.6000000000000003,
+            "after_min": 0.6000000000000003,
+            "after_max": 0.6000000000000003,
+            "oriented_paired_changes": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "mean_oriented_change": 0.0,
+            "std_paired_change": 0.0,
+            "mean_change_percent": 0.0,
+            "paired_change_central90_t_interval": [
+              0.0,
+              0.0
+            ],
+            "tolerance": 0.05,
+            "improvement_threshold": 0.06000000000000003,
+            "noninferiority": "NONINFERIOR",
+            "practical_improvement": false,
+            "improvement_pairs": 0,
+            "tie_pairs": 3,
+            "primary_one_sided_sign_p": 1.0
+          }
+        }
+      }
+    }
+  },
+  "all_run_ids": [
+    "p5_manual_continuous_explore_20261007_jitter_jitter_before_1",
+    "p5_manual_continuous_explore_20261007_jitter_jitter_before_2",
+    "p5_manual_continuous_explore_20261007_jitter_jitter_before_3",
+    "p5_manual_continuous_explore_20261007_jitter_jitter_after_1",
+    "p5_manual_continuous_explore_20261007_jitter_jitter_after_2",
+    "p5_manual_continuous_explore_20261007_jitter_jitter_after_3"
+  ],
+  "failures": [],
+  "insufficient": [
+    "planned pair missing: p5_manual_continuous_explore_20261007_spin_spin_before_1/p5_manual_continuous_explore_20261007_spin_spin_after_1",
+    "planned pair missing: p5_manual_continuous_explore_20261007_spin_spin_before_2/p5_manual_continuous_explore_20261007_spin_spin_after_2",
+    "planned pair missing: p5_manual_continuous_explore_20261007_spin_spin_before_3/p5_manual_continuous_explore_20261007_spin_spin_after_3",
+    "planned pair missing: p5_manual_continuous_explore_20261007_sweep_sweep_before_1/p5_manual_continuous_explore_20261007_sweep_sweep_after_1",
+    "planned pair missing: p5_manual_continuous_explore_20261007_sweep_sweep_before_2/p5_manual_continuous_explore_20261007_sweep_sweep_after_2",
+    "planned pair missing: p5_manual_continuous_explore_20261007_sweep_sweep_before_3/p5_manual_continuous_explore_20261007_sweep_sweep_after_3",
+    "registered strata differ from observed paired strata"
+  ],
+  "interpretation": "Safety/metadata contracts are caller-supplied attestations with hashed evidence, not proofs extracted from arbitrary documents. Only registered scenarios are covered; no general statistical guarantee or real-flight claim.",
+  "scope": "candidate",
+  "registration_evidence": [
+    {
+      "path": "/home/starry/isaac-data/EGO1P5/ADAPTIVE_OPTIMIZATION.md",
+      "sha256": "157607c6271d40b64bb37149236c7ac0373fe66c2baa226f988492515f024d2e"
+    }
+  ],
+  "unpaired_run_ids": [],
+  "decision": "INSUFFICIENT",
+  "input_files": [
+    {
+      "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/assessment/manual_continuous_explore_collected/before_analysis.json",
+      "sha256": "a7c789c651c5705232f5a2eb821c521c3d5daad3ade1731337bdf4fafc04f61f"
+    },
+    {
+      "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/assessment/manual_continuous_explore_collected/after_analysis.json",
+      "sha256": "dfed8c279ba0575429e2e336a2903ae5bbde87dadbf4faade381d6a9cd3df14d"
+    },
+    {
+      "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/assessment/manual_continuous_explore_collected/supplement.json",
+      "sha256": "74c7a9d375d1b0d9b82500908e77b6e59c17e6a61c5b6cae05fe19df706b0388"
+    },
+    {
+      "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/preregistration/manual_continuous.json",
+      "sha256": "48cadcd866e1d3b067aa3eccf5576ac0c981cc74640a6c0b75e043411617aecf"
+    }
+  ],
+  "raw_supplement_evidence": {
+    "p5_manual_continuous_explore_20261007_jitter_jitter_before_1": {
+      "metadata": {
+        "sequence": 1,
+        "variant_sha256": "8476e135bc7be3a4c2c82b21c976049d565cb99d31d8ac23cea253896a0ed77d",
+        "conditions_sha256": "d7e0ed6ff66a319557560cb07ce2a07c0e78b1088eb031fb589225bb05385a00",
+        "freeze_verified": true,
+        "actual_launch_local_time": "2026-10-07T22:58:48.867222",
+        "sequence_source": "post-lock ROS launch log directory timestamp"
+      },
+      "files": [
+        {
+          "kind": "csv",
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/closed_loop/p5_manual_continuous_explore_20261007_jitter/p5_manual_continuous_explore_20261007_jitter_jitter_before_1.csv",
+          "sha256": "efa9430aa789e6d664aeb81160375980786df5fc1f73285b0936570e3a7ebca9"
+        },
+        {
+          "kind": "performance",
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/closed_loop/p5_manual_continuous_explore_20261007_jitter/p5_manual_continuous_explore_20261007_jitter_jitter_before_1_performance.md",
+          "sha256": "787b4c78c2d439f273c2e3ff8336c09f08fcb2f7d9b5d767992c90dffadd1e9d"
+        },
+        {
+          "kind": "log",
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/closed_loop/p5_manual_continuous_explore_20261007_jitter/p5_manual_continuous_explore_20261007_jitter_jitter_before_1.log",
+          "sha256": "5ba73a9017f3546a6ea7bba46e38ad658472504c82800ef1cd2857eb9e8d0f07"
+        }
+      ],
+      "release": {
+        "events": [
+          {
+            "t": 15.0,
+            "target_s": 0.0,
+            "brake_s": 0.6166666666666671,
+            "observed_interval_s": 1.9833333333333343,
+            "initial_speed_mps": 0.7782476457153475
+          },
+          {
+            "t": 26.0,
+            "target_s": 0.0,
+            "brake_s": 0.4499999999999993,
+            "observed_interval_s": 1.9833333333333343,
+            "initial_speed_mps": 0.5798821813164335
+          },
+          {
+            "t": 32.0,
+            "target_s": 0.0,
+            "brake_s": 0.43333333333333,
+            "observed_interval_s": 2.0166666666666657,
+            "initial_speed_mps": 0.5630950382488432
+          }
+        ],
+        "event_count": 3,
+        "complete": true,
+        "target_p95_s": 0.0,
+        "brake_p95_s": 0.6000000000000003,
+        "target_max_s": 0.0
+      },
+      "lifecycle": {
+        "nonzero_child_exits": [],
+        "compute_deadlines": 0,
+        "rosout_invalid_context": 1
+      }
+    },
+    "p5_manual_continuous_explore_20261007_jitter_jitter_before_2": {
+      "metadata": {
+        "sequence": 4,
+        "variant_sha256": "8476e135bc7be3a4c2c82b21c976049d565cb99d31d8ac23cea253896a0ed77d",
+        "conditions_sha256": "d7e0ed6ff66a319557560cb07ce2a07c0e78b1088eb031fb589225bb05385a00",
+        "freeze_verified": true,
+        "actual_launch_local_time": "2026-10-07T23:06:09.690245",
+        "sequence_source": "post-lock ROS launch log directory timestamp"
+      },
+      "files": [
+        {
+          "kind": "csv",
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/closed_loop/p5_manual_continuous_explore_20261007_jitter/p5_manual_continuous_explore_20261007_jitter_jitter_before_2.csv",
+          "sha256": "900fa760e97b7e49a6ef31977e6445cfe1fc85da242d2a06cf28a463c9f3e2c5"
+        },
+        {
+          "kind": "performance",
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/closed_loop/p5_manual_continuous_explore_20261007_jitter/p5_manual_continuous_explore_20261007_jitter_jitter_before_2_performance.md",
+          "sha256": "ad5e64167d65c1b53a4d709edb05527034eb4e207393c2dbbf0a724a44c98f9c"
+        },
+        {
+          "kind": "log",
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/closed_loop/p5_manual_continuous_explore_20261007_jitter/p5_manual_continuous_explore_20261007_jitter_jitter_before_2.log",
+          "sha256": "baf6fcd789b22859fbed8fd4079e71f88cd93f74ab6854948976e4110cd84ecf"
+        }
+      ],
+      "release": {
+        "events": [
+          {
+            "t": 15.0,
+            "target_s": 0.0,
+            "brake_s": 0.6166666666666671,
+            "observed_interval_s": 1.9833333333333343,
+            "initial_speed_mps": 0.777517389288354
+          },
+          {
+            "t": 26.0,
+            "target_s": 0.0,
+            "brake_s": 0.4499999999999993,
+            "observed_interval_s": 1.9833333333333343,
+            "initial_speed_mps": 0.5798821079732459
+          },
+          {
+            "t": 32.0,
+            "target_s": 0.0,
+            "brake_s": 0.43333333333333,
+            "observed_interval_s": 2.0166666666666657,
+            "initial_speed_mps": 0.563095038402368
+          }
+        ],
+        "event_count": 3,
+        "complete": true,
+        "target_p95_s": 0.0,
+        "brake_p95_s": 0.6000000000000003,
+        "target_max_s": 0.0
+      },
+      "lifecycle": {
+        "nonzero_child_exits": [],
+        "compute_deadlines": 0,
+        "rosout_invalid_context": 1
+      }
+    },
+    "p5_manual_continuous_explore_20261007_jitter_jitter_before_3": {
+      "metadata": {
+        "sequence": 5,
+        "variant_sha256": "8476e135bc7be3a4c2c82b21c976049d565cb99d31d8ac23cea253896a0ed77d",
+        "conditions_sha256": "d7e0ed6ff66a319557560cb07ce2a07c0e78b1088eb031fb589225bb05385a00",
+        "freeze_verified": true,
+        "actual_launch_local_time": "2026-10-07T23:08:29.751875",
+        "sequence_source": "post-lock ROS launch log directory timestamp"
+      },
+      "files": [
+        {
+          "kind": "csv",
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/closed_loop/p5_manual_continuous_explore_20261007_jitter/p5_manual_continuous_explore_20261007_jitter_jitter_before_3.csv",
+          "sha256": "18a1ca13abfe8abeef758922558b3d2bde64409d1317545bf03143d09ae04aed"
+        },
+        {
+          "kind": "performance",
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/closed_loop/p5_manual_continuous_explore_20261007_jitter/p5_manual_continuous_explore_20261007_jitter_jitter_before_3_performance.md",
+          "sha256": "ff5e68e002c1ab2389c248e31a21b47e7960d5834c1acd73e817bef1864afefd"
+        },
+        {
+          "kind": "log",
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/closed_loop/p5_manual_continuous_explore_20261007_jitter/p5_manual_continuous_explore_20261007_jitter_jitter_before_3.log",
+          "sha256": "c11a3a66dc9ff2a73540342f937eef9d0823b64fdecd6f17c04bd30c56c023a9"
+        }
+      ],
+      "release": {
+        "events": [
+          {
+            "t": 15.0,
+            "target_s": 0.0,
+            "brake_s": 0.6166666666666671,
+            "observed_interval_s": 1.9833333333333343,
+            "initial_speed_mps": 0.7761711200300205
+          },
+          {
+            "t": 26.0,
+            "target_s": 0.0,
+            "brake_s": 0.4499999999999993,
+            "observed_interval_s": 1.9833333333333343,
+            "initial_speed_mps": 0.579881577278549
+          },
+          {
+            "t": 32.0,
+            "target_s": 0.0,
+            "brake_s": 0.43333333333333,
+            "observed_interval_s": 2.0166666666666657,
+            "initial_speed_mps": 0.5630950379909224
+          }
+        ],
+        "event_count": 3,
+        "complete": true,
+        "target_p95_s": 0.0,
+        "brake_p95_s": 0.6000000000000003,
+        "target_max_s": 0.0
+      },
+      "lifecycle": {
+        "nonzero_child_exits": [],
+        "compute_deadlines": 0,
+        "rosout_invalid_context": 1
+      }
+    },
+    "p5_manual_continuous_explore_20261007_jitter_jitter_after_1": {
+      "metadata": {
+        "sequence": 2,
+        "variant_sha256": "7d006bb45f1eb06cfd04c2ec885d1abc381470b0cacf48c15d07238b802ca4a9",
+        "conditions_sha256": "d7e0ed6ff66a319557560cb07ce2a07c0e78b1088eb031fb589225bb05385a00",
+        "freeze_verified": true,
+        "actual_launch_local_time": "2026-10-07T23:01:07.497764",
+        "sequence_source": "post-lock ROS launch log directory timestamp"
+      },
+      "files": [
+        {
+          "kind": "csv",
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/closed_loop/p5_manual_continuous_explore_20261007_jitter/p5_manual_continuous_explore_20261007_jitter_jitter_after_1.csv",
+          "sha256": "e414ce78eab6d0ae15bd1fe5a36cc83310dae57810a82c303929c4efcc9d2f97"
+        },
+        {
+          "kind": "performance",
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/closed_loop/p5_manual_continuous_explore_20261007_jitter/p5_manual_continuous_explore_20261007_jitter_jitter_after_1_performance.md",
+          "sha256": "9af4c8d58980f86016b03fdbd108b4e7992a34dd8a43de3be14258fbf911f3e8"
+        },
+        {
+          "kind": "log",
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/closed_loop/p5_manual_continuous_explore_20261007_jitter/p5_manual_continuous_explore_20261007_jitter_jitter_after_1.log",
+          "sha256": "08bf6587d767b7b097b2eabab1f1675026613fc2851f321bf4caee82e7b62dea"
+        }
+      ],
+      "release": {
+        "events": [
+          {
+            "t": 15.0,
+            "target_s": 0.0,
+            "brake_s": 0.6166666666666671,
+            "observed_interval_s": 1.9833333333333343,
+            "initial_speed_mps": 0.7763441464151681
+          },
+          {
+            "t": 26.0,
+            "target_s": 0.0,
+            "brake_s": 0.4499999999999993,
+            "observed_interval_s": 1.9833333333333343,
+            "initial_speed_mps": 0.579882737306787
+          },
+          {
+            "t": 32.0,
+            "target_s": 0.0,
+            "brake_s": 0.43333333333333,
+            "observed_interval_s": 2.0166666666666657,
+            "initial_speed_mps": 0.563095038402368
+          }
+        ],
+        "event_count": 3,
+        "complete": true,
+        "target_p95_s": 0.0,
+        "brake_p95_s": 0.6000000000000003,
+        "target_max_s": 0.0
+      },
+      "lifecycle": {
+        "nonzero_child_exits": [],
+        "compute_deadlines": 0,
+        "rosout_invalid_context": 1
+      }
+    },
+    "p5_manual_continuous_explore_20261007_jitter_jitter_after_2": {
+      "metadata": {
+        "sequence": 3,
+        "variant_sha256": "7d006bb45f1eb06cfd04c2ec885d1abc381470b0cacf48c15d07238b802ca4a9",
+        "conditions_sha256": "d7e0ed6ff66a319557560cb07ce2a07c0e78b1088eb031fb589225bb05385a00",
+        "freeze_verified": true,
+        "actual_launch_local_time": "2026-10-07T23:03:37.936068",
+        "sequence_source": "post-lock ROS launch log directory timestamp"
+      },
+      "files": [
+        {
+          "kind": "csv",
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/closed_loop/p5_manual_continuous_explore_20261007_jitter/p5_manual_continuous_explore_20261007_jitter_jitter_after_2.csv",
+          "sha256": "d0b2333abe69eb88340101b3550363ee59a5434e4019576745ed6d2252d16f81"
+        },
+        {
+          "kind": "performance",
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/closed_loop/p5_manual_continuous_explore_20261007_jitter/p5_manual_continuous_explore_20261007_jitter_jitter_after_2_performance.md",
+          "sha256": "72748355beafb7fb2b9049b76321c7e6d6c9106bdfffd563fd256a81ed132071"
+        },
+        {
+          "kind": "log",
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/closed_loop/p5_manual_continuous_explore_20261007_jitter/p5_manual_continuous_explore_20261007_jitter_jitter_after_2.log",
+          "sha256": "ff94385c1e80773a8255e426b3b082a9c13c18c7fc5c240e4f61260726b3f70c"
+        }
+      ],
+      "release": {
+        "events": [
+          {
+            "t": 15.0,
+            "target_s": 0.0,
+            "brake_s": 0.6166666666666671,
+            "observed_interval_s": 1.9833333333333343,
+            "initial_speed_mps": 0.7761515892258682
+          },
+          {
+            "t": 26.0,
+            "target_s": 0.0,
+            "brake_s": 0.4499999999999993,
+            "observed_interval_s": 1.9833333333333343,
+            "initial_speed_mps": 0.5798812579772268
+          },
+          {
+            "t": 32.0,
+            "target_s": 0.0,
+            "brake_s": 0.43333333333333,
+            "observed_interval_s": 2.0166666666666657,
+            "initial_speed_mps": 0.5630950374456714
+          }
+        ],
+        "event_count": 3,
+        "complete": true,
+        "target_p95_s": 0.0,
+        "brake_p95_s": 0.6000000000000003,
+        "target_max_s": 0.0
+      },
+      "lifecycle": {
+        "nonzero_child_exits": [],
+        "compute_deadlines": 0,
+        "rosout_invalid_context": 1
+      }
+    },
+    "p5_manual_continuous_explore_20261007_jitter_jitter_after_3": {
+      "metadata": {
+        "sequence": 6,
+        "variant_sha256": "7d006bb45f1eb06cfd04c2ec885d1abc381470b0cacf48c15d07238b802ca4a9",
+        "conditions_sha256": "d7e0ed6ff66a319557560cb07ce2a07c0e78b1088eb031fb589225bb05385a00",
+        "freeze_verified": true,
+        "actual_launch_local_time": "2026-10-07T23:10:48.974632",
+        "sequence_source": "post-lock ROS launch log directory timestamp"
+      },
+      "files": [
+        {
+          "kind": "csv",
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/closed_loop/p5_manual_continuous_explore_20261007_jitter/p5_manual_continuous_explore_20261007_jitter_jitter_after_3.csv",
+          "sha256": "830309a805c3ef1345a11cd82cfe6d095d5df53827d13f184db1ccf6ce7e89e7"
+        },
+        {
+          "kind": "performance",
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/closed_loop/p5_manual_continuous_explore_20261007_jitter/p5_manual_continuous_explore_20261007_jitter_jitter_after_3_performance.md",
+          "sha256": "c266688597b9051d003748da59d05e602c317e310559c592e84348bf0cc59286"
+        },
+        {
+          "kind": "log",
+          "path": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/closed_loop/p5_manual_continuous_explore_20261007_jitter/p5_manual_continuous_explore_20261007_jitter_jitter_after_3.log",
+          "sha256": "381980e0a472d6b6371d083270e6cfbf1d2a479b0a369c8009a688095ce23bc3"
+        }
+      ],
+      "release": {
+        "events": [
+          {
+            "t": 15.0,
+            "target_s": 0.0,
+            "brake_s": 0.6166666666666671,
+            "observed_interval_s": 1.9833333333333343,
+            "initial_speed_mps": 0.7761489027752205
+          },
+          {
+            "t": 26.0,
+            "target_s": 0.0,
+            "brake_s": 0.4499999999999993,
+            "observed_interval_s": 1.9833333333333343,
+            "initial_speed_mps": 0.5798818637564034
+          },
+          {
+            "t": 32.0,
+            "target_s": 0.0,
+            "brake_s": 0.43333333333333,
+            "observed_interval_s": 2.0166666666666657,
+            "initial_speed_mps": 0.5630950379848821
+          }
+        ],
+        "event_count": 3,
+        "complete": true,
+        "target_p95_s": 0.0,
+        "brake_p95_s": 0.6000000000000003,
+        "target_max_s": 0.0
+      },
+      "lifecycle": {
+        "nonzero_child_exits": [],
+        "compute_deadlines": 0,
+        "rosout_invalid_context": 1
+      }
+    }
+  }
+}

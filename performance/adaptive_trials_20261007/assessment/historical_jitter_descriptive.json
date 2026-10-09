@@ -1,0 +1,707 @@
+{
+  "stage": "confirm",
+  "policy": {
+    "version": "adaptive_assessment_v1",
+    "metrics": {
+      "arrival_s": {
+        "unit": "s",
+        "direction": "lower",
+        "tolerance_abs": 0.2,
+        "tolerance_rel": 0.01,
+        "improve_abs": 0.3,
+        "improve_rel": 0.01
+      },
+      "path_efficiency": {
+        "unit": "ratio",
+        "direction": "higher",
+        "tolerance_abs": 0.01,
+        "tolerance_rel": 0.0,
+        "improve_abs": 0.005,
+        "improve_rel": 0.0
+      },
+      "stop_s": {
+        "unit": "s",
+        "direction": "lower",
+        "tolerance_abs": 0.05,
+        "tolerance_rel": 0.1,
+        "improve_abs": 0.1,
+        "improve_rel": 0.1
+      },
+      "longest_stop_s": {
+        "unit": "s",
+        "direction": "lower",
+        "tolerance_abs": 0.05,
+        "tolerance_rel": 0.1,
+        "improve_abs": 0.05,
+        "improve_rel": 0.1
+      },
+      "jerk_rms_mps3": {
+        "unit": "m/s^3",
+        "direction": "lower",
+        "tolerance_abs": 0.02,
+        "tolerance_rel": 0.05,
+        "improve_abs": 0.05,
+        "improve_rel": 0.1
+      },
+      "compute_p95_ms": {
+        "unit": "ms",
+        "direction": "lower",
+        "tolerance_abs": 0.2,
+        "tolerance_rel": 0.1,
+        "improve_abs": 0.2,
+        "improve_rel": 0.1
+      },
+      "angle_mean_deg": {
+        "unit": "degree",
+        "direction": "lower",
+        "tolerance_abs": 0.25,
+        "tolerance_rel": 0.03,
+        "improve_abs": 0.5,
+        "improve_rel": 0.05
+      },
+      "angle_p95_deg": {
+        "unit": "degree",
+        "direction": "lower",
+        "tolerance_abs": 1.0,
+        "tolerance_rel": 0.05,
+        "improve_abs": 1.0,
+        "improve_rel": 0.05
+      },
+      "progress_m": {
+        "unit": "m",
+        "direction": "higher",
+        "tolerance_abs": 0.1,
+        "tolerance_rel": 0.01,
+        "improve_abs": 0.2,
+        "improve_rel": 0.01
+      },
+      "vector_error_rms_mps": {
+        "unit": "m/s",
+        "direction": "lower",
+        "tolerance_abs": 0.005,
+        "tolerance_rel": 0.03,
+        "improve_abs": 0.01,
+        "improve_rel": 0.05
+      },
+      "release_target_p95_s": {
+        "unit": "s",
+        "direction": "lower",
+        "tolerance_abs": 0.016666666666666666,
+        "tolerance_rel": 0.05,
+        "improve_abs": 0.016666666666666666,
+        "improve_rel": 0.1
+      },
+      "release_brake_p95_s": {
+        "unit": "s",
+        "direction": "lower",
+        "tolerance_abs": 0.05,
+        "tolerance_rel": 0.05,
+        "improve_abs": 0.05,
+        "improve_rel": 0.1
+      }
+    },
+    "required": {
+      "goal": [
+        "arrival_s",
+        "path_efficiency",
+        "stop_s",
+        "longest_stop_s",
+        "jerk_rms_mps3",
+        "compute_p95_ms"
+      ],
+      "manual": [
+        "angle_mean_deg",
+        "angle_p95_deg",
+        "progress_m",
+        "vector_error_rms_mps",
+        "stop_s",
+        "longest_stop_s",
+        "jerk_rms_mps3",
+        "compute_p95_ms",
+        "release_target_p95_s",
+        "release_brake_p95_s"
+      ]
+    },
+    "exploration_pairs": 3,
+    "confirmation_pairs": 5,
+    "primary_sign_test_alpha": 0.05,
+    "goal_worst_run_absolute_margin_s": 1.0,
+    "goal_worst_run_relative_margin": 0.03,
+    "release_target_max_s": 0.05,
+    "contracts": [
+      "unknown_rejection",
+      "expired_depth_rejection",
+      "stale_command_rejection"
+    ]
+  },
+  "policy_sha256": "bc365b5624f9015d5879cbc20f41e0264b300a2dd61ee1741f648568246cf0a9",
+  "descriptive": {
+    "manual:jitter": {
+      "before_runs": 3,
+      "after_runs": 3,
+      "metrics": {
+        "angle_mean_deg": {
+          "before_n": 3,
+          "after_n": 3,
+          "before_mean": 9.445619721224523,
+          "after_mean": 9.229748554531495,
+          "before_std": 0.15653193322758008,
+          "after_std": 0.13715869792903354,
+          "incomplete": false
+        },
+        "angle_p95_deg": {
+          "before_n": 3,
+          "after_n": 3,
+          "before_mean": 28.935697416635886,
+          "after_mean": 28.065217739020667,
+          "before_std": 0.46324809904834024,
+          "after_std": 0.42664894565232925,
+          "incomplete": false
+        },
+        "progress_m": {
+          "before_n": 3,
+          "after_n": 3,
+          "before_mean": 16.44665908120565,
+          "after_mean": 16.509986085820213,
+          "before_std": 0.018992244897629514,
+          "after_std": 0.017688670278350537,
+          "incomplete": false
+        },
+        "vector_error_rms_mps": {
+          "before_n": 3,
+          "after_n": 3,
+          "before_mean": 0.26323896467473823,
+          "after_mean": 0.25853706536754717,
+          "before_std": 0.0015961860065687042,
+          "after_std": 0.0018439604518835132,
+          "incomplete": false
+        },
+        "stop_s": {
+          "before_n": 3,
+          "after_n": 3,
+          "before_mean": 1.0333333333333325,
+          "after_mean": 0.9666666666666712,
+          "before_std": 2.0511601988091347e-15,
+          "after_std": 0.0,
+          "incomplete": false
+        },
+        "longest_stop_s": {
+          "before_n": 3,
+          "after_n": 3,
+          "before_mean": 0.2833333333333326,
+          "after_mean": 0.26666666666666927,
+          "before_std": 2.0511601988091347e-15,
+          "after_std": 0.0,
+          "incomplete": false
+        },
+        "jerk_rms_mps3": {
+          "before_n": 3,
+          "after_n": 3,
+          "before_mean": 4.532161173237948,
+          "after_mean": 4.46258495427296,
+          "before_std": 0.00918051932888537,
+          "after_std": 0.0167138349413127,
+          "incomplete": false
+        },
+        "compute_p95_ms": {
+          "before_n": 3,
+          "after_n": 3,
+          "before_mean": 8.427666666666667,
+          "after_mean": 7.761333333333333,
+          "before_std": 1.3915377585007644,
+          "after_std": 0.22502518377580186,
+          "incomplete": false
+        },
+        "release_target_p95_s": {
+          "before_n": 3,
+          "after_n": 3,
+          "before_mean": 0.0,
+          "after_mean": 0.0,
+          "before_std": 0.0,
+          "after_std": 0.0,
+          "incomplete": false
+        },
+        "release_brake_p95_s": {
+          "before_n": 3,
+          "after_n": 3,
+          "before_mean": 0.6000000000000003,
+          "after_mean": 0.6000000000000003,
+          "before_std": 0.0,
+          "after_std": 0.0,
+          "incomplete": false
+        }
+      }
+    }
+  },
+  "safety_audit": {
+    "p5_refine_execution_jitter_20261007_jitter_before_1": {
+      "failed": [],
+      "missing": [
+        "unknown_rejection: no complete same-freeze evidence",
+        "expired_depth_rejection: no complete same-freeze evidence",
+        "stale_command_rejection: no complete same-freeze evidence",
+        "variant_sha256 not SHA256",
+        "conditions_sha256 not SHA256",
+        "freeze not independently verified"
+      ],
+      "contract_evidence": []
+    },
+    "p5_refine_execution_jitter_20261007_jitter_before_2": {
+      "failed": [],
+      "missing": [
+        "unknown_rejection: no complete same-freeze evidence",
+        "expired_depth_rejection: no complete same-freeze evidence",
+        "stale_command_rejection: no complete same-freeze evidence",
+        "variant_sha256 not SHA256",
+        "conditions_sha256 not SHA256",
+        "freeze not independently verified"
+      ],
+      "contract_evidence": []
+    },
+    "p5_refine_execution_jitter_20261007_jitter_before_3": {
+      "failed": [],
+      "missing": [
+        "unknown_rejection: no complete same-freeze evidence",
+        "expired_depth_rejection: no complete same-freeze evidence",
+        "stale_command_rejection: no complete same-freeze evidence",
+        "variant_sha256 not SHA256",
+        "conditions_sha256 not SHA256",
+        "freeze not independently verified"
+      ],
+      "contract_evidence": []
+    },
+    "p5_refine_execution_jitter_20261007_jitter_after_1": {
+      "failed": [],
+      "missing": [
+        "unknown_rejection: no complete same-freeze evidence",
+        "expired_depth_rejection: no complete same-freeze evidence",
+        "stale_command_rejection: no complete same-freeze evidence",
+        "variant_sha256 not SHA256",
+        "conditions_sha256 not SHA256",
+        "freeze not independently verified"
+      ],
+      "contract_evidence": []
+    },
+    "p5_refine_execution_jitter_20261007_jitter_after_2": {
+      "failed": [],
+      "missing": [
+        "unknown_rejection: no complete same-freeze evidence",
+        "expired_depth_rejection: no complete same-freeze evidence",
+        "stale_command_rejection: no complete same-freeze evidence",
+        "variant_sha256 not SHA256",
+        "conditions_sha256 not SHA256",
+        "freeze not independently verified"
+      ],
+      "contract_evidence": []
+    },
+    "p5_refine_execution_jitter_20261007_jitter_after_3": {
+      "failed": [],
+      "missing": [
+        "unknown_rejection: no complete same-freeze evidence",
+        "expired_depth_rejection: no complete same-freeze evidence",
+        "stale_command_rejection: no complete same-freeze evidence",
+        "variant_sha256 not SHA256",
+        "conditions_sha256 not SHA256",
+        "freeze not independently verified"
+      ],
+      "contract_evidence": []
+    }
+  },
+  "strata": {},
+  "all_run_ids": [
+    "p5_refine_execution_jitter_20261007_jitter_before_1",
+    "p5_refine_execution_jitter_20261007_jitter_before_2",
+    "p5_refine_execution_jitter_20261007_jitter_before_3",
+    "p5_refine_execution_jitter_20261007_jitter_after_1",
+    "p5_refine_execution_jitter_20261007_jitter_after_2",
+    "p5_refine_execution_jitter_20261007_jitter_after_3"
+  ],
+  "failures": [],
+  "insufficient": [
+    "p5_refine_execution_jitter_20261007_jitter_before_1: unknown_rejection: no complete same-freeze evidence",
+    "p5_refine_execution_jitter_20261007_jitter_before_1: expired_depth_rejection: no complete same-freeze evidence",
+    "p5_refine_execution_jitter_20261007_jitter_before_1: stale_command_rejection: no complete same-freeze evidence",
+    "p5_refine_execution_jitter_20261007_jitter_before_1: variant_sha256 not SHA256",
+    "p5_refine_execution_jitter_20261007_jitter_before_1: conditions_sha256 not SHA256",
+    "p5_refine_execution_jitter_20261007_jitter_before_1: freeze not independently verified",
+    "p5_refine_execution_jitter_20261007_jitter_before_2: unknown_rejection: no complete same-freeze evidence",
+    "p5_refine_execution_jitter_20261007_jitter_before_2: expired_depth_rejection: no complete same-freeze evidence",
+    "p5_refine_execution_jitter_20261007_jitter_before_2: stale_command_rejection: no complete same-freeze evidence",
+    "p5_refine_execution_jitter_20261007_jitter_before_2: variant_sha256 not SHA256",
+    "p5_refine_execution_jitter_20261007_jitter_before_2: conditions_sha256 not SHA256",
+    "p5_refine_execution_jitter_20261007_jitter_before_2: freeze not independently verified",
+    "p5_refine_execution_jitter_20261007_jitter_before_3: unknown_rejection: no complete same-freeze evidence",
+    "p5_refine_execution_jitter_20261007_jitter_before_3: expired_depth_rejection: no complete same-freeze evidence",
+    "p5_refine_execution_jitter_20261007_jitter_before_3: stale_command_rejection: no complete same-freeze evidence",
+    "p5_refine_execution_jitter_20261007_jitter_before_3: variant_sha256 not SHA256",
+    "p5_refine_execution_jitter_20261007_jitter_before_3: conditions_sha256 not SHA256",
+    "p5_refine_execution_jitter_20261007_jitter_before_3: freeze not independently verified",
+    "p5_refine_execution_jitter_20261007_jitter_after_1: unknown_rejection: no complete same-freeze evidence",
+    "p5_refine_execution_jitter_20261007_jitter_after_1: expired_depth_rejection: no complete same-freeze evidence",
+    "p5_refine_execution_jitter_20261007_jitter_after_1: stale_command_rejection: no complete same-freeze evidence",
+    "p5_refine_execution_jitter_20261007_jitter_after_1: variant_sha256 not SHA256",
+    "p5_refine_execution_jitter_20261007_jitter_after_1: conditions_sha256 not SHA256",
+    "p5_refine_execution_jitter_20261007_jitter_after_1: freeze not independently verified",
+    "p5_refine_execution_jitter_20261007_jitter_after_2: unknown_rejection: no complete same-freeze evidence",
+    "p5_refine_execution_jitter_20261007_jitter_after_2: expired_depth_rejection: no complete same-freeze evidence",
+    "p5_refine_execution_jitter_20261007_jitter_after_2: stale_command_rejection: no complete same-freeze evidence",
+    "p5_refine_execution_jitter_20261007_jitter_after_2: variant_sha256 not SHA256",
+    "p5_refine_execution_jitter_20261007_jitter_after_2: conditions_sha256 not SHA256",
+    "p5_refine_execution_jitter_20261007_jitter_after_2: freeze not independently verified",
+    "p5_refine_execution_jitter_20261007_jitter_after_3: unknown_rejection: no complete same-freeze evidence",
+    "p5_refine_execution_jitter_20261007_jitter_after_3: expired_depth_rejection: no complete same-freeze evidence",
+    "p5_refine_execution_jitter_20261007_jitter_after_3: stale_command_rejection: no complete same-freeze evidence",
+    "p5_refine_execution_jitter_20261007_jitter_after_3: variant_sha256 not SHA256",
+    "p5_refine_execution_jitter_20261007_jitter_after_3: conditions_sha256 not SHA256",
+    "p5_refine_execution_jitter_20261007_jitter_after_3: freeze not independently verified",
+    "no prespecified plan; no retention decision"
+  ],
+  "interpretation": "Safety/metadata contracts are caller-supplied attestations with hashed evidence, not proofs extracted from arbitrary documents. Only registered scenarios are covered; no general statistical guarantee or real-flight claim.",
+  "decision": "DESCRIPTIVE_ONLY",
+  "input_files": [
+    {
+      "path": "/home/starry/isaac-data/EGO1P5/performance/six_axis_refinement_20261007/closed_loop/p5_refine_execution_jitter_20261007/p5_refine_execution_jitter_20261007_analysis.json",
+      "sha256": "fe0aa5d72c2fc8f5d28548c1f38fa2b603fed985a039555c7f559adf0724c86f"
+    },
+    {
+      "path": "/home/starry/isaac-data/EGO1P5/performance/six_axis_refinement_20261007/closed_loop/p5_refine_execution_jitter_20261007/p5_refine_execution_jitter_20261007_analysis.json",
+      "sha256": "fe0aa5d72c2fc8f5d28548c1f38fa2b603fed985a039555c7f559adf0724c86f"
+    }
+  ],
+  "raw_supplement_evidence": {
+    "p5_refine_execution_jitter_20261007_jitter_before_1": {
+      "metadata": {},
+      "files": [
+        {
+          "kind": "csv",
+          "path": "/home/starry/isaac-data/EGO1P5/performance/six_axis_refinement_20261007/closed_loop/p5_refine_execution_jitter_20261007/p5_refine_execution_jitter_20261007_jitter_before_1.csv",
+          "sha256": "e551455a6c7a95dd486e6b48302f04404b4414af27e6cdd278ce8fb493da7460"
+        },
+        {
+          "kind": "performance",
+          "path": "/home/starry/isaac-data/EGO1P5/performance/six_axis_refinement_20261007/closed_loop/p5_refine_execution_jitter_20261007/p5_refine_execution_jitter_20261007_jitter_before_1_performance.md",
+          "sha256": "88885b42045ef7c208db9e44de1bd9870cdf9d0f3084108635bd6d8f246b6212"
+        },
+        {
+          "kind": "log",
+          "path": "/home/starry/isaac-data/EGO1P5/performance/six_axis_refinement_20261007/closed_loop/p5_refine_execution_jitter_20261007/p5_refine_execution_jitter_20261007_jitter_before_1.log",
+          "sha256": "9a28919b097582d9819e70c419940bb385e20378ce2535dc30a39226415fc765"
+        }
+      ],
+      "release": {
+        "events": [
+          {
+            "t": 15.0,
+            "target_s": 0.0,
+            "brake_s": 0.6166666666666671,
+            "observed_interval_s": 1.9833333333333343,
+            "initial_speed_mps": 0.7768587260881545
+          },
+          {
+            "t": 26.0,
+            "target_s": 0.0,
+            "brake_s": 0.4499999999999993,
+            "observed_interval_s": 1.9833333333333343,
+            "initial_speed_mps": 0.5798747729530374
+          },
+          {
+            "t": 32.0,
+            "target_s": 0.0,
+            "brake_s": 0.43333333333333,
+            "observed_interval_s": 2.0166666666666657,
+            "initial_speed_mps": 0.5630950287976311
+          }
+        ],
+        "event_count": 3,
+        "complete": true,
+        "target_p95_s": 0.0,
+        "brake_p95_s": 0.6000000000000003,
+        "target_max_s": 0.0
+      },
+      "lifecycle": {
+        "nonzero_child_exits": [],
+        "compute_deadlines": 0,
+        "rosout_invalid_context": 1
+      }
+    },
+    "p5_refine_execution_jitter_20261007_jitter_before_2": {
+      "metadata": {},
+      "files": [
+        {
+          "kind": "csv",
+          "path": "/home/starry/isaac-data/EGO1P5/performance/six_axis_refinement_20261007/closed_loop/p5_refine_execution_jitter_20261007/p5_refine_execution_jitter_20261007_jitter_before_2.csv",
+          "sha256": "36379c580fd2868d380e7c50858f0a60ff7172e141beaa435ac96d85f546b589"
+        },
+        {
+          "kind": "performance",
+          "path": "/home/starry/isaac-data/EGO1P5/performance/six_axis_refinement_20261007/closed_loop/p5_refine_execution_jitter_20261007/p5_refine_execution_jitter_20261007_jitter_before_2_performance.md",
+          "sha256": "92694924009cd1287ad7b6fa9b393750ef755647668123226093ae36a1b8b4d2"
+        },
+        {
+          "kind": "log",
+          "path": "/home/starry/isaac-data/EGO1P5/performance/six_axis_refinement_20261007/closed_loop/p5_refine_execution_jitter_20261007/p5_refine_execution_jitter_20261007_jitter_before_2.log",
+          "sha256": "c96cb9b62539ae0d7ca69322fa7627438eb94810c989ec41f6fc1ce4a6ee2f9d"
+        }
+      ],
+      "release": {
+        "events": [
+          {
+            "t": 15.0,
+            "target_s": 0.0,
+            "brake_s": 0.6166666666666671,
+            "observed_interval_s": 1.9833333333333343,
+            "initial_speed_mps": 0.7771400431882792
+          },
+          {
+            "t": 26.0,
+            "target_s": 0.0,
+            "brake_s": 0.4499999999999993,
+            "observed_interval_s": 1.9833333333333343,
+            "initial_speed_mps": 0.5798650873056576
+          },
+          {
+            "t": 32.0,
+            "target_s": 0.0,
+            "brake_s": 0.43333333333333,
+            "observed_interval_s": 2.0166666666666657,
+            "initial_speed_mps": 0.5630950287980393
+          }
+        ],
+        "event_count": 3,
+        "complete": true,
+        "target_p95_s": 0.0,
+        "brake_p95_s": 0.6000000000000003,
+        "target_max_s": 0.0
+      },
+      "lifecycle": {
+        "nonzero_child_exits": [],
+        "compute_deadlines": 0,
+        "rosout_invalid_context": 1
+      }
+    },
+    "p5_refine_execution_jitter_20261007_jitter_before_3": {
+      "metadata": {},
+      "files": [
+        {
+          "kind": "csv",
+          "path": "/home/starry/isaac-data/EGO1P5/performance/six_axis_refinement_20261007/closed_loop/p5_refine_execution_jitter_20261007/p5_refine_execution_jitter_20261007_jitter_before_3.csv",
+          "sha256": "1c70d6207ca6b90325a7cdb1b10fec2f7e70d197ab5cde03a0fe52b6c25a16cc"
+        },
+        {
+          "kind": "performance",
+          "path": "/home/starry/isaac-data/EGO1P5/performance/six_axis_refinement_20261007/closed_loop/p5_refine_execution_jitter_20261007/p5_refine_execution_jitter_20261007_jitter_before_3_performance.md",
+          "sha256": "3d9b319b4b2edf11ecd5a4492bb751a747bb320a202c523767a24c894d2bcd46"
+        },
+        {
+          "kind": "log",
+          "path": "/home/starry/isaac-data/EGO1P5/performance/six_axis_refinement_20261007/closed_loop/p5_refine_execution_jitter_20261007/p5_refine_execution_jitter_20261007_jitter_before_3.log",
+          "sha256": "9551cc8628f0bf6a2c78b7398fe9dc07e2853e13d32e54d3124a0a8a601ee1dd"
+        }
+      ],
+      "release": {
+        "events": [
+          {
+            "t": 15.0,
+            "target_s": 0.0,
+            "brake_s": 0.6166666666666671,
+            "observed_interval_s": 1.9833333333333343,
+            "initial_speed_mps": 0.7747507175374178
+          },
+          {
+            "t": 26.0,
+            "target_s": 0.0,
+            "brake_s": 0.4499999999999993,
+            "observed_interval_s": 1.9833333333333343,
+            "initial_speed_mps": 0.5798667650134537
+          },
+          {
+            "t": 32.0,
+            "target_s": 0.0,
+            "brake_s": 0.43333333333333,
+            "observed_interval_s": 2.0166666666666657,
+            "initial_speed_mps": 0.5630950286637857
+          }
+        ],
+        "event_count": 3,
+        "complete": true,
+        "target_p95_s": 0.0,
+        "brake_p95_s": 0.6000000000000003,
+        "target_max_s": 0.0
+      },
+      "lifecycle": {
+        "nonzero_child_exits": [],
+        "compute_deadlines": 0,
+        "rosout_invalid_context": 1
+      }
+    },
+    "p5_refine_execution_jitter_20261007_jitter_after_1": {
+      "metadata": {},
+      "files": [
+        {
+          "kind": "csv",
+          "path": "/home/starry/isaac-data/EGO1P5/performance/six_axis_refinement_20261007/closed_loop/p5_refine_execution_jitter_20261007/p5_refine_execution_jitter_20261007_jitter_after_1.csv",
+          "sha256": "64fd884593816188e9fc35fbbde3f31c47706d1fe87269c1b3a87d3e310492f2"
+        },
+        {
+          "kind": "performance",
+          "path": "/home/starry/isaac-data/EGO1P5/performance/six_axis_refinement_20261007/closed_loop/p5_refine_execution_jitter_20261007/p5_refine_execution_jitter_20261007_jitter_after_1_performance.md",
+          "sha256": "eae32d1bc81f40c8a70e4113033a6097dd4ba8fce7a026f9f045b0f2d62f8bd8"
+        },
+        {
+          "kind": "log",
+          "path": "/home/starry/isaac-data/EGO1P5/performance/six_axis_refinement_20261007/closed_loop/p5_refine_execution_jitter_20261007/p5_refine_execution_jitter_20261007_jitter_after_1.log",
+          "sha256": "70bc32ecd525055b2153f420b29d86c7d6e3700f5602be97a219917b5c24ee2c"
+        }
+      ],
+      "release": {
+        "events": [
+          {
+            "t": 15.0,
+            "target_s": 0.0,
+            "brake_s": 0.6166666666666671,
+            "observed_interval_s": 1.9833333333333343,
+            "initial_speed_mps": 0.7778722044838692
+          },
+          {
+            "t": 26.0,
+            "target_s": 0.0,
+            "brake_s": 0.4499999999999993,
+            "observed_interval_s": 1.9833333333333343,
+            "initial_speed_mps": 0.5798821628856737
+          },
+          {
+            "t": 32.0,
+            "target_s": 0.0,
+            "brake_s": 0.43333333333333,
+            "observed_interval_s": 2.0166666666666657,
+            "initial_speed_mps": 0.5630950381464932
+          }
+        ],
+        "event_count": 3,
+        "complete": true,
+        "target_p95_s": 0.0,
+        "brake_p95_s": 0.6000000000000003,
+        "target_max_s": 0.0
+      },
+      "lifecycle": {
+        "nonzero_child_exits": [],
+        "compute_deadlines": 0,
+        "rosout_invalid_context": 1
+      }
+    },
+    "p5_refine_execution_jitter_20261007_jitter_after_2": {
+      "metadata": {},
+      "files": [
+        {
+          "kind": "csv",
+          "path": "/home/starry/isaac-data/EGO1P5/performance/six_axis_refinement_20261007/closed_loop/p5_refine_execution_jitter_20261007/p5_refine_execution_jitter_20261007_jitter_after_2.csv",
+          "sha256": "bdec524d45732f96eb1ef0f0a3c0cb27683b3124ead6cbba4ea9cae534a8f62d"
+        },
+        {
+          "kind": "performance",
+          "path": "/home/starry/isaac-data/EGO1P5/performance/six_axis_refinement_20261007/closed_loop/p5_refine_execution_jitter_20261007/p5_refine_execution_jitter_20261007_jitter_after_2_performance.md",
+          "sha256": "7b28b8c3ad89ed925a36d899252b1126b6545c2e6e5da287b20e8b84f552de3d"
+        },
+        {
+          "kind": "log",
+          "path": "/home/starry/isaac-data/EGO1P5/performance/six_axis_refinement_20261007/closed_loop/p5_refine_execution_jitter_20261007/p5_refine_execution_jitter_20261007_jitter_after_2.log",
+          "sha256": "71c05cd5e95f05e7189e9c0f8606532169695709e80acd629621df3a792f2536"
+        }
+      ],
+      "release": {
+        "events": [
+          {
+            "t": 15.0,
+            "target_s": 0.0,
+            "brake_s": 0.6166666666666671,
+            "observed_interval_s": 1.9833333333333343,
+            "initial_speed_mps": 0.7761743740197562
+          },
+          {
+            "t": 26.0,
+            "target_s": 0.0,
+            "brake_s": 0.4499999999999993,
+            "observed_interval_s": 1.9833333333333343,
+            "initial_speed_mps": 0.5798821813164335
+          },
+          {
+            "t": 32.0,
+            "target_s": 0.0,
+            "brake_s": 0.43333333333333,
+            "observed_interval_s": 2.0166666666666657,
+            "initial_speed_mps": 0.5630950384023679
+          }
+        ],
+        "event_count": 3,
+        "complete": true,
+        "target_p95_s": 0.0,
+        "brake_p95_s": 0.6000000000000003,
+        "target_max_s": 0.0
+      },
+      "lifecycle": {
+        "nonzero_child_exits": [],
+        "compute_deadlines": 0,
+        "rosout_invalid_context": 1
+      }
+    },
+    "p5_refine_execution_jitter_20261007_jitter_after_3": {
+      "metadata": {},
+      "files": [
+        {
+          "kind": "csv",
+          "path": "/home/starry/isaac-data/EGO1P5/performance/six_axis_refinement_20261007/closed_loop/p5_refine_execution_jitter_20261007/p5_refine_execution_jitter_20261007_jitter_after_3.csv",
+          "sha256": "128d6bf3dcecf61f1666af4226d35697df1413a106cbe9372bc64c40db7b8a42"
+        },
+        {
+          "kind": "performance",
+          "path": "/home/starry/isaac-data/EGO1P5/performance/six_axis_refinement_20261007/closed_loop/p5_refine_execution_jitter_20261007/p5_refine_execution_jitter_20261007_jitter_after_3_performance.md",
+          "sha256": "d4af74ea4f6fc94bf3a4fee7b06ea93fe9142c0910334d1fd27eb5076b5e7832"
+        },
+        {
+          "kind": "log",
+          "path": "/home/starry/isaac-data/EGO1P5/performance/six_axis_refinement_20261007/closed_loop/p5_refine_execution_jitter_20261007/p5_refine_execution_jitter_20261007_jitter_after_3.log",
+          "sha256": "3efa3b1d543cdd30eaa04393c6a1a3ce2af46ea0f344d3a95bbfaedff624a90a"
+        }
+      ],
+      "release": {
+        "events": [
+          {
+            "t": 15.0,
+            "target_s": 0.0,
+            "brake_s": 0.6166666666666671,
+            "observed_interval_s": 1.9833333333333343,
+            "initial_speed_mps": 0.7780318990762414
+          },
+          {
+            "t": 26.0,
+            "target_s": 0.0,
+            "brake_s": 0.4499999999999993,
+            "observed_interval_s": 1.9833333333333343,
+            "initial_speed_mps": 0.5798821813164335
+          },
+          {
+            "t": 32.0,
+            "target_s": 0.0,
+            "brake_s": 0.43333333333333,
+            "observed_interval_s": 2.0166666666666657,
+            "initial_speed_mps": 0.563095038351193
+          }
+        ],
+        "event_count": 3,
+        "complete": true,
+        "target_p95_s": 0.0,
+        "brake_p95_s": 0.6000000000000003,
+        "target_max_s": 0.0
+      },
+      "lifecycle": {
+        "nonzero_child_exits": [],
+        "compute_deadlines": 0,
+        "rosout_invalid_context": 1
+      }
+    }
+  },
+  "selection_filters": {
+    "before": "_before_",
+    "after": "_after_"
+  }
+}

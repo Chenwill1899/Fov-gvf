@@ -1,0 +1,76 @@
+{
+  "label": "p5_retain_goal_only_confirm_20261008",
+  "design": "Three fresh goal A/B pairs; manual unchanged binary plus one default spin route validation",
+  "order": [
+    [
+      "baseline",
+      "v4"
+    ],
+    [
+      "v4",
+      "baseline"
+    ],
+    [
+      "baseline",
+      "v4"
+    ]
+  ],
+  "scope": "P5 main Shell fixed-goal route only; manual core equals frozen baseline byte-for-byte; older demo unchanged",
+  "controller_identity": {
+    "manual/depth_angular_controller": {
+      "path": "/tmp/fov_gvf_ego1p5_isaac_install/pc_gvf/lib/pc_gvf/depth_angular_controller",
+      "sha256": "4b82e8d3c1381b8d9b25af5510cf1d11dfaafb3f99125ffffeecffea64506c15",
+      "reference": "performance/retain_gains_20261008/baseline/depth_angular_controller",
+      "expected_sha256": "4b82e8d3c1381b8d9b25af5510cf1d11dfaafb3f99125ffffeecffea64506c15",
+      "matches": true
+    },
+    "manual/paper_replay": {
+      "path": "/tmp/fov_gvf_ego1p5_isaac_install/pc_gvf/lib/pc_gvf/paper_replay",
+      "sha256": "b518bb7461b93cb12ecf4bb02ea0f2eb9f84870125a47b1ee8c8d060fe6d9683",
+      "reference": "performance/retain_gains_20261008/baseline/paper_replay",
+      "expected_sha256": "b518bb7461b93cb12ecf4bb02ea0f2eb9f84870125a47b1ee8c8d060fe6d9683",
+      "matches": true
+    },
+    "manual/libpc_gvf_depth_angular_core.a": {
+      "path": "/tmp/fov_gvf_ego1p5_isaac_install/pc_gvf/lib/libpc_gvf_depth_angular_core.a",
+      "sha256": "8bd00e8cee30082c4e28fabfb56d43f247de5d865da9a3ea76ff7942bdde5723",
+      "reference": "performance/retain_gains_20261008/baseline/libpc_gvf_depth_angular_core.a",
+      "expected_sha256": "8bd00e8cee30082c4e28fabfb56d43f247de5d865da9a3ea76ff7942bdde5723",
+      "matches": true
+    },
+    "goal/depth_angular_controller": {
+      "path": "/tmp/fov_gvf_ego1p5_isaac_install/pc_gvf/lib/pc_gvf/depth_angular_controller_goal",
+      "sha256": "2569161496747e8fa5e10cb3dfd51233dfd8c34b33aa68d7c2d4f8a766fd1047",
+      "reference": "performance/retain_gains_20261008/controllers/v4/depth_angular_controller",
+      "expected_sha256": "2569161496747e8fa5e10cb3dfd51233dfd8c34b33aa68d7c2d4f8a766fd1047",
+      "matches": true
+    },
+    "goal/paper_replay": {
+      "path": "/tmp/fov_gvf_ego1p5_isaac_install/pc_gvf/lib/pc_gvf/paper_replay_goal",
+      "sha256": "5fbf5493fee3102a0dbd14449e2c6a94c6705504581670507daca4c246dfe3c8",
+      "reference": "performance/retain_gains_20261008/controllers/v4/paper_replay",
+      "expected_sha256": "5fbf5493fee3102a0dbd14449e2c6a94c6705504581670507daca4c246dfe3c8",
+      "matches": true
+    },
+    "goal/libpc_gvf_depth_angular_core.a": {
+      "path": "/tmp/fov_gvf_ego1p5_isaac_install/pc_gvf/lib/libpc_gvf_depth_angular_core_goal.a",
+      "sha256": "6ccc2734d82c9b1698195c42a153cc0dc0cdad272bf046f3f68da1f8ab43412a",
+      "reference": "performance/retain_gains_20261008/controllers/v4/libpc_gvf_depth_angular_core.a",
+      "expected_sha256": "6ccc2734d82c9b1698195c42a153cc0dc0cdad272bf046f3f68da1f8ab43412a",
+      "matches": true
+    }
+  },
+  "driver_sha256": "edac3525f6cf094634371c78bda99924f1efb045bbf2a85e5f165bb1578c1f87",
+  "metrics": [
+    "arrival_s",
+    "path_efficiency",
+    "stop_s",
+    "longest_stop_s",
+    "jerk_rms_mps3",
+    "jerk_p95_mps3",
+    "callback_p95_ms",
+    "callback_max_ms"
+  ],
+  "rule": "All safety/identity/motion gates pass. Fresh goal paired metrics use original magnitude-free policy, report original and fresh separately, no adverse task metric may be cancelled by compute improvement. Run this one fixed confirmation batch only; abandon if adverse signal remains. Manual default runtime must select exact baseline binary. Geometry benefit bound to the identical v4 replay binary; no claim of all-mode gain.",
+  "new_sample_selection": "This mode-specific hypothesis was chosen after the 36-run study; these six goal runs are new confirmation data, never relabeled as part of the old four-way plan."
+}

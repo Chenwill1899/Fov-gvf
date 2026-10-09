@@ -1,0 +1,97 @@
+{
+  "stage": "stage6_shared",
+  "comparison": "Frozen pre-refinement production source versus current production source; same probe source, inputs, seed, O3/C++14 compiler flags",
+  "clock": "process CPU milliseconds",
+  "repeats": 5,
+  "comparisons": [
+    {
+      "input_count": 32,
+      "baseline_mean_cpu_ms": 4.0828,
+      "optimized_mean_cpu_ms": 0.1928,
+      "speedup": 21.17634854771784,
+      "baseline_samples_cpu_ms": [
+        4.642,
+        3.185,
+        4.515,
+        3.442,
+        4.63
+      ],
+      "optimized_samples_cpu_ms": [
+        0.193,
+        0.19,
+        0.19,
+        0.191,
+        0.2
+      ]
+    },
+    {
+      "input_count": 256,
+      "baseline_mean_cpu_ms": 32.1436,
+      "optimized_mean_cpu_ms": 0.1942,
+      "speedup": 165.51802265705456,
+      "baseline_samples_cpu_ms": [
+        32.437,
+        31.463,
+        32.407,
+        32.241,
+        32.17
+      ],
+      "optimized_samples_cpu_ms": [
+        0.191,
+        0.191,
+        0.198,
+        0.196,
+        0.195
+      ]
+    },
+    {
+      "input_count": 1024,
+      "baseline_mean_cpu_ms": 121.7392,
+      "optimized_mean_cpu_ms": 0.21780000000000002,
+      "speedup": 558.9494949494949,
+      "baseline_samples_cpu_ms": [
+        124.885,
+        127.662,
+        130.84,
+        109.721,
+        115.588
+      ],
+      "optimized_samples_cpu_ms": [
+        0.233,
+        0.196,
+        0.192,
+        0.192,
+        0.276
+      ]
+    },
+    {
+      "input_count": 4096,
+      "baseline_mean_cpu_ms": 494.8016,
+      "optimized_mean_cpu_ms": 0.1946,
+      "speedup": 2542.6598150051386,
+      "baseline_samples_cpu_ms": [
+        512.043,
+        476.531,
+        492.334,
+        509.128,
+        483.972
+      ],
+      "optimized_samples_cpu_ms": [
+        0.195,
+        0.195,
+        0.196,
+        0.189,
+        0.198
+      ]
+    }
+  ],
+  "valid_input_equivalence": true,
+  "baseline_stderr": "overcapacity_hazards_accepted=32 invalid_packets_disabled_clear_map=0 expired_capacity_rejected=0 near_hazards_missed=0\n",
+  "optimized_stderr": "overcapacity_hazards_accepted=0 invalid_packets_disabled_clear_map=0 expired_capacity_rejected=0 near_hazards_missed=0\n",
+  "safety_regression": "temporal_edge_queries=63 random_queries=2000 mismatches=0\nexit_code=0\n",
+  "limitations": [
+    "Analytic production-module microbenchmark, not Isaac, ROS or physical robot flight.",
+    "CPU timings exclude shared packet merge precomputation and dynamic segment queries; speedups only claim explicitly measured phase.",
+    "Default feature flags remain disabled; no proof of global navigation superiority."
+  ]
+}

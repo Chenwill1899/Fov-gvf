@@ -1,0 +1,89 @@
+{
+  "source_manifest_sha256": "08bd451e7b66dae7ac923e06c6e0d6c73e8a3960b23e7678ce414b76db2295c1",
+  "controller_sha256": "b778b2e07b78bcac1a173b3e50f17a9ff3b9690cca1035d9a7dc511497099eb5",
+  "freeze": "/home/starry/isaac-data/EGO1P5/performance/adaptive_trials_20261007/candidates_bc",
+  "checks": {
+    "unknown_rejection": {
+      "cases": 2,
+      "unsafe": 0,
+      "passed": true,
+      "source_file": "src/pc_gvf/test/cpp/paper_guidance_check.cpp",
+      "assertion_messages": [
+        "unobserved near field accepted",
+        "unknown inside body footprint accepted"
+      ],
+      "test_names": [
+        "paper_guidance_check"
+      ],
+      "evidence": [
+        "contract_evidence/ctest_candidates_original.log",
+        "contract_evidence/paper_guidance_check.cpp",
+        "contract_evidence/paper_guidance.cpp",
+        "contract_evidence/depth_angular_controller_node.cpp"
+      ],
+      "scope": "Two unconditional component negative assertions in the frozen PaperGuidance test. Not real-world unknown-space coverage and not candidate-specific end-to-end sensor faults."
+    },
+    "expired_depth_rejection": {
+      "cases": 2,
+      "unsafe": 0,
+      "passed": true,
+      "source_files": [
+        "src/pc_gvf/test/cpp/paper_guidance_check.cpp",
+        "src/pc_gvf/test/cpp/observed_space_check.cpp"
+      ],
+      "assertion_messages": [
+        "stale observation accepted",
+        "expired history authorized motion"
+      ],
+      "test_names": [
+        "paper_guidance_check",
+        "observed_space_check"
+      ],
+      "evidence": [
+        "contract_evidence/ctest_candidates_original.log",
+        "contract_evidence/paper_guidance_check.cpp",
+        "contract_evidence/observed_space_check.cpp",
+        "contract_evidence/paper_guidance.cpp"
+      ],
+      "scope": "Two unconditional component negative assertions: stale current observation and expired historical evidence. No claim all real timing faults covered."
+    },
+    "stale_command_rejection": {
+      "cases": 1,
+      "unsafe": 0,
+      "passed": true,
+      "source_file": "src/pc_gvf/test/test_manual_control_math.py",
+      "test_names": [
+        "test_manual_control_math"
+      ],
+      "python_case": "test_timed_sample_repeats_without_refreshing_receipt_or_sequence",
+      "assertion": "sample.select(10.101, True)[:2] == ((0., 0., 0.), 0)",
+      "evidence": [
+        "contract_evidence/ctest_candidates_original.log",
+        "contract_evidence/manual_control_math_39_passed.txt",
+        "contract_evidence/manual_control_math_39_passed.xunit.xml",
+        "contract_evidence/test_manual_control_math.py",
+        "contract_evidence/manual_control_math.py",
+        "contract_evidence/run_fov_gvf_navigation.py"
+      ],
+      "scope": "One expired-receipt rejection assertion, selected from the 39 passing helper cases. The full 39 is not used as a stale-only count."
+    }
+  },
+  "source_sha256": {
+    "src/pc_gvf/test/cpp/paper_guidance_check.cpp": "b7a8a5c026663c09bb460e7b5b8e3327a376181f3400bd36ec652a3bd7ffc449",
+    "src/pc_gvf/test/cpp/observed_space_check.cpp": "0a1724931ba76a18e933aa7d79fd304c738336f97d0e8251712d283432258f5e",
+    "src/pc_gvf/test/test_manual_control_math.py": "160b1e005a7661581b382fdf77bddd9fa5094d9ac43b32a802c1262d2160a2e3",
+    "src/pc_gvf/src/paper_guidance.cpp": "b1cf1b0fce4e28dd8e398923613a1bc550cfac8236039b0943fadcae3b34621f",
+    "src/pc_gvf/src/depth_angular_controller_node.cpp": "e836e1fbc4a51ea77d9b19307925ab7bbd31406c76d2dba8171a2185e435025e",
+    "scripts/isaac/manual_control_math.py": "4f5e16e63d2b830a1c077ae8ab2644d20b3563ff759605a5c15f48a878f2ac44",
+    "scripts/isaac/run_fov_gvf_navigation.py": "c085dcfedbc5bcad528e814f4e8a1fed5e73d6a0f35ccee975210645a0f67643"
+  },
+  "retained_prior_failures": [
+    "contract_evidence/ctest_candidates_original.log",
+    "contract_evidence/platform_first_import_failure.log",
+    "contract_evidence/platform_second_import_failure.log"
+  ],
+  "successful_environment_retries": [
+    "contract_evidence/ctest_candidates_environment_retry.log",
+    "contract_evidence/platform_ros_environment_15_passed.log"
+  ]
+}

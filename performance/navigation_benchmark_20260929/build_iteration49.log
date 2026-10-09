@@ -1,0 +1,26 @@
+Starting >>> pc_gvf_msgs
+Finished <<< pc_gvf_msgs [0.17s]
+Starting >>> pc_gvf_platforms
+Finished <<< pc_gvf_platforms [0.32s]
+Starting >>> pc_gvf
+--- stderr: pc_gvf
+/usr/bin/ld: libpc_gvf_depth_angular_core.a(local_depth_path.cpp.o): in function `pc_gvf::depth_angular::localDepthPath(std::vector<std::shared_ptr<pc_gvf::depth_angular::DepthObservation const>, std::allocator<std::shared_ptr<pc_gvf::depth_angular::DepthObservation const> > > const&, Eigen::Matrix<double, 3, 1, 0, 3, 1> const&, Eigen::Matrix<double, 3, 1, 0, 3, 1> const&, Eigen::Matrix<double, 3, 1, 0, 3, 1> const&, double, double)':
+local_depth_path.cpp:(.text+0x2fa): undefined reference to `Eigen::MatrixBase<Eigen::Matrix<double, 3, 1, 0, 3, 1> >::cross_product_return_type<Eigen::Matrix<double, 3, 1, 0, 3, 1> >::type Eigen::MatrixBase<Eigen::Matrix<double, 3, 1, 0, 3, 1> >::cross<Eigen::Matrix<double, 3, 1, 0, 3, 1> >(Eigen::MatrixBase<Eigen::Matrix<double, 3, 1, 0, 3, 1> > const&) const'
+/usr/bin/ld: local_depth_path.cpp:(.text+0x1471): undefined reference to `Eigen::MatrixBase<Eigen::Matrix<double, 3, 1, 0, 3, 1> >::unitOrthogonal() const'
+collect2: error: ld returned 1 exit status
+gmake[2]: *** [CMakeFiles/local_depth_path_check.dir/build.make:101：local_depth_path_check] 错误 1
+gmake[1]: *** [CMakeFiles/Makefile2:328：CMakeFiles/local_depth_path_check.dir/all] 错误 2
+gmake[1]: *** 正在等待未完成的任务....
+/usr/bin/ld: libpc_gvf_depth_angular_core.a(local_depth_path.cpp.o): in function `pc_gvf::depth_angular::localDepthPath(std::vector<std::shared_ptr<pc_gvf::depth_angular::DepthObservation const>, std::allocator<std::shared_ptr<pc_gvf::depth_angular::DepthObservation const> > > const&, Eigen::Matrix<double, 3, 1, 0, 3, 1> const&, Eigen::Matrix<double, 3, 1, 0, 3, 1> const&, Eigen::Matrix<double, 3, 1, 0, 3, 1> const&, double, double)':
+local_depth_path.cpp:(.text+0x2fa): undefined reference to `Eigen::MatrixBase<Eigen::Matrix<double, 3, 1, 0, 3, 1> >::cross_product_return_type<Eigen::Matrix<double, 3, 1, 0, 3, 1> >::type Eigen::MatrixBase<Eigen::Matrix<double, 3, 1, 0, 3, 1> >::cross<Eigen::Matrix<double, 3, 1, 0, 3, 1> >(Eigen::MatrixBase<Eigen::Matrix<double, 3, 1, 0, 3, 1> > const&) const'
+/usr/bin/ld: local_depth_path.cpp:(.text+0x1471): undefined reference to `Eigen::MatrixBase<Eigen::Matrix<double, 3, 1, 0, 3, 1> >::unitOrthogonal() const'
+collect2: error: ld returned 1 exit status
+gmake[2]: *** [CMakeFiles/depth_angular_controller.dir/build.make:203：depth_angular_controller] 错误 1
+gmake[1]: *** [CMakeFiles/Makefile2:223：CMakeFiles/depth_angular_controller.dir/all] 错误 2
+gmake: *** [Makefile:146：all] 错误 2
+---
+Failed   <<< pc_gvf [15.0s, exited with code 2]
+
+Summary: 2 packages finished [15.6s]
+  1 package failed: pc_gvf
+  1 package had stderr output: pc_gvf

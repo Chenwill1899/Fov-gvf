@@ -1,0 +1,97 @@
+{
+  "stage": "stage2_dynamic",
+  "comparison": "Frozen pre-refinement production source versus current production source; same probe source, inputs, seed, O3/C++14 compiler flags",
+  "clock": "process CPU milliseconds",
+  "repeats": 5,
+  "comparisons": [
+    {
+      "input_count": 16,
+      "baseline_mean_cpu_ms": 0.211,
+      "optimized_mean_cpu_ms": 0.185,
+      "speedup": 1.1405405405405404,
+      "baseline_samples_cpu_ms": [
+        0.225,
+        0.214,
+        0.203,
+        0.205,
+        0.208
+      ],
+      "optimized_samples_cpu_ms": [
+        0.198,
+        0.183,
+        0.185,
+        0.18,
+        0.179
+      ]
+    },
+    {
+      "input_count": 64,
+      "baseline_mean_cpu_ms": 1.3606,
+      "optimized_mean_cpu_ms": 0.9616,
+      "speedup": 1.4149334442595674,
+      "baseline_samples_cpu_ms": [
+        1.32,
+        1.447,
+        1.332,
+        1.356,
+        1.348
+      ],
+      "optimized_samples_cpu_ms": [
+        0.967,
+        0.975,
+        0.983,
+        0.953,
+        0.93
+      ]
+    },
+    {
+      "input_count": 256,
+      "baseline_mean_cpu_ms": 18.2286,
+      "optimized_mean_cpu_ms": 5.6498,
+      "speedup": 3.2264150943396226,
+      "baseline_samples_cpu_ms": [
+        15.542,
+        18.998,
+        22.777,
+        16.651,
+        17.175
+      ],
+      "optimized_samples_cpu_ms": [
+        5.445,
+        5.544,
+        6.522,
+        5.283,
+        5.455
+      ]
+    },
+    {
+      "input_count": 900,
+      "baseline_mean_cpu_ms": 253.1178,
+      "optimized_mean_cpu_ms": 41.2484,
+      "speedup": 6.136427109900021,
+      "baseline_samples_cpu_ms": [
+        259.254,
+        238.976,
+        248.406,
+        269.455,
+        249.498
+      ],
+      "optimized_samples_cpu_ms": [
+        46.042,
+        44.706,
+        44.144,
+        34.44,
+        36.91
+      ]
+    }
+  ],
+  "valid_input_equivalence": true,
+  "baseline_stderr": "malformed_accepted=4\n",
+  "optimized_stderr": "malformed_accepted=0\n",
+  "safety_regression": "index_tie=pass malformed_inputs=pass invalid_world_origin=pass\nexit_code=0\n",
+  "limitations": [
+    "Analytic production-module microbenchmark, not Isaac, ROS or physical robot flight.",
+    "CPU timings exclude shared packet merge precomputation and dynamic segment queries; speedups only claim explicitly measured phase.",
+    "Default feature flags remain disabled; no proof of global navigation superiority."
+  ]
+}

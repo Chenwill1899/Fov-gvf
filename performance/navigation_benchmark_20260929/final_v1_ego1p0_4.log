@@ -1,0 +1,540 @@
+[PERF] run=final_v1_ego1p0_4 log=/home/starry/isaac-data/EGO1P1/performance/navigation_benchmark_20260929/PERFORMANCE.md
+[INPUT] mode=goal scene_mode=cloud
+[INFO] [launch]: All log files can be found below /tmp/fov_gvf_ego1p1_isaac_ros_log/2026-09-29-22-39-30-666254-starry-System-Product-Name-94864
+[INFO] [launch]: Default logging verbosity is set to INFO
+[INFO] [depth_angular_controller-1]: process started with pid [94866]
+[INFO] [position_cmd_to_twist-2]: process started with pid [94868]
+[depth_angular_controller-1] [INFO] [1790692770.700347027] [depth_angular_controller]: C++ controller commands publish on /position_cmd; horizontal views=4
+[ROS CHECK] ROS_DOMAIN_ID=42 /position_cmd publishers=1
+Type: pc_gvf_msgs/msg/PositionCommand
+Publisher count: 1
+Subscription count: 1
+/depth_angular_controller
+/position_cmd_to_twist
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+E0000 00:00:1790692771.659858   94906 descriptor_database.cc:633] File already exists in database: grpc/health/v1/health.proto
+W0000 00:00:1790692771.659880   94906 message.cc:301] Protobuf GeneratedMessageFactory: File is already registered: grpc/health/v1/health.proto
+2026-09-29T14:39:31Z [Info] [carb] Logging to file: /home/starry/isaac-data/isaacsim/kit/logs/Kit/Isaac-Sim Python/6.0/kit_20260929_223931.log
+[0.044s] [ext: omni.assets.plugins-0.0.0] startup
+[0.045s] [ext: omni.blobkey-1.1.2] startup
+[0.045s] [ext: omni.kit.async_engine-0.0.3] startup
+[0.320s] [ext: omni.client.lib-1.1.1] startup
+[0.328s] [ext: omni.client-1.3.0] startup
+[0.330s] [ext: omni.protobuf.lib-1.0.0] startup
+[0.331s] [ext: omni.grpc.lib-1.0.0] startup
+[0.334s] [ext: omni.metrics.core-0.0.3] startup
+[0.334s] [ext: omni.datastore-0.0.0] startup
+[0.334s] [ext: omni.gpu_foundation.shadercache.vulkan-1.0.0] startup
+[0.336s] [ext: omni.hsscclient-1.1.4] startup
+[0.336s] [ext: omni.stats-1.0.1] startup
+[0.337s] [ext: omni.ujitso.default-1.0.0] startup
+[0.340s] [ext: omni.gpu_foundation-0.0.0] startup
+[0.471s] [ext: carb.windowing.plugins-1.0.1] startup
+[0.472s] [ext: omni.kit.renderer.init-1.0.1] startup
+2026-09-29T14:39:32Z [676ms] [Warning] [omni.rtx] Skipping unsupported non-NVIDIA GPU: AMD Unknown (RADV RAPHAEL_MENDOCINO)
+2026-09-29T14:39:32Z [677ms] [Warning] [omni.rtx] Skipping unsupported non-NVIDIA GPU: AMD Unknown (RADV RAPHAEL_MENDOCINO)
+
+|---------------------------------------------------------------------------------------------|
+| Driver Version: 580.178.04    | Graphics API: Vulkan
+|=============================================================================================|
+| GPU | Name                             | Active | LDA | GPU Memory | Vendor-ID | LUID       |
+|     |                                  |        |     |            | Device-ID | UUID       |
+|     |                                  |        |     |            | Bus-ID    |            |
+|---------------------------------------------------------------------------------------------|
+| 0   | NVIDIA GeForce RTX 5070          | Yes: 0 |     | 12227   MB | 10de      | 0          |
+|     |                                  |        |     |            | 2f04      | 348d89fe.. |
+|     |                                  |        |     |            | 1         |            |
+|---------------------------------------------------------------------------------------------|
+| 1   | AMD Unknown (RADV RAPHAEL_MEND.. |        |     | 10755   MB | 1002      | 0          |
+|     |                                  |        |     |            | 13c0      | 00000000.. |
+|     |                                  |        |     |            | c         |            |
+|=============================================================================================|
+| OS: 22.04.5 LTS (Jammy Jellyfish) ubuntu, Version: 22.04.5, Kernel: 6.8.0-138-generic
+| XServer Vendor: The X.Org Foundation, XServer Version: 12101004 (1.21.1.4)
+| Processor: AMD Ryzen 5 9600X 6-Core Processor
+| Cores: 6 | Logical Cores: 12
+|---------------------------------------------------------------------------------------------|
+| Total Memory (MB): 31241 | Free Memory: 23012
+| Total Page/Swap (MB): 15624 | Free Page/Swap: 15624
+|---------------------------------------------------------------------------------------------|
+2026-09-29T14:39:32Z [894ms] [Warning] [omni.rtx] CPU performance profile is set to powersave. This profile sets the CPU to the lowest frequency reducing performance.
+2026-09-29T14:39:32Z [902ms] [Warning] [omni.rtx] IOMMU is enabled.
+[1.003s] [ext: omni.kit.pipapi-0.0.0] startup
+[1.004s] [ext: omni.kit.pip_archive-0.0.0] startup
+[1.004s] [ext: isaacsim.pip.newton-0.6.1] startup
+[1.004s] [ext: omni.pip.compute-1.9.2] startup
+[1.004s] [ext: omni.isaac.core_archive-5.3.1] startup
+[1.005s] [ext: omni.kit.telemetry-0.5.2] startup
+[1.024s] [ext: omni.kit.loop-isaac-1.6.0] startup
+[1.025s] [ext: omni.kit.test-2.0.7] startup
+[1.078s] [ext: omni.materialx.libs-1.0.9] startup
+[1.085s] [ext: omni.gpucompute.plugins-0.0.0] startup
+[1.085s] [ext: omni.usd.config-1.0.7] startup
+[1.088s] [ext: omni.usd.libs-1.0.3] startup
+[1.142s] [ext: omni.iray.libs-0.0.1] startup
+[1.145s] [ext: omni.mdl-57.0.3] startup
+[1.210s] [ext: omni.mdl.neuraylib-0.2.20] startup
+[1.214s] [ext: omni.kit.usd.mdl-1.1.9] startup
+[1.305s] [ext: omni.appwindow-1.2.2] startup
+[1.306s] [ext: omni.kit.renderer.core-1.2.2] startup
+2026-09-29T14:39:37Z [6,528ms] [Warning] [carb.windowing-glfw.gamepad] Joystick with unknown remapping detected (will be ignored):  BEITONG BEITONG A2P3A BFM DONGLE [03000000bc2000001c51000011010000]
+[6.559s] [ext: omni.kit.renderer.capture-2.0.1] startup
+[6.561s] [ext: omni.kit.renderer.imgui-2.0.6] startup
+[6.596s] [ext: omni.ui-3.2.0] startup
+[6.603s] [ext: omni.kit.mainwindow-1.0.3] startup
+[6.604s] [ext: carb.audio-0.1.0] startup
+[6.606s] [ext: omni.uiaudio-1.0.0] startup
+[6.606s] [ext: omni.kit.uiapp-0.0.0] startup
+[6.606s] [ext: omni.usd.schema.metrics.assembler-110.1.0] startup
+[6.608s] [ext: omni.usd.schema.audio-0.0.1] startup
+[6.611s] [ext: omni.usd_resolver-1.0.0] startup
+[6.613s] [ext: omni.usd.core-1.8.3] startup
+[6.615s] [ext: omni.metropolis.schema-0.0.3] startup
+[6.616s] [ext: isaacsim.anim.robot.schema-0.1.1] startup
+[6.616s] [ext: omni.usd.schema.anim-0.0.1] startup
+[6.629s] [ext: omni.usd.schema.geospatial-0.0.1] startup
+[6.631s] [ext: omni.usd.schema.omnigraph-1.0.1] startup
+[6.635s] [ext: omni.usd.schema.semantics-0.0.0] startup
+[6.636s] [ext: omni.activity.core-1.0.3] startup
+[6.637s] [ext: omni.cubric-0.1.0] startup
+[6.638s] [ext: omni.graph.exec-0.9.6] startup
+[6.638s] [ext: omni.hydra.scene_delegate-0.3.5] startup
+[6.640s] [ext: usdrt.scenegraph-7.6.3] startup
+[6.658s] [ext: omni.hydra.usdrt_delegate-7.5.2] startup
+[6.661s] [ext: omni.inspect-1.0.2] startup
+[6.662s] [ext: omni.kit.actions.core-1.0.0] startup
+[6.664s] [ext: omni.kit.audiodeviceenum-1.0.2] startup
+[6.665s] [ext: omni.kit.commands-1.5.0] startup
+[6.667s] [ext: omni.kit.exec.core-0.13.5] startup
+[6.668s] [ext: omni.kit.usd_undo-0.1.8] startup
+[6.668s] [ext: omni.kit.window.popup_dialog-2.0.25] startup
+[6.671s] [ext: omni.kit.widget.nucleus_connector-2.3.1] startup
+[6.673s] [ext: omni.timeline-1.1.0] startup
+[6.674s] [ext: omni.usd-1.16.0] startup
+[6.700s] [ext: omni.graph.core-3.1.2] startup
+[6.702s] [ext: omni.kit.notification_manager-1.0.11] startup
+[6.704s] [ext: isaacsim.core.deprecation_manager-0.4.2] startup
+[6.704s] [ext: isaacsim.replicator.agent.schema-0.1.1] startup
+[6.705s] [ext: isaacsim.robot.schema-6.3.7] startup
+[6.709s] [ext: isaacsim.robot_motion.schema-0.2.1] startup
+[6.710s] [ext: omni.anim.behavior.schema-110.1.0] startup
+[6.712s] [ext: omni.anim.graph.schema-110.1.1] startup
+[6.717s] [ext: omni.anim.navigation.schema-110.1.0] startup
+[6.719s] [ext: omni.behavior.tree.schema-110.1.0] startup
+[6.720s] [ext: omni.isaac.ml_archive-3.3.0] startup
+[6.720s] [ext: omni.kit.asset_converter-6.0.1] startup
+[6.729s] [ext: omni.pip.cloud-1.5.4] startup
+[6.731s] [ext: omni.usd.schema.flow-110.0.0] startup
+[6.732s] [ext: omni.usd.schema.mujoco-1.1.1] startup
+[6.732s] [ext: omni.usd.schema.newton-1.2.1] startup
+[6.732s] [ext: omni.usd.schema.omni_lens_distortion-1.0.0] startup
+[6.733s] [ext: omni.usd.schema.omni_projectors-1.0.0] startup
+[6.733s] [ext: omni.usd.schema.omni_sensors-0.0.0] startup
+[6.740s] [ext: omni.usd.schema.omniscripting-1.0.1] startup
+[6.742s] [ext: omni.usd.schema.physical_lighting-0.1.0] startup
+[6.745s] [ext: omni.usd.schema.physx-110.1.13] startup
+[6.768s] [ext: omni.usd.schema.render_settings.rtx-1.0.2] startup
+[6.771s] [ext: omni.usd.schema.usd_particle_field-1.0.0] startup
+[6.772s] [ext: isaacsim.core.version-2.1.1] startup
+[6.772s] [ext: omni.kit.menu.core-1.2.0] startup
+[6.773s] [ext: omni.kit.menu.utils-2.2.4] startup
+[6.778s] [ext: isaacsim.app.about-2.3.1] startup
+[6.782s] [ext: isaacsim.asset.transformer-1.2.5] startup
+[6.784s] [ext: omni.scene.optimizer.core-110.1.0] startup
+[6.814s] [ext: isaacsim.asset.importer.utils-1.8.1] startup
+[6.816s] [ext: omni.convexdecomposition-110.1.13] startup
+[6.817s] [ext: omni.physics-110.1.13] startup
+[6.820s] [ext: omni.physx.gpu-110.1.13] startup
+[6.820s] [ext: omni.physx.foundation-110.1.13] startup
+[6.821s] [ext: omni.usdphysics-110.1.13] startup
+[6.822s] [ext: omni.physx.cooking-110.1.13] startup
+[6.824s] [ext: omni.physx-110.1.13] startup
+[6.830s] [ext: omni.physics.physx-110.1.13] startup
+[6.832s] [ext: isaacsim.asset.exporter.urdf-2.0.5] startup
+[6.838s] [ext: omni.kit.clipboard-1.1.1] startup
+[6.839s] [ext: omni.kit.usd.layers-2.6.1] startup
+[6.844s] [ext: omni.kit.widget.context_menu-1.4.0] startup
+[6.845s] [ext: omni.kit.context_menu-1.9.0] startup
+[6.846s] [ext: omni.kit.helper.file_utils-0.1.10] startup
+[6.847s] [ext: omni.kit.widget.nucleus_info-2.0.2] startup
+[6.848s] [ext: omni.kit.search_core-1.0.8] startup
+[6.848s] [ext: omni.kit.widget.path_field-2.0.13] startup
+[6.849s] [ext: omni.kit.widget.browser_bar-2.0.10] startup
+[6.849s] [ext: omni.kit.widget.filebrowser-2.13.4] startup
+[6.852s] [ext: omni.kit.widget.options_menu-1.1.6] startup
+[6.854s] [ext: omni.kit.widget.options_button-1.0.3] startup
+[6.855s] [ext: omni.kit.widget.search_delegate-1.0.9] startup
+[6.856s] [ext: omni.ui.scene-2.0.3] startup
+[6.859s] [ext: omni.kit.window.filepicker-2.15.5] startup
+[6.869s] [ext: omni.kit.window.file_importer-1.1.21] startup
+[6.870s] [ext: omni.kit.material.library-3.1.2] startup
+[6.874s] [ext: isaacsim.asset.transformer.rules-1.7.10] startup
+[6.882s] [ext: omni.usdex.libs-2.2.2] startup
+[6.887s] [ext: isaacsim.asset.importer.mjcf-3.10.1] startup
+[6.889s] [ext: isaacsim.asset.importer.urdf-3.11.2] startup
+[6.892s] [ext: omni.kit.primitive.mesh-1.1.0] startup
+[6.894s] [ext: omni.kit.stage_template.core-1.1.22] startup
+[6.894s] [ext: omni.kit.stage_templates-2.0.2] startup
+[6.895s] [ext: omni.usd.metrics.assembler-110.1.2] startup
+[6.897s] [ext: omni.warp.core-1.13.0] startup
+[7.081s] [ext: isaacsim.core.experimental.utils-0.17.2] startup
+[7.082s] [ext: omni.physics.stageupdate-110.1.13] startup
+[7.084s] [ext: omni.physics.tensors-110.1.13] startup
+[7.087s] [ext: omni.physx.tensors-110.1.13] startup
+[7.090s] [ext: isaacsim.core.simulation_manager-1.15.6] startup
+[7.100s] [ext: isaacsim.storage.native-1.9.3] startup
+[7.101s] [ext: omni.usd.metrics.assembler.physics-110.1.13] startup
+[7.102s] [ext: isaacsim.core.utils-4.1.7] startup
+[7.104s] [ext: isaacsim.core.prims-0.11.7] startup
+[7.980s] [ext: isaacsim.core.api-5.2.13] startup
+[7.986s] [ext: isaacsim.core.cloner-1.7.3] startup
+[7.987s] [ext: isaacsim.test.docstring-1.3.2] startup
+[7.989s] [ext: isaacsim.core.experimental.prims-1.8.9] startup
+[8.008s] [ext: isaacsim.core.experimental.primdata-0.3.2] startup
+[8.009s] [ext: omni.graph.tools-1.81.0] startup
+[8.028s] [ext: omni.graph-1.142.5] startup
+[8.061s] [ext: isaacsim.core.experimental.actuators-0.1.2] startup
+[8.074s] [ext: isaacsim.core.experimental.materials-0.7.1] startup
+[8.076s] [ext: isaacsim.core.experimental.objects-0.8.1] startup
+[8.128s] [ext: omni.hydra.engine.stats-1.0.5] startup
+[8.130s] [ext: omni.hydra.rtx.shadercache.vulkan-1.0.0] startup
+[8.131s] [ext: omni.index.libs-387500.4413.0] startup
+[8.131s] [ext: omni.index-1.0.1] startup
+[8.132s] [ext: omni.ujitso.client-0.0.0] startup
+[8.132s] [ext: omni.usd.schema.playback-1.0.0] startup
+[8.134s] [ext: omni.volume-0.5.2] startup
+[8.138s] [ext: omni.hydra.rtx-1.0.4] startup
+2026-09-29T14:39:39Z [8,128ms] [Warning] [omni.log] Source: omni.hydra was already registered.
+[8.159s] [ext: omni.kit.hydra_texture-1.6.0] startup
+[8.162s] [ext: omni.kit.raycast.query-1.2.0] startup
+[8.165s] [ext: omni.kit.viewport.legacy_gizmos-1.0.24] startup
+[8.166s] [ext: omni.kit.viewport.registry-104.0.6] startup
+[8.167s] [ext: omni.kit.viewport.scene_camera_model-1.0.7] startup
+[8.170s] [ext: omni.kit.widget.viewport-109.2.0] startup
+[8.173s] [ext: omni.kit.window.drop_support-1.0.8] startup
+[8.174s] [ext: omni.kit.viewport.window-109.0.2] startup
+[8.188s] [ext: omni.kit.viewport.utility-2.0.1] startup
+[8.189s] [ext: isaacsim.core.rendering_manager-0.4.3] startup
+[8.209s] [ext: omni.graph.action_core-1.1.9] startup
+[8.211s] [ext: omni.graph.action_nodes_core-2.11.0] startup
+[8.213s] [ext: omni.graph.action_nodes-2.11.0] startup
+[8.228s] [ext: omni.graph.action-2.10.2] startup
+[8.229s] [ext: omni.graph.image.core-0.6.1] startup
+[8.230s] [ext: omni.graph.image.nodes-1.3.1] startup
+[8.230s] [ext: omni.graph.nodes_core-2.11.0] startup
+[8.234s] [ext: omni.graph.nodes-2.12.0] startup
+[8.238s] [ext: omni.kit.hotkeys.core-1.3.12] startup
+[8.239s] [ext: omni.kit.property.adapter.core-1.1.1] startup
+[8.241s] [ext: omni.kit.property.adapter.usd-1.0.5] startup
+[8.242s] [ext: omni.kit.widget.filter-1.1.5] startup
+[8.243s] [ext: omni.kit.widget.highlight_label-1.0.3] startup
+[8.244s] [ext: omni.kit.widget.searchfield-1.1.8] startup
+[8.245s] [ext: omni.kit.window.file_exporter-1.0.36] startup
+[8.246s] [ext: omni.kit.widget.stage-4.4.0] startup
+[8.253s] [ext: omni.kit.window.content_browser_registry-0.0.6] startup
+[8.254s] [ext: omni.kit.window.file-2.0.10] startup
+[8.256s] [ext: omni.kit.window.content_browser-3.1.8] startup
+[8.265s] [ext: omni.kit.window.property-1.15.1] startup
+[8.274s] [ext: omni.kit.property.usd-4.9.4] startup
+[8.282s] [ext: omni.graph.scriptnode-2.10.2] startup
+[8.290s] [ext: omni.kit.widget.searchable_combobox-1.0.7] startup
+[8.291s] [ext: omni.kit.widget.settings-2.0.0] startup
+[8.292s] [ext: omni.kit.window.preferences-1.8.3] startup
+[8.296s] [ext: omni.kit.viewport.menubar.core-107.2.2] startup
+[8.306s] [ext: omni.syntheticdata-0.6.15] startup
+[8.329s] [ext: omni.replicator.nv-1.1.1] startup
+[8.333s] [ext: omni.videoencoding-0.2.1] startup
+[8.335s] [ext: omni.replicator.core-1.13.27] startup
+2026-09-29T14:39:39Z [8,320ms] [Warning] [pxr.Semantics] pxr.Semantics is deprecated - please use Semantics instead
+2026-09-29T14:39:39Z [8,387ms] [Warning] [omni.replicator.core.scripts.extension] No material configuration file, adding configuration to material settings directly.
+[8.541s] [ext: isaacsim.core.nodes-5.10.5] startup
+[8.567s] [ext: isaacsim.core.throttling-2.3.5] startup
+[8.568s] [ext: omni.kit.manipulator.viewport-107.0.1] startup
+[8.569s] [ext: omni.graph.visualization.nodes-2.1.4] startup
+[8.581s] [ext: omni.kit.window.extensions-1.5.10] startup
+[8.585s] [ext: isaacsim.gui.components-1.8.5] startup
+[8.589s] [ext: isaacsim.robot.surface_gripper-3.6.2] startup
+[8.598s] [ext: isaacsim.robot.manipulators-3.4.4] startup
+[8.607s] [ext: isaacsim.robot_motion.lula-4.1.3] startup
+[8.612s] [ext: isaacsim.robot_motion.motion_generation-8.2.9] startup
+[8.616s] [ext: isaacsim.cortex.framework-1.0.18] startup
+[8.618s] [ext: isaacsim.cortex.behaviors-2.0.17] startup
+[8.619s] [ext: isaacsim.examples.base-1.3.2] startup
+[8.620s] [ext: omni.kit.widget.zoombar-1.0.7] startup
+[8.621s] [ext: omni.kit.browser.core-2.3.18] startup
+[8.624s] [ext: omni.kit.browser.folder.core-2.0.2] startup
+[8.627s] [ext: omni.kit.widget.stage_icons-1.0.8] startup
+[8.628s] [ext: omni.kit.window.stage-2.6.1] startup
+[8.630s] [ext: omni.kit.menu.stage-1.2.7] startup
+[8.631s] [ext: omni.kit.usd.collect-3.0.6] startup
+[8.634s] [ext: omni.kit.widget.prompt-1.0.7] startup
+[8.634s] [ext: omni.kit.tool.collect-2.2.19] startup
+[8.636s] [ext: isaacsim.examples.browser-0.3.2] startup
+[8.638s] [ext: omni.kit.search.files-1.0.4] startup
+[8.639s] [ext: omni.kit.widget.calendar-1.0.9] startup
+[8.640s] [ext: omni.kit.widget.extended_searchfield-1.0.31] startup
+[8.646s] [ext: omni.simready.content.browser-0.3.7] startup
+[8.731s] [ext: isaacsim.gui.content_browser-0.4.3] startup
+[8.733s] [ext: omni.kit.selection-0.1.6] startup
+[8.734s] [ext: isaacsim.gui.menu-2.10.5] startup
+[8.741s] [ext: isaacsim.gui.property-1.6.4] startup
+[8.747s] [ext: omni.kit.viewport.actions-110.0.0] startup
+[8.751s] [ext: omni.kit.viewport.menubar.display-107.1.3] startup
+[8.752s] [ext: isaacsim.gui.sensors.icon-2.2.1] startup
+[8.754s] [ext: omni.behavior.scripting.core-110.1.0] startup
+[8.757s] [ext: isaacsim.replicator.behavior-1.5.4] startup
+[8.757s] [ext: isaacsim.replicator.experimental.domain_randomization-1.2.5] startup
+[8.770s] [ext: isaacsim.replicator.domain_randomization-1.2.2] startup
+[8.837s] [ext: isaacsim.replicator.writers-1.5.4] startup
+[8.858s] [ext: isaacsim.robot.experimental.wheeled_robots-0.2.11] startup
+[8.878s] [ext: isaacsim.robot.policy.examples-5.2.12] startup
+[8.895s] [ext: isaacsim.robot.wheeled_robots-5.2.4] startup
+[8.898s] [ext: isaacsim.robot.wheeled_robots.nodes-0.1.5] startup
+[8.914s] [ext: isaacsim.robot_motion.experimental.motion_generation-6.1.3] startup
+[8.924s] [ext: isaacsim.robot_motion.cumotion-1.3.1] startup
+[8.936s] [ext: omni.kit.numpy.common-0.1.3] startup
+[8.937s] [ext: isaacsim.sensors.camera-1.7.9] startup
+[8.964s] [ext: isaacsim.sensors.experimental.physics-3.0.2] startup
+[8.970s] [ext: omni.sensors.net-1.0.1] startup
+[8.972s] [ext: omni.sensors.nv.common-3.0.0] startup
+[8.981s] [ext: omni.sensors.nv.materials-2.0.0] startup
+[8.983s] [ext: omni.sensors.nv.acoustic-3.0.0] startup
+[8.985s] [ext: omni.sensors.nv.ids-2.0.1] startup
+[8.987s] [ext: omni.sensors.nv.lidar-3.0.0] startup
+[8.990s] [ext: omni.sensors.nv.radar-3.0.0] startup
+[8.992s] [ext: isaacsim.sensors.experimental.rtx-1.4.6] startup
+[9.227s] [ext: isaacsim.sensors.physics.nodes-1.5.3] startup
+[9.232s] [ext: isaacsim.util.debug_draw-3.2.3] startup
+[9.236s] [ext: isaacsim.sensors.physx-2.5.5] startup
+[9.242s] [ext: isaacsim.sensors.rtx-15.17.1] startup
+[9.251s] [ext: isaacsim.simulation_app-2.18.4] startup
+[9.251s] [ext: omni.anim.curve.core-1.6.0] startup
+[9.260s] [ext: omni.graph.ui_nodes-2.11.1] startup
+[9.280s] [ext: omni.hydra.scene_api-0.1.3] startup
+[9.283s] [ext: omni.kit.manipulator.camera-110.0.0] startup
+[9.286s] [ext: omni.kit.manipulator.selector-1.1.4] startup
+[9.288s] [ext: omni.kit.manipulator.transform-107.0.0] startup
+[9.291s] [ext: omni.kit.widget.toolbar-2.1.0] startup
+[9.297s] [ext: omni.kit.manipulator.tool.snap-1.5.14] startup
+[9.301s] [ext: omni.kit.viewport.manipulator.transform-107.0.4] startup
+[9.303s] [ext: omni.kit.manipulator.prim.core-108.0.2] startup
+[9.307s] [ext: omni.kit.manipulator.prim.usd-107.0.3] startup
+[9.309s] [ext: omni.kit.manipulator.prim-108.0.0] startup
+[9.309s] [ext: omni.kit.manipulator.selection-109.0.1] startup
+[9.310s] [ext: omni.kit.menu.create-2.0.2] startup
+[9.312s] [ext: omni.kit.property.audio-1.0.16] startup
+[9.315s] [ext: omni.kit.property.camera-1.0.14] startup
+[9.316s] [ext: omni.kit.property.geometry-2.1.2] startup
+[9.318s] [ext: omni.kit.property.light-1.0.14] startup
+2026-09-29T14:39:40Z [9,319ms] [Warning] [omni.usd] Encountered USD Warnings but USD Diagnostics are currently muted. To view USD Warnings, please set the '/persistent/app/usd/muteUsdDiagnostics' setting to false in Preferences page.
+[9.347s] [ext: omni.kit.property.material-1.14.6] startup
+[9.352s] [ext: omni.kit.property.render-1.2.2] startup
+[9.353s] [ext: omni.kit.property.transform-1.6.9] startup
+[9.356s] [ext: omni.kit.property.bundle-1.5.1] startup
+[9.357s] [ext: omni.kit.usdz_export-1.1.0] startup
+[9.360s] [ext: omni.kit.tool.asset_importer-6.0.1] startup
+[9.364s] [ext: omni.kit.ui.actions-1.0.5] startup
+[9.366s] [ext: omni.kit.viewport.menubar.camera-107.0.10] startup
+[9.370s] [ext: omni.kit.viewport.menubar.lighting-107.3.2] startup
+[9.372s] [ext: omni.kit.viewport.menubar.render-110.0.0] startup
+[9.374s] [ext: omni.kit.viewport.menubar.settings-110.0.1] startup
+[9.377s] [ext: omni.kit.window.console-1.1.9] startup
+[9.380s] [ext: omni.kit.window.status_bar-0.1.11] startup
+[9.382s] [ext: omni.kit.window.toolbar-3.0.3] startup
+[9.384s] [ext: omni.ocio-0.1.1] startup
+[9.385s] [ext: omni.physx.commands-110.1.13] startup
+[9.388s] [ext: omni.replicator.replicator_yaml-2.0.12] startup
+[9.397s] [ext: omni.rtx.window.settings-0.8.0] startup
+[9.401s] [ext: omni.rtx.settings.core-0.7.1] startup
+[9.403s] [ext: omni.usd.metrics.assembler.ui-110.1.1] startup
+[9.409s] [ext: semantics.schema.editor-2.0.2] startup
+[9.412s] [ext: semantics.schema.property-2.0.2] startup
+[9.413s] [ext: omni.kit.menu.common-2.0.2] startup
+[9.414s] [ext: isaacsim.exp.base-6.0.1] startup
+[9.414s] [ext: isaacsim.exp.base.python-6.0.1] startup
+[9.416s] Simulation App Starting
+[10.458s] Simulation App Startup Complete
+[10.464s] app ready
+Starting kit application with the following args:  ['/home/starry/isaac-data/isaacsim/exts/isaacsim.simulation_app/isaacsim/simulation_app/simulation_app.py', '/home/starry/isaac-data/isaacsim/apps/isaacsim.exp.base.python.kit', '--/app/tokens/exe-path=/home/starry/isaac-data/isaacsim/kit', '--/persistent/app/viewport/displayOptions=3094', '--/rtx/materialDb/syncLoads=True', '--/rtx/hydra/materialSyncLoads=True', '--/omni/kit/plugin/syncUsdLoads=True', '--/app/renderer/resolution/width=1280', '--/app/renderer/resolution/height=720', '--/app/window/width=1440', '--/app/window/height=900', '--/renderer/multiGpu/enabled=False', '--/app/fastShutdown=True', '--/app/installSignalHandlers=0', '--ext-folder', '/home/starry/isaac-data/isaacsim/exts', '--ext-folder', '/home/starry/isaac-data/isaacsim/apps', '--/renderer/activeGpu=0', '--/physics/cudaDevice=0', '--/plugins/carb.tasking.plugin/threadCount=12', '--/plugins/omni.tbb.globalcontrol/maxThreadCount=12', '--portable', '--no-window', '--/app/window/hideUi=1']
+Passing the following args to the base kit application:  []
+Warp 1.13.0 initialized:
+   CUDA Toolkit 12.9, Driver 13.0
+   Devices:
+     "cpu"      : "x86_64"
+     "cuda:0"   : "NVIDIA GeForce RTX 5070" (11 GiB, sm_120, mempool enabled)
+   Kernel cache:
+     /home/starry/.cache/warp/1.13.0
+[LIGHTING] sun=800.0 (1) dome=0.0 (1) ambient=0.05 constant_color=(0.6, 0.65, 0.7)
+[RENDER] mode=MinimalRendering minimal_shading_mode=2 anti_aliasing=TAA
+[DEPTH CAMERAS] count=4 resolution_each=320x240 horizontal_coverage=360deg
+[ESDF] path=/home/starry/isaac-data/EGO1P1/scenes/ego_swarm_cloud/occupancy.bin shape=(400, 300, 50) resolution=0.40m
+[depth_angular_controller-1] [INFO] [1790692784.176946098] [depth_angular_controller]: WAITING_ODOMETRY
+[NAV] t=0.0s position=(-64.00,-11.20,2.80) yaw=1.2deg command=(0.00,0.00,0.00) manual_active=0 collision_blocks=0
+[depth_angular_controller-1] [INFO] [1790692784.550274161] [depth_angular_controller]: ZERO_INTENT
+[depth_angular_controller-1] [INFO] [1790692786.244959515] [depth_angular_controller]: horizontal guidance switched to view 0
+[depth_angular_controller-1] [INFO] [1790692786.245795063] [depth_angular_controller]: horizontal diagnostic view=0 requested=2.000 free=9.500 brake=2.000 rollout=2.000 desired=2.000 published=0.002 field=valid
+[depth_angular_controller-1] [INFO] [1790692786.245815151] [depth_angular_controller]: NAVIGATING
+[11.007s] [ext: isaacsim.sensors.rtx.nodes-0.1.2] startup
+[11.015s] [ext: isaacsim.ros2.core-1.9.4] startup
+[11.030s] Attempting to load system rclpy
+[11.030s] Could not import system rclpy: No module named 'rclpy'
+[11.030s] Attempting to load internal rclpy for ROS Distro: humble
+[11.042s] rclpy loaded
+[11.045s] [ext: isaacsim.ros2.nodes-1.18.13] startup
+[11.079s] [ext: isaacsim.ros2.examples-1.2.4] startup
+[11.083s] [ext: isaacsim.ros2.ui-1.6.5] startup
+[11.315s] [ext: isaacsim.ros2.bridge-5.1.2] startup
+2026-09-29T14:39:44Z [13,242ms] [Warning] [omni.timeline.plugin] Deprecated: direct use of ITimeline callbacks is deprecated. Use ITimeline::getTimeline (Python: omni.timeline.get_timeline_interface) instead.
+[position_cmd_to_twist-2] [INFO] [1790692789.192230668] [position_cmd_to_twist]: [PERF BRIDGE] run=final_v1_ego1p0_4 elapsed=18.38s received=246 published=246 fps(ros/wall)=50.00/53.04 controller_to_bridge_ms(mean/p50/p95/max)=0.000/0.000/0.000/0.000 bridge_process_ms(mean/p95/max)=0.092/0.123/0.331
+[NAV] t=5.0s position=(-60.85,-10.68,2.80) yaw=9.9deg command=(1.96,0.32,0.00) manual_active=1 collision_blocks=0
+[depth_angular_controller-1] [INFO] [1790692789.560934914] [depth_angular_controller]: [PERF CTRL] run=final_v1_ego1p0_4 elapsed=18.86s callbacks=268 commands=267 guidance=167 command_fps(ros/wall)=50.03/53.09 guidance_wall_fps=50.07 avoid_ms(mean/p50/p95/max)=0.731/0.714/0.832/1.501 cycle_ms(mean/p95/max)=18.837/32.204/92.508 depth_to_cmd_ms(mean/p95/max)=33.134/33.333/33.333 callback_to_publish_ms(mean/p95/max)=0.531/0.975/2.038
+[position_cmd_to_twist-2] [INFO] [1790692794.160100012] [position_cmd_to_twist]: [PERF BRIDGE] run=final_v1_ego1p0_4 elapsed=23.35s received=496 published=496 fps(ros/wall)=50.00/51.59 controller_to_bridge_ms(mean/p50/p95/max)=0.000/0.000/0.000/0.000 bridge_process_ms(mean/p95/max)=0.091/0.121/0.331
+[NAV] t=10.0s position=(-52.16,-8.59,2.80) yaw=9.7deg command=(1.50,1.21,0.00) manual_active=1 collision_blocks=0
+[depth_angular_controller-1] [INFO] [1790692794.565994647] [depth_angular_controller]: [PERF CTRL] run=final_v1_ego1p0_4 elapsed=23.87s callbacks=516 commands=515 guidance=415 command_fps(ros/wall)=49.98/51.32 guidance_wall_fps=49.76 avoid_ms(mean/p50/p95/max)=0.692/0.697/0.866/1.501 cycle_ms(mean/p95/max)=19.486/32.576/92.508 depth_to_cmd_ms(mean/p95/max)=33.173/33.333/50.000 callback_to_publish_ms(mean/p95/max)=0.637/0.978/2.038
+[depth_angular_controller-1] [INFO] [1790692796.382193846] [depth_angular_controller]: horizontal diagnostic view=0 requested=2.000 free=5.362 brake=2.000 rollout=2.000 desired=2.000 published=1.976 field=degraded
+[depth_angular_controller-1] [INFO] [1790692796.382241916] [depth_angular_controller]: DEGRADED
+[depth_angular_controller-1] [INFO] [1790692796.639980491] [depth_angular_controller]: horizontal diagnostic view=0 requested=2.000 free=9.500 brake=2.000 rollout=2.000 desired=2.000 published=1.987 field=valid
+[depth_angular_controller-1] [INFO] [1790692796.640043319] [depth_angular_controller]: NAVIGATING
+[depth_angular_controller-1] [INFO] [1790692796.701123428] [depth_angular_controller]: horizontal diagnostic view=0 requested=2.000 free=1.775 brake=2.000 rollout=0.000 desired=0.000 published=1.977 field=degraded
+[depth_angular_controller-1] [INFO] [1790692796.701405167] [depth_angular_controller]: DEGRADED
+[position_cmd_to_twist-2] [INFO] [1790692799.148853376] [position_cmd_to_twist]: [PERF BRIDGE] run=final_v1_ego1p0_4 elapsed=28.34s received=746 published=746 fps(ros/wall)=50.00/51.08 controller_to_bridge_ms(mean/p50/p95/max)=0.000/0.000/0.000/0.000 bridge_process_ms(mean/p95/max)=0.096/0.130/1.414
+[NAV] t=15.0s position=(-46.43,-9.02,2.80) yaw=10.4deg command=(0.00,0.00,0.00) manual_active=1 collision_blocks=0
+[depth_angular_controller-1] [INFO] [1790692799.571839423] [depth_angular_controller]: [PERF CTRL] run=final_v1_ego1p0_4 elapsed=28.87s callbacks=769 commands=768 guidance=668 command_fps(ros/wall)=49.97/51.06 guidance_wall_fps=50.05 avoid_ms(mean/p50/p95/max)=0.776/0.751/1.154/2.682 cycle_ms(mean/p95/max)=19.585/32.358/94.380 depth_to_cmd_ms(mean/p95/max)=33.234/33.333/50.000 callback_to_publish_ms(mean/p95/max)=0.772/1.352/2.948
+[position_cmd_to_twist-2] [INFO] [1790692803.502505310] [position_cmd_to_twist]: [PERF BRIDGE] run=final_v1_ego1p0_4 elapsed=32.69s received=996 published=996 fps(ros/wall)=50.00/52.54 controller_to_bridge_ms(mean/p50/p95/max)=0.000/0.000/0.000/0.000 bridge_process_ms(mean/p95/max)=0.095/0.130/1.414
+[NAV] t=20.0s position=(-46.43,-9.02,2.80) yaw=10.4deg command=(0.00,0.00,0.00) manual_active=1 collision_blocks=0
+[depth_angular_controller-1] [INFO] [1790692804.574810968] [depth_angular_controller]: [PERF CTRL] run=final_v1_ego1p0_4 elapsed=33.87s callbacks=1054 commands=1053 guidance=953 command_fps(ros/wall)=49.98/52.54 guidance_wall_fps=51.94 avoid_ms(mean/p50/p95/max)=0.797/0.791/1.130/2.682 cycle_ms(mean/p95/max)=19.035/31.958/94.380 depth_to_cmd_ms(mean/p95/max)=33.263/33.333/50.000 callback_to_publish_ms(mean/p95/max)=0.816/1.377/2.948
+[position_cmd_to_twist-2] [INFO] [1790692807.976963962] [position_cmd_to_twist]: [PERF BRIDGE] run=final_v1_ego1p0_4 elapsed=37.17s received=1246 published=1246 fps(ros/wall)=50.00/53.18 controller_to_bridge_ms(mean/p50/p95/max)=0.000/0.000/0.000/0.000 bridge_process_ms(mean/p95/max)=0.095/0.133/1.414
+[NAV] t=25.0s position=(-46.43,-9.02,2.80) yaw=10.4deg command=(0.00,0.00,0.00) manual_active=1 collision_blocks=0
+[depth_angular_controller-1] [INFO] [1790692809.580317038] [depth_angular_controller]: [PERF CTRL] run=final_v1_ego1p0_4 elapsed=38.88s callbacks=1342 commands=1341 guidance=1241 command_fps(ros/wall)=50.00/53.54 guidance_wall_fps=53.14 avoid_ms(mean/p50/p95/max)=0.809/0.808/1.118/2.682 cycle_ms(mean/p95/max)=18.679/31.649/94.380 depth_to_cmd_ms(mean/p95/max)=33.239/33.333/50.000 callback_to_publish_ms(mean/p95/max)=0.845/1.401/2.948
+[position_cmd_to_twist-2] [INFO] [1790692812.245608307] [position_cmd_to_twist]: [PERF BRIDGE] run=final_v1_ego1p0_4 elapsed=41.44s received=1496 published=1496 fps(ros/wall)=50.00/54.01 controller_to_bridge_ms(mean/p50/p95/max)=0.000/0.000/0.000/0.000 bridge_process_ms(mean/p95/max)=0.094/0.130/1.414
+[NAV] t=30.0s position=(-46.43,-9.02,2.80) yaw=10.4deg command=(0.00,0.00,0.00) manual_active=1 collision_blocks=0
+[depth_angular_controller-1] [INFO] [1790692814.589979588] [depth_angular_controller]: [PERF CTRL] run=final_v1_ego1p0_4 elapsed=43.89s callbacks=1635 commands=1634 guidance=1534 command_fps(ros/wall)=49.99/54.36 guidance_wall_fps=54.09 avoid_ms(mean/p50/p95/max)=0.815/0.814/1.091/2.682 cycle_ms(mean/p95/max)=18.395/31.433/94.380 depth_to_cmd_ms(mean/p95/max)=33.246/33.333/50.000 callback_to_publish_ms(mean/p95/max)=0.860/1.402/2.948
+[position_cmd_to_twist-2] [INFO] [1790692816.648976375] [position_cmd_to_twist]: [PERF BRIDGE] run=final_v1_ego1p0_4 elapsed=45.84s received=1747 published=1747 fps(ros/wall)=50.00/54.40 controller_to_bridge_ms(mean/p50/p95/max)=0.000/0.000/0.000/0.000 bridge_process_ms(mean/p95/max)=0.093/0.129/1.414
+[NAV] t=35.0s position=(-46.43,-9.02,2.80) yaw=10.4deg command=(0.00,0.00,0.00) manual_active=1 collision_blocks=0
+[depth_angular_controller-1] [INFO] [1790692819.598724847] [depth_angular_controller]: [PERF CTRL] run=final_v1_ego1p0_4 elapsed=48.90s callbacks=1924 commands=1923 guidance=1823 command_fps(ros/wall)=49.99/54.84 guidance_wall_fps=54.63 avoid_ms(mean/p50/p95/max)=0.822/0.817/1.086/2.682 cycle_ms(mean/p95/max)=18.235/31.174/94.380 depth_to_cmd_ms(mean/p95/max)=33.260/33.333/50.000 callback_to_publish_ms(mean/p95/max)=0.875/1.439/2.948
+[position_cmd_to_twist-2] [INFO] [1790692820.876845053] [position_cmd_to_twist]: [PERF BRIDGE] run=final_v1_ego1p0_4 elapsed=50.07s received=1996 published=1996 fps(ros/wall)=50.00/54.94 controller_to_bridge_ms(mean/p50/p95/max)=0.000/0.000/0.000/0.000 bridge_process_ms(mean/p95/max)=0.092/0.128/1.414
+[NAV] t=40.0s position=(-46.43,-9.02,2.80) yaw=10.4deg command=(0.00,0.00,0.00) manual_active=1 collision_blocks=0
+[depth_angular_controller-1] [INFO] [1790692824.608386205] [depth_angular_controller]: [PERF CTRL] run=final_v1_ego1p0_4 elapsed=53.91s callbacks=2205 commands=2204 guidance=2104 command_fps(ros/wall)=49.99/55.00 guidance_wall_fps=54.82 avoid_ms(mean/p50/p95/max)=0.825/0.819/1.066/2.682 cycle_ms(mean/p95/max)=18.183/31.031/94.380 depth_to_cmd_ms(mean/p95/max)=33.270/33.333/50.000 callback_to_publish_ms(mean/p95/max)=0.883/1.421/2.948
+[position_cmd_to_twist-2] [INFO] [1790692825.313027208] [position_cmd_to_twist]: [PERF BRIDGE] run=final_v1_ego1p0_4 elapsed=54.50s received=2246 published=2246 fps(ros/wall)=50.00/55.09 controller_to_bridge_ms(mean/p50/p95/max)=0.000/0.000/0.000/0.000 bridge_process_ms(mean/p95/max)=0.093/0.128/1.414
+[NAV] t=45.0s position=(-46.43,-9.02,2.80) yaw=10.4deg command=(0.00,0.00,0.00) manual_active=1 collision_blocks=0
+[depth_angular_controller-1] [INFO] [1790692829.616359285] [depth_angular_controller]: [PERF CTRL] run=final_v1_ego1p0_4 elapsed=58.92s callbacks=2490 commands=2489 guidance=2389 command_fps(ros/wall)=49.99/55.21 guidance_wall_fps=55.06 avoid_ms(mean/p50/p95/max)=0.826/0.819/1.063/2.682 cycle_ms(mean/p95/max)=18.113/30.894/94.380 depth_to_cmd_ms(mean/p95/max)=33.284/33.333/50.000 callback_to_publish_ms(mean/p95/max)=0.888/1.414/2.948
+[position_cmd_to_twist-2] [INFO] [1790692829.738673552] [position_cmd_to_twist]: [PERF BRIDGE] run=final_v1_ego1p0_4 elapsed=58.93s received=2496 published=2496 fps(ros/wall)=50.00/55.23 controller_to_bridge_ms(mean/p50/p95/max)=0.000/0.000/0.000/0.000 bridge_process_ms(mean/p95/max)=0.093/0.128/1.414
+[NAV] t=50.0s position=(-46.43,-9.02,2.80) yaw=10.4deg command=(0.00,0.00,0.00) manual_active=1 collision_blocks=0
+[position_cmd_to_twist-2] [INFO] [1790692834.095822148] [position_cmd_to_twist]: [PERF BRIDGE] run=final_v1_ego1p0_4 elapsed=63.29s received=2746 published=2746 fps(ros/wall)=50.00/55.42 controller_to_bridge_ms(mean/p50/p95/max)=0.000/0.000/0.000/0.000 bridge_process_ms(mean/p95/max)=0.093/0.126/1.414
+[NAV] t=55.0s position=(-46.43,-9.02,2.80) yaw=10.4deg command=(0.00,0.00,0.00) manual_active=1 collision_blocks=0
+[depth_angular_controller-1] [INFO] [1790692834.626865729] [depth_angular_controller]: [PERF CTRL] run=final_v1_ego1p0_4 elapsed=63.93s callbacks=2779 commands=2778 guidance=2678 command_fps(ros/wall)=49.99/55.46 guidance_wall_fps=55.33 avoid_ms(mean/p50/p95/max)=0.827/0.820/1.031/2.682 cycle_ms(mean/p95/max)=18.032/30.628/94.380 depth_to_cmd_ms(mean/p95/max)=33.290/33.333/50.000 callback_to_publish_ms(mean/p95/max)=0.892/1.402/2.948
+[position_cmd_to_twist-2] [INFO] [1790692838.399489945] [position_cmd_to_twist]: [PERF BRIDGE] run=final_v1_ego1p0_4 elapsed=67.59s received=2996 published=2996 fps(ros/wall)=50.00/55.63 controller_to_bridge_ms(mean/p50/p95/max)=0.000/0.000/0.000/0.000 bridge_process_ms(mean/p95/max)=0.092/0.125/1.414
+[NAV] t=60.0s position=(-46.43,-9.02,2.80) yaw=10.4deg command=(0.00,0.00,0.00) manual_active=1 collision_blocks=0
+[depth_angular_controller-1] [INFO] [1790692839.639859931] [depth_angular_controller]: [PERF CTRL] run=final_v1_ego1p0_4 elapsed=68.94s callbacks=3072 commands=3071 guidance=2971 command_fps(ros/wall)=50.00/55.73 guidance_wall_fps=55.62 avoid_ms(mean/p50/p95/max)=0.830/0.820/1.030/2.682 cycle_ms(mean/p95/max)=17.944/30.413/94.380 depth_to_cmd_ms(mean/p95/max)=33.294/33.333/50.000 callback_to_publish_ms(mean/p95/max)=0.899/1.421/2.948
+[position_cmd_to_twist-2] [INFO] [1790692842.896651861] [position_cmd_to_twist]: [PERF BRIDGE] run=final_v1_ego1p0_4 elapsed=72.09s received=3246 published=3246 fps(ros/wall)=50.00/55.63 controller_to_bridge_ms(mean/p50/p95/max)=0.000/0.000/0.000/0.000 bridge_process_ms(mean/p95/max)=0.092/0.124/1.414
+[NAV] t=65.0s position=(-46.43,-9.02,2.80) yaw=10.4deg command=(0.00,0.00,0.00) manual_active=1 collision_blocks=0
+[depth_angular_controller-1] [INFO] [1790692844.658091231] [depth_angular_controller]: [PERF CTRL] run=final_v1_ego1p0_4 elapsed=73.96s callbacks=3346 commands=3345 guidance=3245 command_fps(ros/wall)=50.00/55.63 guidance_wall_fps=55.54 avoid_ms(mean/p50/p95/max)=0.832/0.820/1.025/2.682 cycle_ms(mean/p95/max)=17.975/30.270/94.380 depth_to_cmd_ms(mean/p95/max)=33.303/33.333/50.000 callback_to_publish_ms(mean/p95/max)=0.902/1.420/2.948
+[position_cmd_to_twist-2] [INFO] [1790692847.447468060] [position_cmd_to_twist]: [PERF BRIDGE] run=final_v1_ego1p0_4 elapsed=76.64s received=3496 published=3496 fps(ros/wall)=50.00/55.58 controller_to_bridge_ms(mean/p50/p95/max)=0.000/0.000/0.000/0.000 bridge_process_ms(mean/p95/max)=0.092/0.123/1.414
+[NAV] t=70.0s position=(-46.43,-9.02,2.80) yaw=10.4deg command=(0.00,0.00,0.00) manual_active=1 collision_blocks=0
+[depth_angular_controller-1] [INFO] [1790692849.670237512] [depth_angular_controller]: [PERF CTRL] run=final_v1_ego1p0_4 elapsed=78.97s callbacks=3620 commands=3619 guidance=3519 command_fps(ros/wall)=50.00/55.56 guidance_wall_fps=55.47 avoid_ms(mean/p50/p95/max)=0.833/0.820/1.022/2.682 cycle_ms(mean/p95/max)=17.999/30.100/94.380 depth_to_cmd_ms(mean/p95/max)=33.310/33.333/50.000 callback_to_publish_ms(mean/p95/max)=0.906/1.420/2.948
+[position_cmd_to_twist-2] [INFO] [1790692851.814174241] [position_cmd_to_twist]: [PERF BRIDGE] run=final_v1_ego1p0_4 elapsed=81.00s received=3746 published=3746 fps(ros/wall)=50.00/55.69 controller_to_bridge_ms(mean/p50/p95/max)=0.000/0.000/0.000/0.000 bridge_process_ms(mean/p95/max)=0.092/0.123/1.414
+[NAV] t=75.0s position=(-46.43,-9.02,2.80) yaw=10.4deg command=(0.00,0.00,0.00) manual_active=1 collision_blocks=0
+[depth_angular_controller-1] [INFO] [1790692854.674842862] [depth_angular_controller]: [PERF CTRL] run=final_v1_ego1p0_4 elapsed=83.97s callbacks=3912 commands=3911 guidance=3811 command_fps(ros/wall)=50.00/55.76 guidance_wall_fps=55.68 avoid_ms(mean/p50/p95/max)=0.833/0.820/1.016/2.682 cycle_ms(mean/p95/max)=17.935/29.734/94.380 depth_to_cmd_ms(mean/p95/max)=33.311/33.333/50.000 callback_to_publish_ms(mean/p95/max)=0.906/1.407/2.948
+[position_cmd_to_twist-2] [INFO] [1790692856.100573905] [position_cmd_to_twist]: [PERF BRIDGE] run=final_v1_ego1p0_4 elapsed=85.29s received=3996 published=3996 fps(ros/wall)=50.00/55.85 controller_to_bridge_ms(mean/p50/p95/max)=0.000/0.000/0.000/0.000 bridge_process_ms(mean/p95/max)=0.091/0.123/1.414
+[NAV] t=80.0s position=(-46.43,-9.02,2.80) yaw=10.4deg command=(0.00,0.00,0.00) manual_active=1 collision_blocks=0
+[depth_angular_controller-1] [INFO] [1790692859.683623137] [depth_angular_controller]: [PERF CTRL] run=final_v1_ego1p0_4 elapsed=88.98s callbacks=4198 commands=4197 guidance=4097 command_fps(ros/wall)=50.00/55.85 guidance_wall_fps=55.78 avoid_ms(mean/p50/p95/max)=0.835/0.820/1.016/2.682 cycle_ms(mean/p95/max)=17.906/29.596/94.380 depth_to_cmd_ms(mean/p95/max)=33.317/33.333/50.000 callback_to_publish_ms(mean/p95/max)=0.910/1.421/2.948
+[position_cmd_to_twist-2] [INFO] [1790692860.577936556] [position_cmd_to_twist]: [PERF BRIDGE] run=final_v1_ego1p0_4 elapsed=89.77s received=4246 published=4246 fps(ros/wall)=50.00/55.84 controller_to_bridge_ms(mean/p50/p95/max)=0.000/0.000/0.000/0.000 bridge_process_ms(mean/p95/max)=0.091/0.123/1.414
+[NAV] t=85.0s position=(-46.43,-9.02,2.80) yaw=10.4deg command=(0.00,0.00,0.00) manual_active=1 collision_blocks=0
+[depth_angular_controller-1] [INFO] [1790692864.685301014] [depth_angular_controller]: [PERF CTRL] run=final_v1_ego1p0_4 elapsed=93.98s callbacks=4472 commands=4471 guidance=4371 command_fps(ros/wall)=50.00/55.78 guidance_wall_fps=55.71 avoid_ms(mean/p50/p95/max)=0.835/0.820/1.014/2.682 cycle_ms(mean/p95/max)=17.927/29.567/94.380 depth_to_cmd_ms(mean/p95/max)=33.314/33.333/50.000 callback_to_publish_ms(mean/p95/max)=0.911/1.414/2.948
+[position_cmd_to_twist-2] [INFO] [1790692865.115573054] [position_cmd_to_twist]: [PERF BRIDGE] run=final_v1_ego1p0_4 elapsed=94.31s received=4496 published=4496 fps(ros/wall)=50.00/55.80 controller_to_bridge_ms(mean/p50/p95/max)=0.000/0.000/0.000/0.000 bridge_process_ms(mean/p95/max)=0.091/0.123/1.414
+[NAV] t=90.0s position=(-46.43,-9.02,2.80) yaw=10.4deg command=(0.00,0.00,0.00) manual_active=1 collision_blocks=0
+[position_cmd_to_twist-2] [INFO] [1790692869.328152531] [position_cmd_to_twist]: [PERF BRIDGE] run=final_v1_ego1p0_4 elapsed=98.52s received=4746 published=4746 fps(ros/wall)=50.00/55.98 controller_to_bridge_ms(mean/p50/p95/max)=0.000/0.000/0.000/0.000 bridge_process_ms(mean/p95/max)=0.092/0.124/1.414
+[NAV] t=95.0s position=(-46.43,-9.02,2.80) yaw=10.4deg command=(0.00,0.00,0.00) manual_active=1 collision_blocks=0
+[depth_angular_controller-1] [INFO] [1790692869.689884343] [depth_angular_controller]: [PERF CTRL] run=final_v1_ego1p0_4 elapsed=98.99s callbacks=4769 commands=4768 guidance=4668 command_fps(ros/wall)=49.99/55.99 guidance_wall_fps=55.93 avoid_ms(mean/p50/p95/max)=0.836/0.821/1.015/2.682 cycle_ms(mean/p95/max)=17.860/29.446/94.380 depth_to_cmd_ms(mean/p95/max)=33.315/33.333/50.000 callback_to_publish_ms(mean/p95/max)=0.912/1.410/2.948
+[position_cmd_to_twist-2] [INFO] [1790692873.854732831] [position_cmd_to_twist]: [PERF BRIDGE] run=final_v1_ego1p0_4 elapsed=103.05s received=4996 published=4996 fps(ros/wall)=50.00/55.94 controller_to_bridge_ms(mean/p50/p95/max)=0.000/0.000/0.000/0.000 bridge_process_ms(mean/p95/max)=0.091/0.124/1.414
+[NAV] t=100.0s position=(-46.43,-9.02,2.80) yaw=10.4deg command=(0.00,0.00,0.00) manual_active=1 collision_blocks=0
+[depth_angular_controller-1] [INFO] [1790692874.709954162] [depth_angular_controller]: [PERF CTRL] run=final_v1_ego1p0_4 elapsed=104.01s callbacks=5049 commands=5048 guidance=4948 command_fps(ros/wall)=50.00/55.98 guidance_wall_fps=55.92 avoid_ms(mean/p50/p95/max)=0.836/0.821/1.008/2.682 cycle_ms(mean/p95/max)=17.864/29.380/94.380 depth_to_cmd_ms(mean/p95/max)=33.320/33.333/50.000 callback_to_publish_ms(mean/p95/max)=0.913/1.407/2.948
+[position_cmd_to_twist-2] [INFO] [1790692878.093796717] [position_cmd_to_twist]: [PERF BRIDGE] run=final_v1_ego1p0_4 elapsed=107.28s received=5246 published=5246 fps(ros/wall)=50.00/56.08 controller_to_bridge_ms(mean/p50/p95/max)=0.000/0.000/0.000/0.000 bridge_process_ms(mean/p95/max)=0.091/0.124/1.414
+[NAV] t=105.0s position=(-46.43,-9.02,2.80) yaw=10.4deg command=(0.00,0.00,0.00) manual_active=1 collision_blocks=0
+[depth_angular_controller-1] [INFO] [1790692879.718972975] [depth_angular_controller]: [PERF CTRL] run=final_v1_ego1p0_4 elapsed=109.02s callbacks=5338 commands=5337 guidance=5237 command_fps(ros/wall)=50.00/56.07 guidance_wall_fps=56.02 avoid_ms(mean/p50/p95/max)=0.836/0.821/1.004/2.682 cycle_ms(mean/p95/max)=17.835/29.311/94.380 depth_to_cmd_ms(mean/p95/max)=33.317/33.333/50.000 callback_to_publish_ms(mean/p95/max)=0.913/1.401/2.948
+[position_cmd_to_twist-2] [INFO] [1790692882.448637602] [position_cmd_to_twist]: [PERF BRIDGE] run=final_v1_ego1p0_4 elapsed=111.64s received=5496 published=5496 fps(ros/wall)=50.00/56.14 controller_to_bridge_ms(mean/p50/p95/max)=0.000/0.000/0.000/0.000 bridge_process_ms(mean/p95/max)=0.091/0.123/1.414
+[NAV] t=110.0s position=(-46.43,-9.02,2.80) yaw=10.4deg command=(0.00,0.00,0.00) manual_active=1 collision_blocks=0
+[depth_angular_controller-1] [INFO] [1790692884.732514804] [depth_angular_controller]: [PERF CTRL] run=final_v1_ego1p0_4 elapsed=114.03s callbacks=5627 commands=5626 guidance=5526 command_fps(ros/wall)=50.00/56.15 guidance_wall_fps=56.10 avoid_ms(mean/p50/p95/max)=0.836/0.821/1.001/2.682 cycle_ms(mean/p95/max)=17.810/29.264/94.380 depth_to_cmd_ms(mean/p95/max)=33.315/33.333/50.000 callback_to_publish_ms(mean/p95/max)=0.914/1.401/2.948
+[position_cmd_to_twist-2] [INFO] [1790692886.739449876] [position_cmd_to_twist]: [PERF BRIDGE] run=final_v1_ego1p0_4 elapsed=115.93s received=5746 published=5746 fps(ros/wall)=50.00/56.23 controller_to_bridge_ms(mean/p50/p95/max)=0.000/0.000/0.000/0.000 bridge_process_ms(mean/p95/max)=0.091/0.123/1.414
+[NAV] t=115.0s position=(-46.43,-9.02,2.80) yaw=10.4deg command=(0.00,0.00,0.00) manual_active=1 collision_blocks=0
+[depth_angular_controller-1] [INFO] [1790692889.735181797] [depth_angular_controller]: [PERF CTRL] run=final_v1_ego1p0_4 elapsed=119.03s callbacks=5924 commands=5923 guidance=5823 command_fps(ros/wall)=49.99/56.30 guidance_wall_fps=56.26 avoid_ms(mean/p50/p95/max)=0.836/0.821/0.997/2.682 cycle_ms(mean/p95/max)=17.762/29.188/94.380 depth_to_cmd_ms(mean/p95/max)=33.322/33.333/50.000 callback_to_publish_ms(mean/p95/max)=0.915/1.401/2.948
+[position_cmd_to_twist-2] [INFO] [1790692890.939626318] [position_cmd_to_twist]: [PERF BRIDGE] run=final_v1_ego1p0_4 elapsed=120.13s received=5995 published=5995 fps(ros/wall)=49.99/56.35 controller_to_bridge_ms(mean/p50/p95/max)=0.000/0.000/0.000/0.000 bridge_process_ms(mean/p95/max)=0.091/0.124/1.414
+[NAV] t=120.0s position=(-46.43,-9.02,2.80) yaw=10.4deg command=(0.00,0.00,0.00) manual_active=1 collision_blocks=0
+[depth_angular_controller-1] [INFO] [1790692894.745561022] [depth_angular_controller]: [PERF CTRL] run=final_v1_ego1p0_4 elapsed=124.04s callbacks=6210 commands=6209 guidance=6109 command_fps(ros/wall)=49.99/56.34 guidance_wall_fps=56.30 avoid_ms(mean/p50/p95/max)=0.837/0.821/1.000/2.682 cycle_ms(mean/p95/max)=17.750/29.172/94.380 depth_to_cmd_ms(mean/p95/max)=33.328/33.333/50.000 callback_to_publish_ms(mean/p95/max)=0.917/1.407/2.948
+[position_cmd_to_twist-2] [INFO] [1790692895.351854072] [position_cmd_to_twist]: [PERF BRIDGE] run=final_v1_ego1p0_4 elapsed=124.54s received=6245 published=6245 fps(ros/wall)=49.99/56.36 controller_to_bridge_ms(mean/p50/p95/max)=0.000/0.000/0.000/0.000 bridge_process_ms(mean/p95/max)=0.091/0.123/1.414
+[NAV] t=125.0s position=(-46.43,-9.02,2.80) yaw=10.4deg command=(0.00,0.00,0.00) manual_active=1 collision_blocks=0
+[depth_angular_controller-1] [INFO] [1790692899.768443260] [depth_angular_controller]: [PERF CTRL] run=final_v1_ego1p0_4 elapsed=129.07s callbacks=6493 commands=6492 guidance=6392 command_fps(ros/wall)=49.99/56.34 guidance_wall_fps=56.30 avoid_ms(mean/p50/p95/max)=0.837/0.821/1.000/2.682 cycle_ms(mean/p95/max)=17.750/29.116/94.380 depth_to_cmd_ms(mean/p95/max)=33.331/33.333/50.000 callback_to_publish_ms(mean/p95/max)=0.918/1.409/2.948
+[position_cmd_to_twist-2] [INFO] [1790692899.884092630] [position_cmd_to_twist]: [PERF BRIDGE] run=final_v1_ego1p0_4 elapsed=129.07s received=6495 published=6495 fps(ros/wall)=49.99/56.31 controller_to_bridge_ms(mean/p50/p95/max)=0.000/0.000/0.000/0.000 bridge_process_ms(mean/p95/max)=0.091/0.123/1.414
+[NAV] t=130.0s position=(-46.43,-9.02,2.80) yaw=10.4deg command=(0.00,0.00,0.00) manual_active=1 collision_blocks=0
+[position_cmd_to_twist-2] [INFO] [1790692904.420661504] [position_cmd_to_twist]: [PERF BRIDGE] run=final_v1_ego1p0_4 elapsed=133.61s received=6744 published=6744 fps(ros/wall)=49.99/56.26 controller_to_bridge_ms(mean/p50/p95/max)=0.000/0.000/0.000/0.000 bridge_process_ms(mean/p95/max)=0.091/0.124/1.414
+[NAV] t=135.0s position=(-46.43,-9.02,2.80) yaw=10.4deg command=(0.00,0.00,0.00) manual_active=1 collision_blocks=0
+[depth_angular_controller-1] [INFO] [1790692904.778163969] [depth_angular_controller]: [PERF CTRL] run=final_v1_ego1p0_4 elapsed=134.08s callbacks=6767 commands=6766 guidance=6666 command_fps(ros/wall)=49.98/56.27 guidance_wall_fps=56.23 avoid_ms(mean/p50/p95/max)=0.838/0.821/1.000/2.682 cycle_ms(mean/p95/max)=17.772/29.116/94.380 depth_to_cmd_ms(mean/p95/max)=33.331/33.333/50.000 callback_to_publish_ms(mean/p95/max)=0.920/1.423/3.171
+[position_cmd_to_twist-2] [INFO] [1790692908.630821170] [position_cmd_to_twist]: [PERF BRIDGE] run=final_v1_ego1p0_4 elapsed=137.82s received=6995 published=6995 fps(ros/wall)=49.99/56.37 controller_to_bridge_ms(mean/p50/p95/max)=0.000/0.000/0.000/0.000 bridge_process_ms(mean/p95/max)=0.091/0.124/1.414
+[NAV] t=140.0s position=(-46.43,-9.02,2.80) yaw=10.4deg command=(0.00,0.00,0.00) manual_active=1 collision_blocks=0
+[depth_angular_controller-1] [INFO] [1790692909.804151193] [depth_angular_controller]: [PERF CTRL] run=final_v1_ego1p0_4 elapsed=139.10s callbacks=7062 commands=7061 guidance=6961 command_fps(ros/wall)=49.98/56.37 guidance_wall_fps=56.33 avoid_ms(mean/p50/p95/max)=0.838/0.822/0.996/2.682 cycle_ms(mean/p95/max)=17.741/29.051/94.380 depth_to_cmd_ms(mean/p95/max)=33.331/33.333/50.000 callback_to_publish_ms(mean/p95/max)=0.920/1.421/3.171
+[position_cmd_to_twist-2] [INFO] [1790692912.982876338] [position_cmd_to_twist]: [PERF BRIDGE] run=final_v1_ego1p0_4 elapsed=142.17s received=7244 published=7244 fps(ros/wall)=49.99/56.40 controller_to_bridge_ms(mean/p50/p95/max)=0.000/0.000/0.000/0.000 bridge_process_ms(mean/p95/max)=0.091/0.124/1.414
+[NAV] t=145.0s position=(-46.43,-9.02,2.80) yaw=10.4deg command=(0.00,0.00,0.00) manual_active=1 collision_blocks=0
+[depth_angular_controller-1] [INFO] [1790692914.804959127] [depth_angular_controller]: [PERF CTRL] run=final_v1_ego1p0_4 elapsed=144.10s callbacks=7351 commands=7350 guidance=7250 command_fps(ros/wall)=49.99/56.42 guidance_wall_fps=56.39 avoid_ms(mean/p50/p95/max)=0.838/0.822/0.994/2.682 cycle_ms(mean/p95/max)=17.724/28.999/94.380 depth_to_cmd_ms(mean/p95/max)=33.331/33.333/50.000 callback_to_publish_ms(mean/p95/max)=0.920/1.414/3.171
+[position_cmd_to_twist-2] [INFO] [1790692917.278892897] [position_cmd_to_twist]: [PERF BRIDGE] run=final_v1_ego1p0_4 elapsed=146.47s received=7494 published=7494 fps(ros/wall)=49.99/56.46 controller_to_bridge_ms(mean/p50/p95/max)=0.000/0.000/0.000/0.000 bridge_process_ms(mean/p95/max)=0.091/0.124/1.414
+[NAV] t=150.0s position=(-46.43,-9.02,2.80) yaw=10.4deg command=(0.00,0.00,0.00) manual_active=1 collision_blocks=0
+[depth_angular_controller-1] [INFO] [1790692919.807461271] [depth_angular_controller]: [PERF CTRL] run=final_v1_ego1p0_4 elapsed=149.11s callbacks=7634 commands=7633 guidance=7533 command_fps(ros/wall)=49.99/56.43 guidance_wall_fps=56.39 avoid_ms(mean/p50/p95/max)=0.838/0.822/0.994/2.682 cycle_ms(mean/p95/max)=17.722/28.965/94.380 depth_to_cmd_ms(mean/p95/max)=33.331/33.333/50.000 callback_to_publish_ms(mean/p95/max)=0.921/1.425/3.171
+[position_cmd_to_twist-2] [INFO] [1790692921.675391946] [position_cmd_to_twist]: [PERF BRIDGE] run=final_v1_ego1p0_4 elapsed=150.87s received=7744 published=7744 fps(ros/wall)=49.99/56.47 controller_to_bridge_ms(mean/p50/p95/max)=0.000/0.000/0.000/0.000 bridge_process_ms(mean/p95/max)=0.090/0.124/1.414
+[NAV] t=155.0s position=(-46.43,-9.02,2.80) yaw=10.4deg command=(0.00,0.00,0.00) manual_active=1 collision_blocks=0
+[depth_angular_controller-1] [INFO] [1790692924.835093071] [depth_angular_controller]: [PERF CTRL] run=final_v1_ego1p0_4 elapsed=154.13s callbacks=7927 commands=7926 guidance=7826 command_fps(ros/wall)=49.98/56.49 guidance_wall_fps=56.46 avoid_ms(mean/p50/p95/max)=0.839/0.822/0.994/2.682 cycle_ms(mean/p95/max)=17.701/28.934/94.380 depth_to_cmd_ms(mean/p95/max)=33.331/33.333/50.000 callback_to_publish_ms(mean/p95/max)=0.922/1.423/3.171
+[position_cmd_to_twist-2] [INFO] [1790692925.976088908] [position_cmd_to_twist]: [PERF BRIDGE] run=final_v1_ego1p0_4 elapsed=155.17s received=7994 published=7994 fps(ros/wall)=49.99/56.52 controller_to_bridge_ms(mean/p50/p95/max)=0.000/0.000/0.000/0.000 bridge_process_ms(mean/p95/max)=0.090/0.124/1.414
+[NAV] t=160.0s position=(-46.43,-9.02,2.80) yaw=10.4deg command=(0.00,0.00,0.00) manual_active=1 collision_blocks=0
+[depth_angular_controller-1] [INFO] [1790692929.885653377] [depth_angular_controller]: [PERF CTRL] run=final_v1_ego1p0_4 elapsed=159.18s callbacks=8223 commands=8222 guidance=8122 command_fps(ros/wall)=49.99/56.57 guidance_wall_fps=56.54 avoid_ms(mean/p50/p95/max)=0.838/0.822/0.990/2.682 cycle_ms(mean/p95/max)=17.678/28.897/94.380 depth_to_cmd_ms(mean/p95/max)=33.331/33.333/50.000 callback_to_publish_ms(mean/p95/max)=0.921/1.414/3.171
+[position_cmd_to_twist-2] [INFO] [1790692930.256653532] [position_cmd_to_twist]: [PERF BRIDGE] run=final_v1_ego1p0_4 elapsed=159.45s received=8244 published=8244 fps(ros/wall)=49.99/56.58 controller_to_bridge_ms(mean/p50/p95/max)=0.000/0.000/0.000/0.000 bridge_process_ms(mean/p95/max)=0.090/0.124/1.414
+[NAV] t=165.0s position=(-46.43,-9.02,2.80) yaw=10.4deg command=(0.00,0.00,0.00) manual_active=1 collision_blocks=0
+[position_cmd_to_twist-2] [INFO] [1790692934.668938132] [position_cmd_to_twist]: [PERF BRIDGE] run=final_v1_ego1p0_4 elapsed=163.86s received=8494 published=8494 fps(ros/wall)=49.99/56.58 controller_to_bridge_ms(mean/p50/p95/max)=0.000/0.000/0.000/0.000 bridge_process_ms(mean/p95/max)=0.090/0.124/1.414
+[NAV] t=170.0s position=(-46.43,-9.02,2.80) yaw=10.4deg command=(0.00,0.00,0.00) manual_active=1 collision_blocks=0
+[depth_angular_controller-1] [INFO] [1790692934.899104407] [depth_angular_controller]: [PERF CTRL] run=final_v1_ego1p0_4 elapsed=164.20s callbacks=8509 commands=8508 guidance=8408 command_fps(ros/wall)=49.99/56.58 guidance_wall_fps=56.56 avoid_ms(mean/p50/p95/max)=0.839/0.822/0.990/2.682 cycle_ms(mean/p95/max)=17.673/28.897/94.380 depth_to_cmd_ms(mean/p95/max)=33.331/33.333/50.000 callback_to_publish_ms(mean/p95/max)=0.922/1.415/3.171
+[position_cmd_to_twist-2] [INFO] [1790692939.293164428] [position_cmd_to_twist]: [PERF BRIDGE] run=final_v1_ego1p0_4 elapsed=168.48s received=8744 published=8744 fps(ros/wall)=49.99/56.51 controller_to_bridge_ms(mean/p50/p95/max)=0.000/0.000/0.000/0.000 bridge_process_ms(mean/p95/max)=0.090/0.123/1.414
+[NAV] t=175.0s position=(-46.43,-9.02,2.80) yaw=10.4deg command=(0.00,0.00,0.00) manual_active=1 collision_blocks=0
+[depth_angular_controller-1] [INFO] [1790692939.904591161] [depth_angular_controller]: [PERF CTRL] run=final_v1_ego1p0_4 elapsed=169.20s callbacks=8779 commands=8778 guidance=8678 command_fps(ros/wall)=49.99/56.50 guidance_wall_fps=56.47 avoid_ms(mean/p50/p95/max)=0.840/0.822/0.991/2.682 cycle_ms(mean/p95/max)=17.700/28.895/94.380 depth_to_cmd_ms(mean/p95/max)=33.331/33.333/50.000 callback_to_publish_ms(mean/p95/max)=0.924/1.425/3.171
+[position_cmd_to_twist-2] [INFO] [1790692943.706807368] [position_cmd_to_twist]: [PERF BRIDGE] run=final_v1_ego1p0_4 elapsed=172.90s received=8994 published=8994 fps(ros/wall)=49.99/56.51 controller_to_bridge_ms(mean/p50/p95/max)=0.000/0.000/0.000/0.000 bridge_process_ms(mean/p95/max)=0.090/0.124/1.414
+[NAV] t=180.0s position=(-46.43,-9.02,2.80) yaw=10.4deg command=(0.00,0.00,0.00) manual_active=1 collision_blocks=0
+[depth_angular_controller-1] [INFO] [1790692944.905982169] [depth_angular_controller]: [PERF CTRL] run=final_v1_ego1p0_4 elapsed=174.20s callbacks=9060 commands=9059 guidance=8959 command_fps(ros/wall)=49.99/56.49 guidance_wall_fps=56.46 avoid_ms(mean/p50/p95/max)=0.840/0.822/0.990/2.682 cycle_ms(mean/p95/max)=17.703/28.875/94.380 depth_to_cmd_ms(mean/p95/max)=33.330/33.333/50.000 callback_to_publish_ms(mean/p95/max)=0.924/1.423/3.171
+[position_cmd_to_twist-2] [INFO] [1790692948.130240689] [position_cmd_to_twist]: [PERF BRIDGE] run=final_v1_ego1p0_4 elapsed=177.32s received=9244 published=9244 fps(ros/wall)=49.99/56.51 controller_to_bridge_ms(mean/p50/p95/max)=0.000/0.000/0.000/0.000 bridge_process_ms(mean/p95/max)=0.090/0.124/1.441
+[NAV] t=185.0s position=(-46.43,-9.02,2.80) yaw=10.4deg command=(0.00,0.00,0.00) manual_active=1 collision_blocks=0
+[depth_angular_controller-1] [INFO] [1790692949.918676068] [depth_angular_controller]: [PERF CTRL] run=final_v1_ego1p0_4 elapsed=179.22s callbacks=9350 commands=9349 guidance=9249 command_fps(ros/wall)=49.99/56.53 guidance_wall_fps=56.50 avoid_ms(mean/p50/p95/max)=0.839/0.822/0.983/2.682 cycle_ms(mean/p95/max)=17.690/28.884/94.380 depth_to_cmd_ms(mean/p95/max)=33.330/33.333/50.000 callback_to_publish_ms(mean/p95/max)=0.924/1.420/3.171
+[position_cmd_to_twist-2] [INFO] [1790692952.492626242] [position_cmd_to_twist]: [PERF BRIDGE] run=final_v1_ego1p0_4 elapsed=181.68s received=9493 published=9493 fps(ros/wall)=49.98/56.52 controller_to_bridge_ms(mean/p50/p95/max)=0.000/0.000/0.000/0.000 bridge_process_ms(mean/p95/max)=0.090/0.123/1.441
+[NAV] t=190.0s position=(-46.43,-9.02,2.80) yaw=10.4deg command=(0.00,0.00,0.00) manual_active=1 collision_blocks=0
+[depth_angular_controller-1] [INFO] [1790692954.929420859] [depth_angular_controller]: [PERF CTRL] run=final_v1_ego1p0_4 elapsed=184.23s callbacks=9638 commands=9637 guidance=9537 command_fps(ros/wall)=49.98/56.56 guidance_wall_fps=56.53 avoid_ms(mean/p50/p95/max)=0.839/0.822/0.983/2.682 cycle_ms(mean/p95/max)=17.681/28.858/94.380 depth_to_cmd_ms(mean/p95/max)=33.332/33.333/50.000 callback_to_publish_ms(mean/p95/max)=0.924/1.415/3.171
+[position_cmd_to_twist-2] [INFO] [1790692956.823109510] [position_cmd_to_twist]: [PERF BRIDGE] run=final_v1_ego1p0_4 elapsed=186.01s received=9743 published=9743 fps(ros/wall)=49.98/56.55 controller_to_bridge_ms(mean/p50/p95/max)=0.000/0.000/0.000/0.000 bridge_process_ms(mean/p95/max)=0.090/0.123/1.441
+[NAV] t=195.0s position=(-46.43,-9.02,2.80) yaw=10.4deg command=(0.00,0.00,0.00) manual_active=1 collision_blocks=0
+[depth_angular_controller-1] [INFO] [1790692959.938959186] [depth_angular_controller]: [PERF CTRL] run=final_v1_ego1p0_4 elapsed=189.24s callbacks=9929 commands=9928 guidance=9828 command_fps(ros/wall)=49.98/56.60 guidance_wall_fps=56.58 avoid_ms(mean/p50/p95/max)=0.839/0.822/0.979/2.682 cycle_ms(mean/p95/max)=17.668/28.829/94.380 depth_to_cmd_ms(mean/p95/max)=33.333/33.333/50.000 callback_to_publish_ms(mean/p95/max)=0.925/1.419/3.171
+[position_cmd_to_twist-2] [INFO] [1790692961.089809315] [position_cmd_to_twist]: [PERF BRIDGE] run=final_v1_ego1p0_4 elapsed=190.28s received=9993 published=9993 fps(ros/wall)=49.98/56.60 controller_to_bridge_ms(mean/p50/p95/max)=0.000/0.000/0.000/0.000 bridge_process_ms(mean/p95/max)=0.090/0.123/1.441
+[NAV] t=200.0s position=(-46.43,-9.02,2.80) yaw=10.4deg command=(0.00,0.00,0.00) manual_active=1 collision_blocks=0
+[depth_angular_controller-1] [INFO] [1790692964.995671938] [depth_angular_controller]: [PERF CTRL] run=final_v1_ego1p0_4 elapsed=194.29s callbacks=10216 commands=10215 guidance=10115 command_fps(ros/wall)=49.98/56.60 guidance_wall_fps=56.58 avoid_ms(mean/p50/p95/max)=0.840/0.822/0.979/2.682 cycle_ms(mean/p95/max)=17.666/28.823/94.380 depth_to_cmd_ms(mean/p95/max)=33.333/33.333/50.000 callback_to_publish_ms(mean/p95/max)=0.925/1.414/3.171
+[position_cmd_to_twist-2] [INFO] [1790692965.467576693] [position_cmd_to_twist]: [PERF BRIDGE] run=final_v1_ego1p0_4 elapsed=194.66s received=10243 published=10243 fps(ros/wall)=49.99/56.62 controller_to_bridge_ms(mean/p50/p95/max)=0.000/0.000/0.000/0.000 bridge_process_ms(mean/p95/max)=0.090/0.123/1.441
+[NAV] t=205.0s position=(-46.43,-9.02,2.80) yaw=10.4deg command=(0.00,0.00,0.00) manual_active=1 collision_blocks=0
+[position_cmd_to_twist-2] [INFO] [1790692969.907464502] [position_cmd_to_twist]: [PERF BRIDGE] run=final_v1_ego1p0_4 elapsed=199.10s received=10493 published=10493 fps(ros/wall)=49.99/56.61 controller_to_bridge_ms(mean/p50/p95/max)=0.000/0.000/0.000/0.000 bridge_process_ms(mean/p95/max)=0.090/0.123/1.441
+[NAV] t=210.0s position=(-46.43,-9.02,2.80) yaw=10.4deg command=(0.00,0.00,0.00) manual_active=1 collision_blocks=0
+[depth_angular_controller-1] [INFO] [1790692970.019416303] [depth_angular_controller]: [PERF CTRL] run=final_v1_ego1p0_4 elapsed=199.32s callbacks=10501 commands=10500 guidance=10400 command_fps(ros/wall)=49.98/56.61 guidance_wall_fps=56.59 avoid_ms(mean/p50/p95/max)=0.840/0.823/0.974/2.682 cycle_ms(mean/p95/max)=17.665/28.820/94.380 depth_to_cmd_ms(mean/p95/max)=33.333/33.333/50.000 callback_to_publish_ms(mean/p95/max)=0.925/1.411/3.171
+[position_cmd_to_twist-2] [INFO] [1790692974.130368403] [position_cmd_to_twist]: [PERF BRIDGE] run=final_v1_ego1p0_4 elapsed=203.32s received=10743 published=10743 fps(ros/wall)=49.99/56.67 controller_to_bridge_ms(mean/p50/p95/max)=0.000/0.000/0.000/0.000 bridge_process_ms(mean/p95/max)=0.090/0.123/1.441
+[NAV] t=215.0s position=(-46.43,-9.02,2.80) yaw=10.4deg command=(0.00,0.00,0.00) manual_active=1 collision_blocks=0
+[depth_angular_controller-1] [INFO] [1790692975.046922838] [depth_angular_controller]: [PERF CTRL] run=final_v1_ego1p0_4 elapsed=204.34s callbacks=10796 commands=10795 guidance=10695 command_fps(ros/wall)=49.98/56.66 guidance_wall_fps=56.64 avoid_ms(mean/p50/p95/max)=0.840/0.823/0.974/3.450 cycle_ms(mean/p95/max)=17.648/28.811/94.380 depth_to_cmd_ms(mean/p95/max)=33.333/33.333/50.000 callback_to_publish_ms(mean/p95/max)=0.925/1.407/3.502
+[position_cmd_to_twist-2] [INFO] [1790692978.530894889] [position_cmd_to_twist]: [PERF BRIDGE] run=final_v1_ego1p0_4 elapsed=207.72s received=10993 published=10993 fps(ros/wall)=49.99/56.67 controller_to_bridge_ms(mean/p50/p95/max)=0.000/0.000/0.000/0.000 bridge_process_ms(mean/p95/max)=0.090/0.123/1.441
+[NAV] t=220.0s position=(-46.43,-9.02,2.80) yaw=10.4deg command=(0.00,0.00,0.00) manual_active=1 collision_blocks=0
+[depth_angular_controller-1] [INFO] [1790692980.049081166] [depth_angular_controller]: [PERF CTRL] run=final_v1_ego1p0_4 elapsed=209.35s callbacks=11079 commands=11078 guidance=10978 command_fps(ros/wall)=49.99/56.66 guidance_wall_fps=56.64 avoid_ms(mean/p50/p95/max)=0.840/0.823/0.974/3.450 cycle_ms(mean/p95/max)=17.649/28.796/94.380 depth_to_cmd_ms(mean/p95/max)=33.333/33.333/50.000 callback_to_publish_ms(mean/p95/max)=0.925/1.408/3.502
+[position_cmd_to_twist-2] [INFO] [1790692983.053255210] [position_cmd_to_twist]: [PERF BRIDGE] run=final_v1_ego1p0_4 elapsed=212.24s received=11243 published=11243 fps(ros/wall)=49.99/56.64 controller_to_bridge_ms(mean/p50/p95/max)=0.000/0.000/0.000/0.000 bridge_process_ms(mean/p95/max)=0.090/0.123/1.441
+[NAV] t=225.0s position=(-46.43,-9.02,2.80) yaw=10.4deg command=(0.00,0.00,0.00) manual_active=1 collision_blocks=0
+[depth_angular_controller-1] [INFO] [1790692985.059759042] [depth_angular_controller]: [PERF CTRL] run=final_v1_ego1p0_4 elapsed=214.36s callbacks=11361 commands=11360 guidance=11260 command_fps(ros/wall)=49.98/56.65 guidance_wall_fps=56.63 avoid_ms(mean/p50/p95/max)=0.840/0.823/0.973/3.450 cycle_ms(mean/p95/max)=17.652/28.800/94.380 depth_to_cmd_ms(mean/p95/max)=33.333/33.333/50.000 callback_to_publish_ms(mean/p95/max)=0.926/1.412/3.502
+[position_cmd_to_twist-2] [INFO] [1790692987.335666970] [position_cmd_to_twist]: [PERF BRIDGE] run=final_v1_ego1p0_4 elapsed=216.52s received=11493 published=11493 fps(ros/wall)=49.99/56.67 controller_to_bridge_ms(mean/p50/p95/max)=0.000/0.000/0.000/0.000 bridge_process_ms(mean/p95/max)=0.090/0.123/1.441
+[NAV] t=230.0s position=(-46.43,-9.02,2.80) yaw=10.4deg command=(0.00,0.00,0.00) manual_active=1 collision_blocks=0
+[depth_angular_controller-1] [INFO] [1790692990.070993181] [depth_angular_controller]: [PERF CTRL] run=final_v1_ego1p0_4 elapsed=219.37s callbacks=11653 commands=11652 guidance=11552 command_fps(ros/wall)=49.99/56.69 guidance_wall_fps=56.67 avoid_ms(mean/p50/p95/max)=0.840/0.823/0.974/3.450 cycle_ms(mean/p95/max)=17.640/28.792/94.380 depth_to_cmd_ms(mean/p95/max)=33.330/33.333/50.000 callback_to_publish_ms(mean/p95/max)=0.926/1.412/3.502
+[position_cmd_to_twist-2] [INFO] [1790692991.649951790] [position_cmd_to_twist]: [PERF BRIDGE] run=final_v1_ego1p0_4 elapsed=220.84s received=11743 published=11743 fps(ros/wall)=49.99/56.70 controller_to_bridge_ms(mean/p50/p95/max)=0.000/0.000/0.000/0.000 bridge_process_ms(mean/p95/max)=0.090/0.123/1.441
+[NAV] t=235.0s position=(-46.43,-9.02,2.80) yaw=10.4deg command=(0.00,0.00,0.00) manual_active=1 collision_blocks=0
+[depth_angular_controller-1] [INFO] [1790692995.074204385] [depth_angular_controller]: [PERF CTRL] run=final_v1_ego1p0_4 elapsed=224.37s callbacks=11939 commands=11938 guidance=11838 command_fps(ros/wall)=49.99/56.70 guidance_wall_fps=56.68 avoid_ms(mean/p50/p95/max)=0.840/0.823/0.973/3.450 cycle_ms(mean/p95/max)=17.636/28.787/94.380 depth_to_cmd_ms(mean/p95/max)=33.333/33.333/50.000 callback_to_publish_ms(mean/p95/max)=0.926/1.410/3.502
+[position_cmd_to_twist-2] [INFO] [1790692996.000589588] [position_cmd_to_twist]: [PERF BRIDGE] run=final_v1_ego1p0_4 elapsed=225.19s received=11993 published=11993 fps(ros/wall)=49.99/56.72 controller_to_bridge_ms(mean/p50/p95/max)=0.000/0.000/0.000/0.000 bridge_process_ms(mean/p95/max)=0.090/0.123/1.441
+[NAV] t=240.0s position=(-46.43,-9.02,2.80) yaw=10.4deg command=(0.00,0.00,0.00) manual_active=1 collision_blocks=0
+[BENCHMARK RESULT] TIMEOUT sim=240.000s
+[PERF ISAAC FINAL] run=final_v1_ego1p0_4 result=TIMEOUT wall=213.60s sim_frames=14522 fps(sim/wall)=60.01/67.99 command_changes=428 collision_blocks=0 frame_interval_ms(mean/p50/p95/max)=14.686/13.908/16.019/78.729
+[226.708s] Simulation App Shutting Down
+[depth_angular_controller-1] [INFO] [1790692998.476196388] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[position_cmd_to_twist-2] [INFO] [1790692998.478188747] [position_cmd_to_twist]: [PERF BRIDGE FINAL] run=final_v1_ego1p0_4 elapsed=227.67s received=12097 published=12097 fps(ros/wall)=49.99/56.73 controller_to_bridge_ms(mean/p50/p95/max)=0.000/0.000/0.000/0.000 bridge_process_ms(mean/p95/max)=0.090/0.123/1.441
+[position_cmd_to_twist-2] Failed to publish log message to rosout: publisher's context is invalid, at ./src/rcl/publisher.c:389
+[depth_angular_controller-1] [INFO] [1790692998.478236035] [depth_angular_controller]: [PERF CTRL FINAL] run=final_v1_ego1p0_4 elapsed=227.78s callbacks=12098 commands=12097 guidance=11997 command_fps(ros/wall)=49.99/56.73 guidance_wall_fps=56.71 avoid_ms(mean/p50/p95/max)=0.840/0.823/0.971/3.450 cycle_ms(mean/p95/max)=17.627/28.782/94.380 depth_to_cmd_ms(mean/p95/max)=33.335/33.333/50.000 callback_to_publish_ms(mean/p95/max)=0.926/1.408/3.502
+[INFO] [depth_angular_controller-1]: process has finished cleanly [pid 94866]
+[INFO] [position_cmd_to_twist-2]: process has finished cleanly [pid 94868]

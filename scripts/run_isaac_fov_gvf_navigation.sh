@@ -1,10 +1,13 @@
 #!/usr/bin/env bash
 set -eo pipefail
 
-PROJECT_ROOT="/home/starry/isaac-data/EGO1P1"
+# Sleeping OpenMP workers leave CPU time available for sensor rendering.
+export OMP_WAIT_POLICY="${OMP_WAIT_POLICY:-PASSIVE}"
+
+PROJECT_ROOT="/home/starry/isaac-data/EGO1P5"
 ISAAC_ROOT="/home/starry/isaac-data/isaacsim"
 HUMBLE_BRIDGE_LIB="$ISAAC_ROOT/exts/isaacsim.ros2.core/humble/lib"
-ROS_INSTALL="${FOV_GVF_INSTALL:-/tmp/fov_gvf_ego1p1_isaac_install}"
+ROS_INSTALL="${FOV_GVF_INSTALL:-/tmp/fov_gvf_ego1p5_isaac_install}"
 INPUT_MODE="${ISAAC_MANUAL_INPUT_MODE:-joystick}"
 case "$INPUT_MODE" in
   joystick)
@@ -17,8 +20,16 @@ case "$INPUT_MODE" in
     ;;
   keyboard)
     ;;
+  goal)
+    test -f "${ISAAC_GOAL_PROTOCOL:?goal mode requires ISAAC_GOAL_PROTOCOL}"
+    : "${FOV_GVF_BENCHMARK_ALGORITHM:?select ego1p5, ego1p3, ego1p2, ego1p1, ego1p0 or user_ego}"
+    : "${ISAAC_BENCHMARK_RESULT:?set result JSON path}"
+    ;;
+  trace)
+    test -f "${ISAAC_INTENT_TRACE:?trace mode requires ISAAC_INTENT_TRACE}"
+    ;;
   *)
-    echo "Unknown ISAAC_MANUAL_INPUT_MODE=$INPUT_MODE (expected joystick or keyboard)" >&2
+    echo "Unknown ISAAC_MANUAL_INPUT_MODE=$INPUT_MODE (expected joystick, keyboard, trace or goal)" >&2
     exit 1
     ;;
 esac
@@ -37,6 +48,7 @@ case "$SCENE_MODE" in
     ;;
 esac
 SCENE="${FOV_GVF_SCENE:-$DEFAULT_SCENE}"
+export FOV_GVF_ACTUAL_SCENE="$SCENE"
 
 if [[ ! -f "$ROS_INSTALL/setup.bash" ]]; then
   echo "ROS install not found: $ROS_INSTALL/setup.bash" >&2
@@ -61,8 +73,12 @@ if [[ -z "${FOV_GVF_ESDF_OCCUPANCY+x}" ]]; then
     unset FOV_GVF_ESDF_OCCUPANCY
   fi
 fi
-export ROS_LOG_DIR="${ROS_LOG_DIR:-/tmp/fov_gvf_ego1p1_isaac_ros_log}"
+export ROS_LOG_DIR="${ROS_LOG_DIR:-/tmp/fov_gvf_ego1p5_isaac_ros_log}"
 export FOV_GVF_RUN_ID="${FOV_GVF_RUN_ID:-$(date +%Y%m%d_%H%M%S)}"
+export FOV_GVF_REPLAY_DIR="${FOV_GVF_REPLAY_DIR-/tmp/fov_gvf_ego1p5_replays/$FOV_GVF_RUN_ID}"
+if [[ -n "$FOV_GVF_REPLAY_DIR" ]]; then
+  mkdir -p "$FOV_GVF_REPLAY_DIR"
+fi
 export FOV_GVF_PERFORMANCE_LOG="${FOV_GVF_PERFORMANCE_LOG:-$PROJECT_ROOT/performance/PERFORMANCE_METRICS.md}"
 mkdir -p "$ROS_LOG_DIR"
 mkdir -p "$(dirname "$FOV_GVF_PERFORMANCE_LOG")"
@@ -75,7 +91,10 @@ echo "[INPUT] mode=$ISAAC_MANUAL_INPUT_MODE scene_mode=$SCENE_MODE"
 
 LOCK_FILE="/tmp/fov_gvf_user_navigation.lock"
 exec 9>"$LOCK_FILE"
-if ! flock -n 9; then
+if [[ "${FOV_GVF_WAIT_FOR_LOCK:-0}" == "1" ]]; then
+  echo "[LOCK] Waiting for shared Isaac navigation slot"
+  flock 9
+elif ! flock -n 9; then
   echo "USER manual navigation is already running (lock: $LOCK_FILE)" >&2
   exit 1
 fi
@@ -113,7 +132,11 @@ if (( existing_publishers != 0 )); then
   exit 1
 fi
 
-setsid ros2 launch pc_gvf isaac_cloud_navigation.launch.py rviz:="$FOV_GVF_RVIZ" &
+LAUNCH_FILE=isaac_cloud_navigation.launch.py
+if [[ "$INPUT_MODE" == goal ]]; then
+  LAUNCH_FILE=navigation_benchmark.launch.py
+fi
+setsid ros2 launch pc_gvf "$LAUNCH_FILE" rviz:="$FOV_GVF_RVIZ" &
 ROS_LAUNCH_PID=$!
 publisher_count=0
 for _startup_attempt in {1..20}; do

@@ -1,0 +1,23 @@
+{
+  "build_log": "build.log",
+  "build_success": true,
+  "packages": 3,
+  "initial_ctest": {
+    "log": "core_tests.log",
+    "passed": 34,
+    "total": 36,
+    "failed": [
+      "test_depth_angular_core",
+      "test_python_behavior_baseline"
+    ],
+    "reason": "User site NumPy 2 loaded with extension built for NumPy 1; initial invocation lacked project PYTHONNOUSERSITE=1."
+  },
+  "retry": {
+    "log": "core_tests_python_env_retry.log",
+    "command": "PYTHONNOUSERSITE=1 ctest --test-dir /tmp/fov_gvf_ego1p5_isaac_build/pc_gvf --rerun-failed --output-on-failure",
+    "passed": 2,
+    "total": 2
+  },
+  "final_unique_tests_passed": 36,
+  "dependency_changes": false
+}

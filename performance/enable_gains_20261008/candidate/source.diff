@@ -1,0 +1,61 @@
+--- before/WORK_LOG.md
++++ candidate/WORK_LOG.md
+@@ -1,4 +1,18 @@
+ # EGO1P5 工作日志（完整继承EGO1P3及此前历史）
++
++### 2026-10-08 — [EGO1P5] 按用户放宽采用条件试开①②④⑥，核查遗漏退化并验证默认组合
++
++- 状态：进行中，尚未将新组合写成验证通过。
++- 目的：用户要求不再因整机证据不足保持关闭；启用没有明确现版退化的已有能力，保留逐项比较并撤销实测退化项。
++- 项目路径：`/home/starry/isaac-data/EGO1P5`。
++- 涉及文件：`src/pc_gvf/launch/isaac_cloud_navigation.launch.py`默认①②④⑥0→1；共享发布时间戳修复及新验证脚本随后另记；实验归档`performance/enable_gains_20261008`。
++- 修改内容：③增量和⑤输入滤波仍0，callback修复仍开，A-v4仍只goal；显式环境变量仍可逐项关闭。已冻结此前165份源码及两控制器。
++- 更正：此前聊天将①④概括为仅证据不足并不完整。旧①单开有182.567s卡停轨迹，旧④一对jerk3.829→3.961。后续已有等价提速但未重测开启，不能宣称它们从无退化；本次重新比较当前实现，不删旧失败。②解析让行有预期进展代价。
++- 验证：尚未执行新默认构建/运行。计划核心回归、真实launch启用/关闭检查、共享异步时间验证、逐项及组合主Shell运行；所有失败保留。
++- 影响与边界：只改P5；不改P3/P4、物理模型或地图。
++- 回滚/备份：`performance/enable_gains_20261008/before`。
++- 后续事项：完成实际验证，按新发现的退化决定最终默认值并同步最终记录。
++
+ 
+ ### 2026-10-08 11:36 — [EGO1P5] 完成43轨逐项消融，固定目标保留几何复用、人工撤销退化优化
+ 
+--- before/src/pc_gvf/launch/isaac_cloud_navigation.launch.py
++++ candidate/src/pc_gvf/launch/isaac_cloud_navigation.launch.py
+@@ -73,15 +73,15 @@
+                 "paper_subpixel_proposal": True,
+                 "paper_local_path_proposal": False,
+                 "paper_retain_certified_volume": True,
+-                "paper_shared_obstacles": os.environ.get("FOV_GVF_SHARED_OBSTACLES", "0") == "1",
++                "paper_shared_obstacles": os.environ.get("FOV_GVF_SHARED_OBSTACLES", "1") == "1",
+                 "shared_robot_id": os.environ.get("FOV_GVF_ROBOT_ID", "ego1p5"),
+                 "shared_map_frame": os.environ.get("FOV_GVF_SHARED_FRAME", "world"),
+                 "operator_assistance": os.environ.get("FOV_GVF_OPERATOR_ASSISTANCE", "0") == "1",
+-                "paper_spherical_memory": os.environ.get("FOV_GVF_SPHERICAL_MEMORY", "0") == "1",
++                "paper_spherical_memory": os.environ.get("FOV_GVF_SPHERICAL_MEMORY", "1") == "1",
+                 "paper_incremental_frontend": os.environ.get("FOV_GVF_INCREMENTAL_FRONTEND", "1") == "1",
+                 "paper_incremental_field": os.environ.get("FOV_GVF_INCREMENTAL_FIELD", "0") == "1",
+-                "paper_dynamic_obstacles": os.environ.get("FOV_GVF_DYNAMIC_OBSTACLES", "0") == "1",
+-                "depth_uncertainty_enabled": os.environ.get("FOV_GVF_DEPTH_UNCERTAINTY", "0") == "1",
++                "paper_dynamic_obstacles": os.environ.get("FOV_GVF_DYNAMIC_OBSTACLES", "1") == "1",
++                "depth_uncertainty_enabled": os.environ.get("FOV_GVF_DEPTH_UNCERTAINTY", "1") == "1",
+                 "depth_uncertainty_sigma0": float(os.environ.get("FOV_GVF_DEPTH_SIGMA0", "0.005")),
+                 "depth_uncertainty_sigma_range2": float(os.environ.get("FOV_GVF_DEPTH_SIGMA_RANGE2", "0.001")),
+                 "depth_uncertainty_multiplier": 3.0,
+--- before/src/pc_gvf/src/depth_angular_controller_node.cpp
++++ candidate/src/pc_gvf/src/depth_angular_controller_node.cpp
+@@ -1727,7 +1727,14 @@
+                 current_paper_views.push_back(std::make_shared<DepthObservation>(observed));
+             }
+         }
+-        if(shared_enabled_&&!current_paper_views.empty())publishShared(current_paper_views.front()->stamp);
++        if(shared_enabled_&&!current_paper_views.empty()) {
++            // Views arrive independently. A delayed first camera must not hold
++            // back newer local evidence from the other cameras. Individual
++            // track timestamps remain unchanged in publishShared().
++            double shared_stamp=current_paper_views.front()->stamp;
++            for(const auto& view:current_paper_views)shared_stamp=std::max(shared_stamp,view->stamp);
++            publishShared(shared_stamp);
++        }
+         evidence_ingest_ms_.add(std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-evidence_start).count());
+         evidence_start=std::chrono::steady_clock::now();
+         // Preserve the actually reached footprint also on ZERO_INTENT frames:

@@ -1,0 +1,719 @@
+{
+  "scope": "real ROS controller, synthetic asynchronous two-view sensors; no flight",
+  "controller": "/tmp/fov_gvf_ego1p5_isaac_install/pc_gvf/lib/pc_gvf/depth_angular_controller",
+  "controller_sha256": "10446500b8f130a9dbfa982a91074b7a46df11f21da206983fddce858e0b5423",
+  "script_sha256": "bc3650253326a64a475a396512d82b2aa694da4156181aed1ef256c8324c4eb7",
+  "domain_id": 79,
+  "command": [
+    "/tmp/fov_gvf_ego1p5_isaac_install/pc_gvf/lib/pc_gvf/depth_angular_controller",
+    "--ros-args",
+    "-r",
+    "__node:=controller",
+    "-r",
+    "__ns:=/shared_async_356694",
+    "-r",
+    "/clock:=/shared_async_356694/clock",
+    "-p",
+    "use_sim_time:=true",
+    "-p",
+    "paper_enabled:=true",
+    "-p",
+    "paper_shared_obstacles:=true",
+    "-p",
+    "shared_robot_id:=async_local",
+    "-p",
+    "shared_map_frame:=world",
+    "-p",
+    "shared_obstacle_topic:=/shared_async_356694/shared",
+    "-p",
+    "odom_topic:=/shared_async_356694/odom",
+    "-p",
+    "depth_topic:=/shared_async_356694/front/depth",
+    "-p",
+    "camera_info_topic:=/shared_async_356694/front/info",
+    "-p",
+    "left_depth_topic:=/shared_async_356694/left/depth",
+    "-p",
+    "left_camera_info_topic:=/shared_async_356694/left/info",
+    "-p",
+    "back_depth_topic:=/shared_async_356694/unused_back/depth",
+    "-p",
+    "back_camera_info_topic:=/shared_async_356694/unused_back/info",
+    "-p",
+    "right_depth_topic:=/shared_async_356694/unused_right/depth",
+    "-p",
+    "right_camera_info_topic:=/shared_async_356694/unused_right/info",
+    "-p",
+    "human_intent_topic:=/shared_async_356694/intent",
+    "-p",
+    "cmd_topic:=/shared_async_356694/command",
+    "-p",
+    "horizontal_360_enabled:=true",
+    "-p",
+    "max_depth_age:=0.3",
+    "-p",
+    "human_intent_timeout:=0.5",
+    "-p",
+    "paper_depth_proposal:=true",
+    "-p",
+    "angular_width:=32",
+    "-p",
+    "angular_height:=24",
+    "-p",
+    "camera_offset:=[-2.0, 0.0, 0.0]",
+    "-p",
+    "body_radius:=0.48",
+    "-p",
+    "safety_margin:=0.02",
+    "-p",
+    "rollout_margin:=0.02",
+    "-p",
+    "command_accel_limit:=1.2",
+    "-p",
+    "paper_observation_history:=0.5"
+  ],
+  "checks": {
+    "initial_local_packet": true,
+    "new_side_published_while_front_still_fresh": true,
+    "old_track_original_timestamp_preserved": true,
+    "remote_packet_really_accepted": true,
+    "peer_not_republished": true,
+    "expired_hits_absent": true,
+    "future_front_not_published": true,
+    "original_track_age_contract": true,
+    "sequence_strictly_increasing": true,
+    "frame_unchanged": true
+  },
+  "passed": true,
+  "child_returncode": 0,
+  "child_cleaned_up": true,
+  "stages": [
+    {
+      "name": "synchronous_start",
+      "now": 100.0,
+      "observations": {
+        "front": [
+          100.0,
+          3.0
+        ],
+        "left": [
+          100.0,
+          3.0
+        ]
+      },
+      "local_packets": [
+        {
+          "stamp": 100.0,
+          "source": "async_local",
+          "sequence": 1,
+          "observed_at": [
+            100.0,
+            100.0,
+            100.0,
+            100.0,
+            100.0,
+            100.0,
+            100.0,
+            100.0
+          ],
+          "centers": [
+            [
+              -0.15,
+              1.05,
+              2.85
+            ],
+            [
+              -0.15,
+              1.05,
+              3.15
+            ],
+            [
+              0.15,
+              1.05,
+              2.85
+            ],
+            [
+              0.15,
+              1.05,
+              3.15
+            ],
+            [
+              1.05,
+              -0.15,
+              2.85
+            ],
+            [
+              1.05,
+              -0.15,
+              3.15
+            ],
+            [
+              1.05,
+              0.15,
+              2.85
+            ],
+            [
+              1.05,
+              0.15,
+              3.15
+            ]
+          ],
+          "frame": "world",
+          "overloaded": false
+        }
+      ]
+    },
+    {
+      "name": "front_frozen_side_new",
+      "now": 100.12,
+      "observations": {
+        "left": [
+          100.12,
+          4.0
+        ]
+      },
+      "local_packets": [
+        {
+          "stamp": 100.12,
+          "source": "async_local",
+          "sequence": 2,
+          "observed_at": [
+            100.12,
+            100.12,
+            100.12,
+            100.12,
+            100.0,
+            100.0,
+            100.0,
+            100.0,
+            100.0,
+            100.0,
+            100.0,
+            100.0
+          ],
+          "centers": [
+            [
+              -0.15,
+              1.95,
+              2.85
+            ],
+            [
+              -0.15,
+              1.95,
+              3.15
+            ],
+            [
+              0.15,
+              1.95,
+              2.85
+            ],
+            [
+              0.15,
+              1.95,
+              3.15
+            ],
+            [
+              -0.15,
+              1.05,
+              2.85
+            ],
+            [
+              -0.15,
+              1.05,
+              3.15
+            ],
+            [
+              0.15,
+              1.05,
+              2.85
+            ],
+            [
+              0.15,
+              1.05,
+              3.15
+            ],
+            [
+              1.05,
+              -0.15,
+              2.85
+            ],
+            [
+              1.05,
+              -0.15,
+              3.15
+            ],
+            [
+              1.05,
+              0.15,
+              2.85
+            ],
+            [
+              1.05,
+              0.15,
+              3.15
+            ]
+          ],
+          "frame": "world",
+          "overloaded": false
+        }
+      ]
+    },
+    {
+      "name": "remote_accepted_not_forwarded",
+      "now": 100.2,
+      "observations": {
+        "left": [
+          100.2,
+          4.0
+        ]
+      },
+      "local_packets": [
+        {
+          "stamp": 100.2,
+          "source": "async_local",
+          "sequence": 3,
+          "observed_at": [
+            100.2,
+            100.2,
+            100.2,
+            100.2,
+            100.0,
+            100.0,
+            100.0,
+            100.0,
+            100.0,
+            100.0,
+            100.0,
+            100.0
+          ],
+          "centers": [
+            [
+              -0.15,
+              1.95,
+              2.85
+            ],
+            [
+              -0.15,
+              1.95,
+              3.15
+            ],
+            [
+              0.15,
+              1.95,
+              2.85
+            ],
+            [
+              0.15,
+              1.95,
+              3.15
+            ],
+            [
+              -0.15,
+              1.05,
+              2.85
+            ],
+            [
+              -0.15,
+              1.05,
+              3.15
+            ],
+            [
+              0.15,
+              1.05,
+              2.85
+            ],
+            [
+              0.15,
+              1.05,
+              3.15
+            ],
+            [
+              1.05,
+              -0.15,
+              2.85
+            ],
+            [
+              1.05,
+              -0.15,
+              3.15
+            ],
+            [
+              1.05,
+              0.15,
+              2.85
+            ],
+            [
+              1.05,
+              0.15,
+              3.15
+            ]
+          ],
+          "frame": "world",
+          "overloaded": false
+        }
+      ]
+    },
+    {
+      "name": "expired_hits_not_refreshed",
+      "now": 100.8,
+      "observations": {
+        "left": [
+          100.8,
+          null
+        ]
+      },
+      "local_packets": [
+        {
+          "stamp": 100.8,
+          "source": "async_local",
+          "sequence": 4,
+          "observed_at": [],
+          "centers": [],
+          "frame": "world",
+          "overloaded": false
+        }
+      ]
+    },
+    {
+      "name": "future_front_side_current",
+      "now": 100.9,
+      "observations": {
+        "front": [
+          101.1,
+          8.0
+        ],
+        "left": [
+          100.9,
+          4.0
+        ]
+      },
+      "local_packets": [
+        {
+          "stamp": 100.9,
+          "source": "async_local",
+          "sequence": 5,
+          "observed_at": [
+            100.9,
+            100.9,
+            100.9,
+            100.9
+          ],
+          "centers": [
+            [
+              -0.15,
+              1.95,
+              2.85
+            ],
+            [
+              -0.15,
+              1.95,
+              3.15
+            ],
+            [
+              0.15,
+              1.95,
+              2.85
+            ],
+            [
+              0.15,
+              1.95,
+              3.15
+            ]
+          ],
+          "frame": "world",
+          "overloaded": false
+        }
+      ]
+    }
+  ],
+  "packets": [
+    {
+      "stamp": 100.0,
+      "source": "async_local",
+      "sequence": 1,
+      "observed_at": [
+        100.0,
+        100.0,
+        100.0,
+        100.0,
+        100.0,
+        100.0,
+        100.0,
+        100.0
+      ],
+      "centers": [
+        [
+          -0.15,
+          1.05,
+          2.85
+        ],
+        [
+          -0.15,
+          1.05,
+          3.15
+        ],
+        [
+          0.15,
+          1.05,
+          2.85
+        ],
+        [
+          0.15,
+          1.05,
+          3.15
+        ],
+        [
+          1.05,
+          -0.15,
+          2.85
+        ],
+        [
+          1.05,
+          -0.15,
+          3.15
+        ],
+        [
+          1.05,
+          0.15,
+          2.85
+        ],
+        [
+          1.05,
+          0.15,
+          3.15
+        ]
+      ],
+      "frame": "world",
+      "overloaded": false
+    },
+    {
+      "stamp": 100.12,
+      "source": "async_local",
+      "sequence": 2,
+      "observed_at": [
+        100.12,
+        100.12,
+        100.12,
+        100.12,
+        100.0,
+        100.0,
+        100.0,
+        100.0,
+        100.0,
+        100.0,
+        100.0,
+        100.0
+      ],
+      "centers": [
+        [
+          -0.15,
+          1.95,
+          2.85
+        ],
+        [
+          -0.15,
+          1.95,
+          3.15
+        ],
+        [
+          0.15,
+          1.95,
+          2.85
+        ],
+        [
+          0.15,
+          1.95,
+          3.15
+        ],
+        [
+          -0.15,
+          1.05,
+          2.85
+        ],
+        [
+          -0.15,
+          1.05,
+          3.15
+        ],
+        [
+          0.15,
+          1.05,
+          2.85
+        ],
+        [
+          0.15,
+          1.05,
+          3.15
+        ],
+        [
+          1.05,
+          -0.15,
+          2.85
+        ],
+        [
+          1.05,
+          -0.15,
+          3.15
+        ],
+        [
+          1.05,
+          0.15,
+          2.85
+        ],
+        [
+          1.05,
+          0.15,
+          3.15
+        ]
+      ],
+      "frame": "world",
+      "overloaded": false
+    },
+    {
+      "stamp": 100.2,
+      "source": "async_local",
+      "sequence": 3,
+      "observed_at": [
+        100.2,
+        100.2,
+        100.2,
+        100.2,
+        100.0,
+        100.0,
+        100.0,
+        100.0,
+        100.0,
+        100.0,
+        100.0,
+        100.0
+      ],
+      "centers": [
+        [
+          -0.15,
+          1.95,
+          2.85
+        ],
+        [
+          -0.15,
+          1.95,
+          3.15
+        ],
+        [
+          0.15,
+          1.95,
+          2.85
+        ],
+        [
+          0.15,
+          1.95,
+          3.15
+        ],
+        [
+          -0.15,
+          1.05,
+          2.85
+        ],
+        [
+          -0.15,
+          1.05,
+          3.15
+        ],
+        [
+          0.15,
+          1.05,
+          2.85
+        ],
+        [
+          0.15,
+          1.05,
+          3.15
+        ],
+        [
+          1.05,
+          -0.15,
+          2.85
+        ],
+        [
+          1.05,
+          -0.15,
+          3.15
+        ],
+        [
+          1.05,
+          0.15,
+          2.85
+        ],
+        [
+          1.05,
+          0.15,
+          3.15
+        ]
+      ],
+      "frame": "world",
+      "overloaded": false
+    },
+    {
+      "stamp": 100.2,
+      "source": "remote_only",
+      "sequence": 1,
+      "observed_at": [
+        100.2
+      ],
+      "centers": [
+        [
+          50.0,
+          50.0,
+          3.0
+        ]
+      ],
+      "frame": "world",
+      "overloaded": false
+    },
+    {
+      "stamp": 100.8,
+      "source": "async_local",
+      "sequence": 4,
+      "observed_at": [],
+      "centers": [],
+      "frame": "world",
+      "overloaded": false
+    },
+    {
+      "stamp": 100.9,
+      "source": "async_local",
+      "sequence": 5,
+      "observed_at": [
+        100.9,
+        100.9,
+        100.9,
+        100.9
+      ],
+      "centers": [
+        [
+          -0.15,
+          1.95,
+          2.85
+        ],
+        [
+          -0.15,
+          1.95,
+          3.15
+        ],
+        [
+          0.15,
+          1.95,
+          2.85
+        ],
+        [
+          0.15,
+          1.95,
+          3.15
+        ]
+      ],
+      "frame": "world",
+      "overloaded": false
+    }
+  ],
+  "diagnostic_count": 12,
+  "shared_accepted_max": 1
+}

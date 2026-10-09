@@ -1,0 +1,23 @@
+[
+  {
+    "step": "world midpoint interval in first candidate",
+    "status": "confirmed safety bug, fixed",
+    "original_probe": "../review/spherical_roundoff_probe.cpp",
+    "failed_observation": {
+      "world_origin": 1000000000.0,
+      "contained": true,
+      "pointwise_revoked": true,
+      "block_revoked": false
+    },
+    "fix": "Subtract origin from both endpoints before midpoint; scale padding by absolute matrix and plane arithmetic; nonfinite interval falls back.",
+    "fixed_probe": "roundoff_fixed.log",
+    "final_evidence": "measurements_v2_roundoff",
+    "regression_world_origins": [
+      0,
+      1000000.0,
+      1000000000.0,
+      1000000000000.0,
+      -1000000000.0
+    ]
+  }
+]

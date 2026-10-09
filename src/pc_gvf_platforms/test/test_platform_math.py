@@ -1,6 +1,6 @@
 import math
 
-from pc_gvf_platforms.command_bridge import convert
+from pc_gvf_platforms.command_bridge import convert, command_stamp_is_fresh
 from pc_gvf_platforms.intent_trace_replay import load_trace
 from pc_gvf_platforms.joy_to_intent import map_axes
 
@@ -34,3 +34,15 @@ def test_trace_validation(tmp_path):
     path.write_text("events:\n  - {at: 0, forward: 1, lateral: 0}\n  - {at: 1, forward: 0, lateral: 0}\n")
     events, _ = load_trace(path)
     assert events[-1] == (1.0, 0.0, 0.0)
+
+
+def test_holonomic_limits_scale_entire_vector():
+    twist = convert(3.0, 1.5, 0.0, "holonomic", 2.0, 2.0, 0.0, 1.0, 0.01,
+                    vz=2.0, max_vz=1.0)
+    assert (twist.linear.x, twist.linear.y, twist.linear.z) == (1.5, 0.75, 1.0)
+
+
+def test_bridge_rejects_delayed_and_future_commands():
+    assert command_stamp_is_fresh(1_050_000_000, 1_000_000_000, .1)
+    assert not command_stamp_is_fresh(1_110_000_000, 1_000_000_000, .1)
+    assert not command_stamp_is_fresh(900_000_000, 1_000_000_000, .1)

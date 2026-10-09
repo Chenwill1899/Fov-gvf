@@ -1,0 +1,414 @@
+{
+  "label": "final_v22",
+  "implementation": "Continuous world-frame spherical depth proposals; fixed-goal world candidate pool; certified exact-goal early return; conservative union depth 5 to 7 with unchanged 1024 split budget.",
+  "status": "implemented_and_comparatively_tested",
+  "all_predeclared_performance_checks_pass": false,
+  "failed_predeclared_checks": [
+    "spin/moving_angle_mean_deg_nonregression",
+    "spin/active_vector_error_rms_mps_nonregression",
+    "spin/progress_nonregression",
+    "goal/time_nonregression",
+    "goal/stop_nonregression"
+  ],
+  "build": {
+    "success": true,
+    "packages": 3,
+    "log": "build_v22.log"
+  },
+  "core_tests": {
+    "passed": 22,
+    "failed": 0,
+    "log": "ctest_v22.log"
+  },
+  "platform_tests": {
+    "passed": 15,
+    "failed": 0,
+    "log": "pytest_platform.log",
+    "scope": "Executed earlier in this task; protected platform source unchanged afterward."
+  },
+  "baseline_core_tests": {
+    "passed": 20,
+    "scope": "Executed earlier in this task against original P2."
+  },
+  "ros_probe": {
+    "command": "ROS_DOMAIN_ID=83 PYTHONNOUSERSITE=1 /usr/bin/python3 tools/ros_vector_guidance_probe.py --omni",
+    "shared_simulation_lock": true,
+    "exit_code": 0,
+    "controller_sha256": "0c9115d7e344977eb935a8b326c67c8b4e274508c980e4657df6c13d006869a3",
+    "controller_log_archived": "ros_omni_controller_v22.log",
+    "checks": {
+      "front_up": {
+        "velocity": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "status": "UNOBSERVED_BODY_ENVELOPE"
+      },
+      "left_up": {
+        "velocity": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "status": "UNOBSERVED_BODY_ENVELOPE"
+      },
+      "back_down": {
+        "velocity": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "status": "UNOBSERVED_BODY_ENVELOPE"
+      },
+      "right_down": {
+        "velocity": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "status": "UNOBSERVED_BODY_ENVELOPE"
+      },
+      "diagonal": {
+        "velocity": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "status": "UNOBSERVED_BODY_ENVELOPE"
+      },
+      "missing_front": "three valid views reached certification; unknown body still refused",
+      "obstacle_velocity": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "pure_up": "UNOBSERVED_BODY_ENVELOPE",
+      "pure_down": "UNOBSERVED_BODY_ENVELOPE",
+      "stale_depth": "WAITING_OMNI_DEPTH",
+      "stale_intent": "STALE_INTENT",
+      "released": "ZERO_INTENT",
+      "strict_observation_refusal": "PASS; navigation acceptance remains NOT PASS",
+      "matched_command_rays": 0,
+      "controller_log": "/tmp/ego1p3-vector-controller-3cs3qiky.log"
+    }
+  },
+  "replay_decision_effects": {
+    "count": 21,
+    "same_decisions": 4,
+    "newly_certified": 17,
+    "all_finite": true,
+    "scope": "Saved conservative depth and proof state only; native hits/frontend timing are not reproduced. Changed decisions are expected for deeper certified unions, not counted as exact replay matches."
+  },
+  "v22_replay_binary_identical_to_tested_v21": true,
+  "manual_trials": 14,
+  "goal_trials": 10,
+  "manual_summary": {
+    "recovery/ego1p2": {
+      "runs": 1,
+      "means": {
+        "moving_angle_mean_deg": 6.620763054011009,
+        "moving_angle_p95_deg": 23.238642994849943,
+        "active_vector_error_rms_mps": 0.5382316418430851,
+        "active_projected_progress_m": 81.91679108421332,
+        "jerk_rms_mps3": 3.810896884356998,
+        "stop_s": 1.25,
+        "longest_stop_s": 0.25,
+        "camera_switches": 6.0,
+        "compute_deadlines": 1.0
+      },
+      "safe_runs": 1,
+      "compute_mean_ms": 0.875
+    },
+    "recovery/ego1p3": {
+      "runs": 1,
+      "means": {
+        "moving_angle_mean_deg": 6.874405176869531,
+        "moving_angle_p95_deg": 23.268185411531135,
+        "active_vector_error_rms_mps": 0.5407124764549817,
+        "active_projected_progress_m": 82.5291796043742,
+        "jerk_rms_mps3": 3.807821041488363,
+        "stop_s": 1.2333333333333343,
+        "longest_stop_s": 0.25,
+        "camera_switches": 0.0,
+        "compute_deadlines": 0.0
+      },
+      "safe_runs": 1,
+      "compute_mean_ms": 1.123
+    },
+    "spin/ego1p2": {
+      "runs": 3,
+      "means": {
+        "moving_angle_mean_deg": 11.32050549178014,
+        "moving_angle_p95_deg": 37.16413323169724,
+        "active_vector_error_rms_mps": 0.5695881023303384,
+        "active_projected_progress_m": 92.0442144466611,
+        "jerk_rms_mps3": 3.1610476547184128,
+        "stop_s": 0.5,
+        "longest_stop_s": 0.25,
+        "camera_switches": 14.0,
+        "compute_deadlines": 0.0
+      },
+      "safe_runs": 3,
+      "compute_mean_ms": 0.6106666666666666
+    },
+    "spin/ego1p3": {
+      "runs": 3,
+      "means": {
+        "moving_angle_mean_deg": 12.342589783234649,
+        "moving_angle_p95_deg": 38.9529513678871,
+        "active_vector_error_rms_mps": 0.6077438502537228,
+        "active_projected_progress_m": 89.79612353641357,
+        "jerk_rms_mps3": 3.7346941350524605,
+        "stop_s": 0.49444444444444446,
+        "longest_stop_s": 0.25,
+        "camera_switches": 0.0,
+        "compute_deadlines": 0.3333333333333333
+      },
+      "safe_runs": 3,
+      "compute_mean_ms": 1.359
+    },
+    "sweep/ego1p2": {
+      "runs": 3,
+      "means": {
+        "moving_angle_mean_deg": 30.680755481401107,
+        "moving_angle_p95_deg": 85.26604775551583,
+        "active_vector_error_rms_mps": 0.5500820199402364,
+        "active_projected_progress_m": 21.135886829448562,
+        "jerk_rms_mps3": 4.894133175159417,
+        "stop_s": 0.7166666666666662,
+        "longest_stop_s": 0.3722222222222224,
+        "camera_switches": 5.0,
+        "compute_deadlines": 5.333333333333333
+      },
+      "safe_runs": 3,
+      "compute_mean_ms": 1.4183333333333332
+    },
+    "sweep/ego1p3": {
+      "runs": 3,
+      "means": {
+        "moving_angle_mean_deg": 7.534379920463863,
+        "moving_angle_p95_deg": 32.29392255429911,
+        "active_vector_error_rms_mps": 0.1812145740010346,
+        "active_projected_progress_m": 28.41306512962512,
+        "jerk_rms_mps3": 2.3015037368810827,
+        "stop_s": 0.25,
+        "longest_stop_s": 0.25,
+        "camera_switches": 0.0,
+        "compute_deadlines": 0.0
+      },
+      "safe_runs": 3,
+      "compute_mean_ms": 0.36333333333333334
+    }
+  },
+  "goal_summary": {
+    "ego1p2": {
+      "runs": 5,
+      "safe_arrivals": 5,
+      "mean_arrival_sim_s": 69.71666666666667,
+      "std_arrival_sim_s": 0.9227073690444256,
+      "mean_arrival_wall_s": 70.31824236459798,
+      "timeout_penalized_sim_s": 69.71666666666667,
+      "mean_stopped_s": 0.24000000000000005,
+      "mean_jerk_rms_mps3": 2.108487327903036
+    },
+    "ego1p3": {
+      "runs": 5,
+      "safe_arrivals": 5,
+      "mean_arrival_sim_s": 70.14333333333333,
+      "std_arrival_sim_s": 1.266809202506657,
+      "mean_arrival_wall_s": 73.27944078459696,
+      "timeout_penalized_sim_s": 70.14333333333333,
+      "mean_stopped_s": 0.25,
+      "mean_jerk_rms_mps3": 2.0112078544901224
+    }
+  },
+  "all_safety_and_speed_checks_pass": true,
+  "independent_geometry_audit": "Swept 0.48 m body sphere against original occupied voxels and ground; no simulator collision protection allowed.",
+  "integrity": {
+    "label": "final_v22",
+    "frozen_version": "v22",
+    "baseline_manifest_entries": 3257,
+    "baseline_files_hashed": 2922,
+    "baseline_changes": [],
+    "baseline_extra_entries": [],
+    "frozen_source_count": 125,
+    "frozen_source_drift": [],
+    "frozen_binary_drift": [],
+    "protected_file_count": 9,
+    "protected_source_drift": [],
+    "unchanged_protected_file_count": 8,
+    "intentional_proof_changes": {
+      "src/pc_gvf/src/paper_guidance.cpp": {
+        "before": "7c46e1ea9b522d3b75e575294b69078b2f30cd074b5b8c6d4752b4266a64e6d1",
+        "after": "40a9115e67fa749c51665ff12a77c91a382122dae60f73309fee36bcc73b0263",
+        "reason": "Union containment octree maximum depth 5 -> 7; split budget remains 1024; all containment primitives and safety parameters byte-identical after reversing this one change."
+      }
+    },
+    "trial_metadata_checks": {
+      "final_v22_recovery_ego1p2_1": true,
+      "final_v22_recovery_ego1p3_1": true,
+      "final_v22_spin_ego1p2_1": true,
+      "final_v22_spin_ego1p2_2": true,
+      "final_v22_spin_ego1p2_3": true,
+      "final_v22_spin_ego1p3_1": true,
+      "final_v22_spin_ego1p3_2": true,
+      "final_v22_spin_ego1p3_3": true,
+      "final_v22_sweep_ego1p2_1": true,
+      "final_v22_sweep_ego1p2_2": true,
+      "final_v22_sweep_ego1p2_3": true,
+      "final_v22_sweep_ego1p3_1": true,
+      "final_v22_sweep_ego1p3_2": true,
+      "final_v22_sweep_ego1p3_3": true,
+      "omni_final_v22_ego1p2_1": true,
+      "omni_final_v22_ego1p2_2": true,
+      "omni_final_v22_ego1p2_3": true,
+      "omni_final_v22_ego1p2_4": true,
+      "omni_final_v22_ego1p2_5": true,
+      "omni_final_v22_ego1p3_1": true,
+      "omni_final_v22_ego1p3_2": true,
+      "omni_final_v22_ego1p3_3": true,
+      "omni_final_v22_ego1p3_4": true,
+      "omni_final_v22_ego1p3_5": true
+    },
+    "input_sha256_by_case": {
+      "recovery": [
+        "fef7dba08668d8599aa4a910b11e28d64236a8cd2c63b2dd2cdd09dfa87910b7"
+      ],
+      "spin": [
+        "1da7cd4da4bd71ac2508de486868ccbac0edd7fdfec98141702635b180dc5bb1"
+      ],
+      "sweep": [
+        "edff3db19e6f9b7b60aa98a881831e66b7f3aedf591653b685f04a7a8a281f8b"
+      ]
+    },
+    "controller_sha256_by_algorithm": {
+      "ego1p2": [
+        "b7ae5a33803cf67b72587eda92a95c5d967c4cb1dcfae449f290dd553aecfb4e"
+      ],
+      "ego1p3": [
+        "0c9115d7e344977eb935a8b326c67c8b4e274508c980e4657df6c13d006869a3"
+      ]
+    },
+    "identical_goal_protocol": true,
+    "integrity_pass": true
+  },
+  "source_checks": {
+    "python_ast": [
+      "scripts/isaac/beitong_joystick.py",
+      "scripts/isaac/manual_control_math.py",
+      "scripts/isaac/navigation_benchmark.py",
+      "scripts/isaac/run_fov_gvf_navigation.py",
+      "src/pc_gvf/launch/depth_angular_demo.launch.py",
+      "src/pc_gvf/launch/isaac_cloud_navigation.launch.py",
+      "src/pc_gvf/launch/navigation_benchmark.launch.py",
+      "src/pc_gvf/pc_gvf/__init__.py",
+      "src/pc_gvf/pc_gvf/depth_angular_core.py",
+      "src/pc_gvf/pc_gvf/depth_angular_demo_sim.py",
+      "src/pc_gvf/setup.py",
+      "src/pc_gvf/test/test_beitong_joystick.py",
+      "src/pc_gvf/test/test_depth_angular_core.py",
+      "src/pc_gvf/test/test_manual_control_math.py",
+      "src/pc_gvf/test/test_navigation_benchmark.py",
+      "src/pc_gvf/test/test_python_behavior_baseline.py",
+      "src/pc_gvf_platforms/launch/ground_platform.launch.py",
+      "src/pc_gvf_platforms/pc_gvf_platforms/__init__.py",
+      "src/pc_gvf_platforms/pc_gvf_platforms/command_bridge.py",
+      "src/pc_gvf_platforms/pc_gvf_platforms/intent_trace_replay.py",
+      "src/pc_gvf_platforms/pc_gvf_platforms/joy_to_intent.py",
+      "src/pc_gvf_platforms/pc_gvf_platforms/kinematic_sim.py",
+      "src/pc_gvf_platforms/pc_gvf_platforms/navigation_visualizer.py",
+      "src/pc_gvf_platforms/pc_gvf_platforms/observed_map_visualizer.py",
+      "src/pc_gvf_platforms/setup.py",
+      "src/pc_gvf_platforms/test/test_observed_map_visualizer.py",
+      "src/pc_gvf_platforms/test/test_platform_math.py",
+      "src/pc_gvf_platforms/test/test_robot_visualization.py",
+      "tools/analyze_envelope_trace.py",
+      "tools/analyze_intent_response.py",
+      "tools/analyze_motion_consistency.py",
+      "tools/analyze_navigation_benchmark.py",
+      "tools/analyze_omni_comparison.py",
+      "tools/analyze_paper_isaac_run.py",
+      "tools/calibrate_motion_discretization.py",
+      "tools/calibrate_vehicle_envelope.py",
+      "tools/generate_python_baseline.py",
+      "tools/ros_cpp_closed_loop_probe.py",
+      "tools/ros_cpp_state_probe.py",
+      "tools/ros_observed_map_probe.py",
+      "tools/ros_vector_guidance_probe.py",
+      "tools/run_navigation_benchmark.py",
+      "tools/run_omni_comparison.py",
+      "tools/validate_isaac_depth_contract.py",
+      "tools/verify_navigation_replays.py"
+    ],
+    "shell_syntax": [
+      "scripts/build_isaac_ros_workspace.sh",
+      "scripts/lib/beitong_joystick.sh",
+      "scripts/run_isaac_fov_gvf_navigation.sh"
+    ],
+    "frozen_sha256_unchanged": true,
+    "git_diff_check": {
+      "returncode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    "reporting_scripts_ast": [
+      "finalize_v22_validation.py",
+      "make_final_tables.py",
+      "verify_final_evidence.py",
+      "summarize_acceptance.py",
+      "render_report.py"
+    ],
+    "final_documentation_diff_check": {
+      "returncode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    "current_report_links_checked": 9
+  },
+  "visual_review": {
+    "reviewed_at": "2026-10-07 02:33",
+    "reviewed": true,
+    "notes": [
+      "Six-panel comparison labels and sample-deviation bars are legible; regressions displayed.",
+      "First-pair trajectory panels explicitly marked illustration; full repeats drive statistics.",
+      "All ten goal trajectories included; low-altitude XY projection is not collision evidence."
+    ],
+    "sha256": {
+      "performance/omni_20261006/final_v22_comparison.png": "3d34e660ddc4030fd9eb902b9e449c643be6657a20a10e686720ac2475e151be",
+      "performance/omni_20261006/final_v22_trajectories.png": "f67ae55086d67a1c6c9dce74d893eadf132b91d0d8abf26a674e705c97601ddb",
+      "performance/navigation_benchmark_20260929/omni_final_v22_trajectories.png": "711543bf7319f894fba45248bffc9aff9188a59c7db2144047896b30dc156976"
+    }
+  },
+  "unvalidated": [
+    "Actual physical joystick input",
+    "GUI/RViz performance under full visualization load",
+    "Other maps, start-goal pairs and moving obstacles",
+    "Real aircraft",
+    "Universal non-stalling or per-cycle real-time guarantee"
+  ],
+  "notes": [
+    "No exploration trial or earlier failed frozen group included in final_v22 statistics.",
+    "Unknown observations remain unknown; physical camera blind regions remain.",
+    "Angle error is conditional on moving; all-active RMS, stopped time and projected progress are reported alongside it.",
+    "Only three sweep/spin repetitions and one recovery per algorithm; no statistical-significance claim.",
+    "Original replay snapshots omit native hit clouds and ROS frontend timing.",
+    "All strict failed gates are retained; no threshold was relaxed after measurement."
+  ],
+  "evidence_sha256": {
+    "final_v22_analysis.json": "9e408ffd98b24c4720f3b66f0b23cca430f48101158a43c8d49e72940da44717",
+    "final_v22_acceptance.json": "79ac0b63bb324e5c6702631ad20395a809844c972e3766a345d154e3f54ff004",
+    "final_v22_integrity.json": "72d2df1470d93f9de07f8a34591db2cad95b4636c5c6b1a4af271cf3d47bd3f6",
+    "final_v22_source_checks.json": "4956cea594ecc9d90ed86d66afb436215e7ab563e4f50963accbcd552c5c1c60",
+    "ros_omni_probe_v22_metadata.json": "0b88aa29ef1e4d22b387b3cdc14ec68fa7e196a7d49354dfd3c384f69b84232b",
+    "ros_omni_controller_v22.log": "94e336a76765fd4c7d9d7c28a67ef5f0bcc81be6bdc74bcf346ff7f4a2fa39e2",
+    "v21_replay_effects.json": "248948ef7c850962d869ccf1c41b80757fcc739fac05f7f3df05c8945e784562",
+    "build_v22.log": "826b05ead755f0be62b36f404a427e2363ae0b34ddea25305bd756da2c36d203",
+    "ctest_v22.log": "f955c9ad22980d781e0898947c4b143d6bd2e6d6daa471e689cb3619b8972b49",
+    "pytest_platform.log": "3505b1c4057954c7b899990d26c3bcdf5c6a1192ff677524c8c1d21a2047d4f7",
+    "v22_diff_vs_EGO1P2.patch": "7ed7eceb24390af168482ef55166f932fc283a09ad5262abfe8178c7ef2c2689",
+    "v22_runtime_changes.json": "c72b8d8a1d4491a4f8735e5132353556b93492e0074494e73996b5c23f2ddd40",
+    "final_v22_visual_review.json": "c84ed31715750d75f66cb2b612cde0bc562e2cfb9c9f301b543fdcef398d31b4",
+    "../navigation_benchmark_20260929/omni_final_v22_analysis.json": "23af988079c3c0946517a6520212efedbfad2bc59542b14db6b4a86cf5d1bfc2"
+  }
+}

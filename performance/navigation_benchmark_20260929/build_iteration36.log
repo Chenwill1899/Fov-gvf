@@ -1,0 +1,21 @@
+Starting >>> pc_gvf_msgs
+Finished <<< pc_gvf_msgs [0.16s]
+Starting >>> pc_gvf_platforms
+Finished <<< pc_gvf_platforms [0.32s]
+Starting >>> pc_gvf
+--- stderr: pc_gvf
+/home/starry/isaac-data/EGO1P1/src/pc_gvf/test/cpp/guidance_composition_check.cpp: In function ‘int main()’:
+/home/starry/isaac-data/EGO1P1/src/pc_gvf/test/cpp/guidance_composition_check.cpp:299:50: error: ‘AngleAxisd’ is not a member of ‘Eigen’; did you mean ‘AngleAxis’?
+  299 |     const Eigen::Matrix3d origin_rotation=Eigen::AngleAxisd(.7,Eigen::Vector3d(1,2,3).normalized()).toRotationMatrix();
+      |                                                  ^~~~~~~~~~
+      |                                                  AngleAxis
+gmake[2]: *** [CMakeFiles/guidance_composition_check.dir/build.make:76：CMakeFiles/guidance_composition_check.dir/test/cpp/guidance_composition_check.cpp.o] 错误 1
+gmake[1]: *** [CMakeFiles/Makefile2:430：CMakeFiles/guidance_composition_check.dir/all] 错误 2
+gmake[1]: *** 正在等待未完成的任务....
+gmake: *** [Makefile:146：all] 错误 2
+---
+Failed   <<< pc_gvf [19.2s, exited with code 2]
+
+Summary: 2 packages finished [19.8s]
+  1 package failed: pc_gvf
+  1 package had stderr output: pc_gvf

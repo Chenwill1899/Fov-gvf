@@ -1,0 +1,39 @@
+{
+  "version": "retain-gains-20261008-v1",
+  "authority": "User: retain reproducible positive runtime gains of any magnitude only when capability does not regress; independently ablate each retained optimization.",
+  "timing": "Magnitude-free requirement and eight balanced geometry batches were fixed before timing in geometry/plan.json. This assessment implementation was finalized after timing; it is not a new preregistered statistical trial.",
+  "minimum_relative_gain": null,
+  "minimum_absolute_gain": null,
+  "additional_confirmation_batches_required": false,
+  "geometry": {
+    "variants": ["baseline", "v2", "v4", "combined"],
+    "groups": ["all", "stall16", "inherited21"],
+    "metrics": ["wall_ms", "cpu_ms"],
+    "statistics": ["mean", "p95", "max"],
+    "batches": 8,
+    "fixtures": 37,
+    "required_comparisons": [["baseline", "v2"], ["baseline", "v4"], ["v2", "combined"], ["v4", "combined"]],
+    "descriptive_comparisons": [["baseline", "combined"]],
+    "reproducible_direction": "Paired batch bootstrap descriptive 95% CI excludes zero and at least 75% of complete batches point the same way. Zero-only differences are unchanged; all other mixed/uncertain results are unresolved_variation, not proof of benefit or harm.",
+    "benefit": "At least one all-group wall mean or P95 shows reproducible gain. Report every wall/CPU subgroup mean/P95/max; reproducible harm in any of those prevents adopting that contrast. An unresolved negative estimate remains explicit and cannot be claimed equivalent.",
+    "hard_gates": ["complete planned inventory/order", "all processes return zero", "exact complete stdout equality to baseline including finite continuous outputs", "plan/source/binary/fixture hash identity", "reviewed arithmetic differential negative cases"],
+    "independent_unit": "A complete balanced batch, never 37 frames treated as 37 independent repetitions",
+    "pooled": "Always report pooled summaries separately. Pooled P95 is not the mean of per-batch P95; a contrary pooled point estimate must remain visible.",
+    "scope": "Geometry eligibility only. Full controller safety contracts and actual task capability require the Isaac stage. Bootstrap intervals are descriptive and unadjusted for multiple comparisons."
+  },
+  "isaac": {
+    "cases": ["goal", "jitter", "spin"],
+    "minimum_repeats": 3,
+    "four_variant_runs": 36,
+    "single_component_runs": 18,
+    "order": "Driver's frozen order_by_repeat; actual post-lock launch sequence verified. Three four-variant blocks are interleaved but not a complete four-block Latin design.",
+    "hard_gates": ["all goal runs ARRIVED", "zero swept overlap", "zero external safety intervention", "actual executable and launch identity", "same scene/physics/input and six flags off/callback", "selected unknown/expired/stale-command negative contracts on the candidate build"],
+    "metrics_goal": ["arrival_s", "path_efficiency", "stop_s", "longest_stop_s", "jerk_rms_mps3", "jerk_p95_mps3", "callback_p95_ms", "callback_max_ms"],
+    "metrics_manual": ["angle_mean_deg", "angle_p95_deg", "vector_error_rms_mps", "progress_m", "stop_s", "longest_stop_s", "jerk_rms_mps3", "callback_p95_ms", "callback_max_ms", "release_target_s", "release_brake_s"],
+    "comparison": "Same repeat and case paired, four required independent/incremental contrasts. Report raw values, absolute and relative changes, standard deviations, maxima, sign counts, descriptive paired-bootstrap interval. Any reproducible adverse task metric is reported separately and blocks automatic retention of that contrast; no favorable aggregate may cancel it.",
+    "small_sample": "Three pairs are an initial engineering check, not population noninferiority. CI crossing zero is unresolved, not equivalent or worse by decree. Existing exact-output and negative-case evidence can support provisional retention with no demonstrated regression; root must state unresolved task fluctuations. Add only targeted pairs when a material adverse signal remains ambiguous, never an automatic old five-pair confirmation requirement.",
+    "reproducible_direction": "Same CI and 75% direction rule; with three pairs that requires all three signs. No fixed gain magnitude, sign-test significance, or 10%/1% threshold is required.",
+    "runtime_gain": "A validated geometry gain is sufficient runtime benefit; task arrival/jerk need not also improve. Actual task checks guard capability and must not be described as navigation acceleration without evidence.",
+    "contracts_scope": "Selected regression fixtures only; never proof that all real unknown/expired/stale situations are covered. Missing evidence remains unknown."
+  }
+}

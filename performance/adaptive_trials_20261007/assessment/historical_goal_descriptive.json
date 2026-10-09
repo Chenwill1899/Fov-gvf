@@ -1,0 +1,467 @@
+{
+  "stage": "confirm",
+  "policy": {
+    "version": "adaptive_assessment_v1",
+    "metrics": {
+      "arrival_s": {
+        "unit": "s",
+        "direction": "lower",
+        "tolerance_abs": 0.2,
+        "tolerance_rel": 0.01,
+        "improve_abs": 0.3,
+        "improve_rel": 0.01
+      },
+      "path_efficiency": {
+        "unit": "ratio",
+        "direction": "higher",
+        "tolerance_abs": 0.01,
+        "tolerance_rel": 0.0,
+        "improve_abs": 0.005,
+        "improve_rel": 0.0
+      },
+      "stop_s": {
+        "unit": "s",
+        "direction": "lower",
+        "tolerance_abs": 0.05,
+        "tolerance_rel": 0.1,
+        "improve_abs": 0.1,
+        "improve_rel": 0.1
+      },
+      "longest_stop_s": {
+        "unit": "s",
+        "direction": "lower",
+        "tolerance_abs": 0.05,
+        "tolerance_rel": 0.1,
+        "improve_abs": 0.05,
+        "improve_rel": 0.1
+      },
+      "jerk_rms_mps3": {
+        "unit": "m/s^3",
+        "direction": "lower",
+        "tolerance_abs": 0.02,
+        "tolerance_rel": 0.05,
+        "improve_abs": 0.05,
+        "improve_rel": 0.1
+      },
+      "compute_p95_ms": {
+        "unit": "ms",
+        "direction": "lower",
+        "tolerance_abs": 0.2,
+        "tolerance_rel": 0.1,
+        "improve_abs": 0.2,
+        "improve_rel": 0.1
+      },
+      "angle_mean_deg": {
+        "unit": "degree",
+        "direction": "lower",
+        "tolerance_abs": 0.25,
+        "tolerance_rel": 0.03,
+        "improve_abs": 0.5,
+        "improve_rel": 0.05
+      },
+      "angle_p95_deg": {
+        "unit": "degree",
+        "direction": "lower",
+        "tolerance_abs": 1.0,
+        "tolerance_rel": 0.05,
+        "improve_abs": 1.0,
+        "improve_rel": 0.05
+      },
+      "progress_m": {
+        "unit": "m",
+        "direction": "higher",
+        "tolerance_abs": 0.1,
+        "tolerance_rel": 0.01,
+        "improve_abs": 0.2,
+        "improve_rel": 0.01
+      },
+      "vector_error_rms_mps": {
+        "unit": "m/s",
+        "direction": "lower",
+        "tolerance_abs": 0.005,
+        "tolerance_rel": 0.03,
+        "improve_abs": 0.01,
+        "improve_rel": 0.05
+      },
+      "release_target_p95_s": {
+        "unit": "s",
+        "direction": "lower",
+        "tolerance_abs": 0.016666666666666666,
+        "tolerance_rel": 0.05,
+        "improve_abs": 0.016666666666666666,
+        "improve_rel": 0.1
+      },
+      "release_brake_p95_s": {
+        "unit": "s",
+        "direction": "lower",
+        "tolerance_abs": 0.05,
+        "tolerance_rel": 0.05,
+        "improve_abs": 0.05,
+        "improve_rel": 0.1
+      }
+    },
+    "required": {
+      "goal": [
+        "arrival_s",
+        "path_efficiency",
+        "stop_s",
+        "longest_stop_s",
+        "jerk_rms_mps3",
+        "compute_p95_ms"
+      ],
+      "manual": [
+        "angle_mean_deg",
+        "angle_p95_deg",
+        "progress_m",
+        "vector_error_rms_mps",
+        "stop_s",
+        "longest_stop_s",
+        "jerk_rms_mps3",
+        "compute_p95_ms",
+        "release_target_p95_s",
+        "release_brake_p95_s"
+      ]
+    },
+    "exploration_pairs": 3,
+    "confirmation_pairs": 5,
+    "primary_sign_test_alpha": 0.05,
+    "goal_worst_run_absolute_margin_s": 1.0,
+    "goal_worst_run_relative_margin": 0.03,
+    "release_target_max_s": 0.05,
+    "contracts": [
+      "unknown_rejection",
+      "expired_depth_rejection",
+      "stale_command_rejection"
+    ]
+  },
+  "policy_sha256": "bc365b5624f9015d5879cbc20f41e0264b300a2dd61ee1741f648568246cf0a9",
+  "descriptive": {
+    "goal:fixed_goal": {
+      "before_runs": 3,
+      "after_runs": 3,
+      "metrics": {
+        "arrival_s": {
+          "before_n": 3,
+          "after_n": 3,
+          "before_mean": 71.32222222222222,
+          "after_mean": 70.75555555555556,
+          "before_std": 0.4151081965160596,
+          "after_std": 1.5501194697088228,
+          "incomplete": false
+        },
+        "path_efficiency": {
+          "before_n": 3,
+          "after_n": 3,
+          "before_mean": 0.957873886844833,
+          "after_mean": 0.9640096440642828,
+          "before_std": 0.0016486048155325576,
+          "after_std": 0.009751982482457533,
+          "incomplete": false
+        },
+        "stop_s": {
+          "before_n": 3,
+          "after_n": 3,
+          "before_mean": 0.25,
+          "after_mean": 0.3111111111111115,
+          "before_std": 0.0,
+          "after_std": 0.13471506281091322,
+          "incomplete": false
+        },
+        "longest_stop_s": {
+          "before_n": 3,
+          "after_n": 3,
+          "before_mean": 0.25,
+          "after_mean": 0.2333333333333337,
+          "before_std": 0.0,
+          "after_std": 5.127900497022837e-16,
+          "incomplete": false
+        },
+        "jerk_rms_mps3": {
+          "before_n": 3,
+          "after_n": 3,
+          "before_mean": 2.363062373326567,
+          "after_mean": 1.873415217557636,
+          "before_std": 0.20136667495182092,
+          "after_std": 0.31194532882629533,
+          "incomplete": false
+        },
+        "compute_p95_ms": {
+          "before_n": 0,
+          "after_n": 0,
+          "before_mean": null,
+          "after_mean": null,
+          "before_std": null,
+          "after_std": null,
+          "incomplete": true
+        }
+      }
+    }
+  },
+  "safety_audit": {
+    "p5_refine_execution_goals_20261007_before_ego1p5_1": {
+      "failed": [],
+      "missing": [
+        "unknown_rejection: no complete same-freeze evidence",
+        "expired_depth_rejection: no complete same-freeze evidence",
+        "stale_command_rejection: no complete same-freeze evidence",
+        "variant_sha256 not SHA256",
+        "conditions_sha256 not SHA256",
+        "freeze not independently verified"
+      ],
+      "contract_evidence": []
+    },
+    "p5_refine_execution_goals_20261007_before_ego1p5_2": {
+      "failed": [],
+      "missing": [
+        "unknown_rejection: no complete same-freeze evidence",
+        "expired_depth_rejection: no complete same-freeze evidence",
+        "stale_command_rejection: no complete same-freeze evidence",
+        "variant_sha256 not SHA256",
+        "conditions_sha256 not SHA256",
+        "freeze not independently verified"
+      ],
+      "contract_evidence": []
+    },
+    "p5_refine_execution_goals_20261007_before_ego1p5_3": {
+      "failed": [],
+      "missing": [
+        "unknown_rejection: no complete same-freeze evidence",
+        "expired_depth_rejection: no complete same-freeze evidence",
+        "stale_command_rejection: no complete same-freeze evidence",
+        "variant_sha256 not SHA256",
+        "conditions_sha256 not SHA256",
+        "freeze not independently verified"
+      ],
+      "contract_evidence": []
+    },
+    "p5_refine_execution_goals_20261007_after_ego1p5_1": {
+      "failed": [],
+      "missing": [
+        "unknown_rejection: no complete same-freeze evidence",
+        "expired_depth_rejection: no complete same-freeze evidence",
+        "stale_command_rejection: no complete same-freeze evidence",
+        "variant_sha256 not SHA256",
+        "conditions_sha256 not SHA256",
+        "freeze not independently verified"
+      ],
+      "contract_evidence": []
+    },
+    "p5_refine_execution_goals_20261007_after_ego1p5_2": {
+      "failed": [],
+      "missing": [
+        "unknown_rejection: no complete same-freeze evidence",
+        "expired_depth_rejection: no complete same-freeze evidence",
+        "stale_command_rejection: no complete same-freeze evidence",
+        "variant_sha256 not SHA256",
+        "conditions_sha256 not SHA256",
+        "freeze not independently verified"
+      ],
+      "contract_evidence": []
+    },
+    "p5_refine_execution_goals_20261007_after_ego1p5_3": {
+      "failed": [],
+      "missing": [
+        "unknown_rejection: no complete same-freeze evidence",
+        "expired_depth_rejection: no complete same-freeze evidence",
+        "stale_command_rejection: no complete same-freeze evidence",
+        "variant_sha256 not SHA256",
+        "conditions_sha256 not SHA256",
+        "freeze not independently verified"
+      ],
+      "contract_evidence": []
+    }
+  },
+  "strata": {},
+  "all_run_ids": [
+    "p5_refine_execution_goals_20261007_before_ego1p5_1",
+    "p5_refine_execution_goals_20261007_before_ego1p5_2",
+    "p5_refine_execution_goals_20261007_before_ego1p5_3",
+    "p5_refine_execution_goals_20261007_after_ego1p5_1",
+    "p5_refine_execution_goals_20261007_after_ego1p5_2",
+    "p5_refine_execution_goals_20261007_after_ego1p5_3"
+  ],
+  "failures": [],
+  "insufficient": [
+    "p5_refine_execution_goals_20261007_before_ego1p5_1: unknown_rejection: no complete same-freeze evidence",
+    "p5_refine_execution_goals_20261007_before_ego1p5_1: expired_depth_rejection: no complete same-freeze evidence",
+    "p5_refine_execution_goals_20261007_before_ego1p5_1: stale_command_rejection: no complete same-freeze evidence",
+    "p5_refine_execution_goals_20261007_before_ego1p5_1: variant_sha256 not SHA256",
+    "p5_refine_execution_goals_20261007_before_ego1p5_1: conditions_sha256 not SHA256",
+    "p5_refine_execution_goals_20261007_before_ego1p5_1: freeze not independently verified",
+    "p5_refine_execution_goals_20261007_before_ego1p5_2: unknown_rejection: no complete same-freeze evidence",
+    "p5_refine_execution_goals_20261007_before_ego1p5_2: expired_depth_rejection: no complete same-freeze evidence",
+    "p5_refine_execution_goals_20261007_before_ego1p5_2: stale_command_rejection: no complete same-freeze evidence",
+    "p5_refine_execution_goals_20261007_before_ego1p5_2: variant_sha256 not SHA256",
+    "p5_refine_execution_goals_20261007_before_ego1p5_2: conditions_sha256 not SHA256",
+    "p5_refine_execution_goals_20261007_before_ego1p5_2: freeze not independently verified",
+    "p5_refine_execution_goals_20261007_before_ego1p5_3: unknown_rejection: no complete same-freeze evidence",
+    "p5_refine_execution_goals_20261007_before_ego1p5_3: expired_depth_rejection: no complete same-freeze evidence",
+    "p5_refine_execution_goals_20261007_before_ego1p5_3: stale_command_rejection: no complete same-freeze evidence",
+    "p5_refine_execution_goals_20261007_before_ego1p5_3: variant_sha256 not SHA256",
+    "p5_refine_execution_goals_20261007_before_ego1p5_3: conditions_sha256 not SHA256",
+    "p5_refine_execution_goals_20261007_before_ego1p5_3: freeze not independently verified",
+    "p5_refine_execution_goals_20261007_after_ego1p5_1: unknown_rejection: no complete same-freeze evidence",
+    "p5_refine_execution_goals_20261007_after_ego1p5_1: expired_depth_rejection: no complete same-freeze evidence",
+    "p5_refine_execution_goals_20261007_after_ego1p5_1: stale_command_rejection: no complete same-freeze evidence",
+    "p5_refine_execution_goals_20261007_after_ego1p5_1: variant_sha256 not SHA256",
+    "p5_refine_execution_goals_20261007_after_ego1p5_1: conditions_sha256 not SHA256",
+    "p5_refine_execution_goals_20261007_after_ego1p5_1: freeze not independently verified",
+    "p5_refine_execution_goals_20261007_after_ego1p5_2: unknown_rejection: no complete same-freeze evidence",
+    "p5_refine_execution_goals_20261007_after_ego1p5_2: expired_depth_rejection: no complete same-freeze evidence",
+    "p5_refine_execution_goals_20261007_after_ego1p5_2: stale_command_rejection: no complete same-freeze evidence",
+    "p5_refine_execution_goals_20261007_after_ego1p5_2: variant_sha256 not SHA256",
+    "p5_refine_execution_goals_20261007_after_ego1p5_2: conditions_sha256 not SHA256",
+    "p5_refine_execution_goals_20261007_after_ego1p5_2: freeze not independently verified",
+    "p5_refine_execution_goals_20261007_after_ego1p5_3: unknown_rejection: no complete same-freeze evidence",
+    "p5_refine_execution_goals_20261007_after_ego1p5_3: expired_depth_rejection: no complete same-freeze evidence",
+    "p5_refine_execution_goals_20261007_after_ego1p5_3: stale_command_rejection: no complete same-freeze evidence",
+    "p5_refine_execution_goals_20261007_after_ego1p5_3: variant_sha256 not SHA256",
+    "p5_refine_execution_goals_20261007_after_ego1p5_3: conditions_sha256 not SHA256",
+    "p5_refine_execution_goals_20261007_after_ego1p5_3: freeze not independently verified",
+    "no prespecified plan; no retention decision"
+  ],
+  "interpretation": "Safety/metadata contracts are caller-supplied attestations with hashed evidence, not proofs extracted from arbitrary documents. Only registered scenarios are covered; no general statistical guarantee or real-flight claim.",
+  "decision": "DESCRIPTIVE_ONLY",
+  "input_files": [
+    {
+      "path": "/home/starry/isaac-data/EGO1P5/performance/navigation_benchmark_20260929/p5_refine_execution_goals_20261007_before_analysis.json",
+      "sha256": "ee78856a01c6ebd017c9b96d9c8fcfd5aa8b36d656f6dc1affcdd152803cc52e"
+    },
+    {
+      "path": "/home/starry/isaac-data/EGO1P5/performance/navigation_benchmark_20260929/p5_refine_execution_goals_20261007_after_analysis.json",
+      "sha256": "05f7ad6cde4a7a5f2875d4a4ca6efd2b5b9435f588490fdaa508ba893a87f724"
+    }
+  ],
+  "raw_supplement_evidence": {
+    "p5_refine_execution_goals_20261007_before_ego1p5_1": {
+      "metadata": {},
+      "files": [
+        {
+          "kind": "csv",
+          "path": "/home/starry/isaac-data/EGO1P5/performance/navigation_benchmark_20260929/p5_refine_execution_goals_20261007_before_ego1p5_1.csv",
+          "sha256": "a0e3f0f887b292d8d5b53b3c17b8b3ddeed3c7268c38c52ca408abc69412aefe"
+        },
+        {
+          "kind": "log",
+          "path": "/home/starry/isaac-data/EGO1P5/performance/navigation_benchmark_20260929/p5_refine_execution_goals_20261007_before_ego1p5_1.log",
+          "sha256": "c3f5eefff737cdf13159a8cec0ad767a06caeaa2ceddb79a82d2cc13c56e2aa0"
+        }
+      ],
+      "release": null,
+      "lifecycle": {
+        "nonzero_child_exits": [],
+        "compute_deadlines": 1,
+        "rosout_invalid_context": 1
+      }
+    },
+    "p5_refine_execution_goals_20261007_before_ego1p5_2": {
+      "metadata": {},
+      "files": [
+        {
+          "kind": "csv",
+          "path": "/home/starry/isaac-data/EGO1P5/performance/navigation_benchmark_20260929/p5_refine_execution_goals_20261007_before_ego1p5_2.csv",
+          "sha256": "37a35bf5da4c953b5af11376f72c1d6b0df490b601c134a58eff547c9ec3164b"
+        },
+        {
+          "kind": "log",
+          "path": "/home/starry/isaac-data/EGO1P5/performance/navigation_benchmark_20260929/p5_refine_execution_goals_20261007_before_ego1p5_2.log",
+          "sha256": "7776eb9527f9a4b6d8805f13acf918b0b020a94ec314c436e3edefb43a0ad21f"
+        }
+      ],
+      "release": null,
+      "lifecycle": {
+        "nonzero_child_exits": [],
+        "compute_deadlines": 1,
+        "rosout_invalid_context": 1
+      }
+    },
+    "p5_refine_execution_goals_20261007_before_ego1p5_3": {
+      "metadata": {},
+      "files": [
+        {
+          "kind": "csv",
+          "path": "/home/starry/isaac-data/EGO1P5/performance/navigation_benchmark_20260929/p5_refine_execution_goals_20261007_before_ego1p5_3.csv",
+          "sha256": "bb3707faf75f9f096d149259a5a13aa03fe8bb63d7eb47ab78a3e9d844bd32e0"
+        },
+        {
+          "kind": "log",
+          "path": "/home/starry/isaac-data/EGO1P5/performance/navigation_benchmark_20260929/p5_refine_execution_goals_20261007_before_ego1p5_3.log",
+          "sha256": "0d030a8a76033fc19c41c367bb7efe7de452bb3d55e9bd90026126f9634c9a77"
+        }
+      ],
+      "release": null,
+      "lifecycle": {
+        "nonzero_child_exits": [],
+        "compute_deadlines": 1,
+        "rosout_invalid_context": 1
+      }
+    },
+    "p5_refine_execution_goals_20261007_after_ego1p5_1": {
+      "metadata": {},
+      "files": [
+        {
+          "kind": "csv",
+          "path": "/home/starry/isaac-data/EGO1P5/performance/navigation_benchmark_20260929/p5_refine_execution_goals_20261007_after_ego1p5_1.csv",
+          "sha256": "587c577ff7d6a22806c810f8228e69d9a0772f7d70f00b8f39977cb4e532d7ca"
+        },
+        {
+          "kind": "log",
+          "path": "/home/starry/isaac-data/EGO1P5/performance/navigation_benchmark_20260929/p5_refine_execution_goals_20261007_after_ego1p5_1.log",
+          "sha256": "a07f8584dba46845a670ba7f48d65ad71f2c92ba6711e970047cf268610c6501"
+        }
+      ],
+      "release": null,
+      "lifecycle": {
+        "nonzero_child_exits": [],
+        "compute_deadlines": 0,
+        "rosout_invalid_context": 1
+      }
+    },
+    "p5_refine_execution_goals_20261007_after_ego1p5_2": {
+      "metadata": {},
+      "files": [
+        {
+          "kind": "csv",
+          "path": "/home/starry/isaac-data/EGO1P5/performance/navigation_benchmark_20260929/p5_refine_execution_goals_20261007_after_ego1p5_2.csv",
+          "sha256": "cfade1c6f355a629c58dcf0bc98ef177077e93a4581effc6ce9be82a0602a429"
+        },
+        {
+          "kind": "log",
+          "path": "/home/starry/isaac-data/EGO1P5/performance/navigation_benchmark_20260929/p5_refine_execution_goals_20261007_after_ego1p5_2.log",
+          "sha256": "3eccdd67e67909d35a000efa0b45ff4d6d10a6fd9436e8edf8fa62e08c270585"
+        }
+      ],
+      "release": null,
+      "lifecycle": {
+        "nonzero_child_exits": [],
+        "compute_deadlines": 1,
+        "rosout_invalid_context": 1
+      }
+    },
+    "p5_refine_execution_goals_20261007_after_ego1p5_3": {
+      "metadata": {},
+      "files": [
+        {
+          "kind": "csv",
+          "path": "/home/starry/isaac-data/EGO1P5/performance/navigation_benchmark_20260929/p5_refine_execution_goals_20261007_after_ego1p5_3.csv",
+          "sha256": "185fc73d38f6ceb794153277cf9a6370ffe91ec110c2251d5ba86cac852884cf"
+        },
+        {
+          "kind": "log",
+          "path": "/home/starry/isaac-data/EGO1P5/performance/navigation_benchmark_20260929/p5_refine_execution_goals_20261007_after_ego1p5_3.log",
+          "sha256": "710c3dae78acfe65eab8d32bb6176105eb35b8445768d8de7c27385a204ae538"
+        }
+      ],
+      "release": null,
+      "lifecycle": {
+        "nonzero_child_exits": [],
+        "compute_deadlines": 0,
+        "rosout_invalid_context": 1
+      }
+    }
+  },
+  "selection_filters": {
+    "before": null,
+    "after": null
+  }
+}

@@ -8,6 +8,7 @@ find_package(std_msgs REQUIRED)
 
 rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/PositionCommand.msg"
+  "msg/SharedObstacles.msg"
   DEPENDENCIES geometry_msgs std_msgs
 )
 

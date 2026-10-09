@@ -12,6 +12,8 @@ import struct
 import time
 from pathlib import Path
 
+from manual_control_math import desired_velocity_from_direction
+
 
 def _nonnegative_env(name: str, default: float) -> float:
     raw = os.environ.get(name)
@@ -227,17 +229,14 @@ class BeitongMode2:
             return (0.0, 0.0, 0.0), 0.0, False, channels
         forward = channels["pitch"]
         left = -channels["roll"]
-        planar_norm = math.hypot(forward, left)
-        if planar_norm > 1.0:
-            forward /= planar_norm
-            left /= planar_norm
-        body_forward = self.horizontal_speed * forward
-        body_left = self.horizontal_speed * left
+        body_forward, body_left, body_vertical = desired_velocity_from_direction(
+            forward, left, channels["throttle"],
+            self.horizontal_speed, self.vertical_speed)
         c, s = math.cos(yaw), math.sin(yaw)
         translation = (
             c * body_forward - s * body_left,
             s * body_forward + c * body_left,
-            self.vertical_speed * channels["throttle"],
+            body_vertical,
         )
         yaw_rate = self.max_yaw_rate * channels["yaw"]
         active = any(abs(value) > 1.0e-6 for value in channels.values())

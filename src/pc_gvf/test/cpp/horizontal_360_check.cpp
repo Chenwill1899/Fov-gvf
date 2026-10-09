@@ -14,7 +14,6 @@ namespace {
 using pc_gvf::depth_angular::Camera;
 using pc_gvf::depth_angular::SimConfig;
 using pc_gvf::depth_angular::computeGuidance;
-using pc_gvf::depth_angular::composeHorizontalVerticalCommand;
 using pc_gvf::depth_angular::fixedCameraRotation;
 using pc_gvf::depth_angular::selectClosestYaw;
 
@@ -56,15 +55,6 @@ Eigen::Vector2d directionPixel(
 
 int main()
 {
-    const Eigen::Vector3d combined = composeHorizontalVerticalCommand(
-        Eigen::Vector3d(0.25, -0.70, 99.0), 0.50, 1.0);
-    require((combined - Eigen::Vector3d(0.25, -0.70, 0.50)).norm() < 1.0e-12,
-            "horizontal avoidance must not overwrite direct vertical command");
-    const Eigen::Vector3d pure_vertical = composeHorizontalVerticalCommand(
-        Eigen::Vector3d::Zero(), -2.0, 1.0);
-    require((pure_vertical - Eigen::Vector3d(0.0, 0.0, -1.0)).norm() < 1.0e-12,
-            "pure vertical command must not create horizontal motion");
-
     const std::vector<double> camera_yaws{
         0.0, 0.5 * kPi, kPi, -0.5 * kPi};
     const std::vector<double> desired_yaws{

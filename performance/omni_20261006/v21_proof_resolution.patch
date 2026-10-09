@@ -1,0 +1,14 @@
+--- EGO1P2/src/pc_gvf/src/paper_guidance.cpp
++++ EGO1P3/src/pc_gvf/src/paper_guidance.cpp
+@@ -952,7 +952,10 @@
+         if(((p-center).cwiseAbs()-Eigen::Vector3d::Constant(half)).cwiseMax(0).squaredNorm()>radius*radius)return true;
+         if(covered(p,std::sqrt(3.0)*half))return true;
+         if((p-center).squaredNorm()<radius*radius && !covered(p,0))return false;
+-        if(level>=5 || --remaining<=0)return false;
++        // Resolve narrow overlaps between real evidence volumes. The split
++        // budget stays 1024; every accepted box still needs full containment,
++        // and unresolved leaves remain unknown. No surface samples authorize it.
++        if(level>=7 || --remaining<=0)return false;
+         const double h=.5*half;
+         for(int z:{-1,1})for(int y:{-1,1})for(int x:{-1,1})
+             if(!certify(p+h*Eigen::Vector3d(x,y,z),h,level+1))return false;

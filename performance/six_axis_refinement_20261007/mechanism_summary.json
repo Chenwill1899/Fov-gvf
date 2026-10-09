@@ -1,0 +1,1175 @@
+{
+  "schema_version": 1,
+  "project": "EGO1P5",
+  "experiment": "six_axis_refinement_20261007",
+  "generated_at": "2026-10-07T21:44:06.241671+08:00",
+  "artifact_kind": "mechanism-only evidence aggregation",
+  "relative_path_base": "this file directory",
+  "comparison_baseline": {
+    "description": "本轮开始前冻结的EGO1P5六项既有实现；各项机制旧→新比较，不重标前轮关闭→开启收益",
+    "archive": "baseline/sources.tar.gz",
+    "sha256": "0e3d4c581ed9c35aa77485e66ccc1e23fca342ac56c3fe7a6bb7c135e1453f1c"
+  },
+  "overall_claim": "六项均有各自有限输入/阶段内的机制收益；此文件不宣称整体导航或所有指标全面优胜。",
+  "integration_and_flight": {
+    "isaac_conclusion": "not assessed by this mechanism summary",
+    "isaac_pass_claim": false,
+    "new_flights_run_by_this_summary_task": 0,
+    "main_build_and_ctest": "由主任务独立报告；本文件未据阶段文档提前认定通过",
+    "human_study": "not performed",
+    "real_robot_flight": "not performed"
+  },
+  "data_selection": {
+    "stage4": "只采用measurements_v2_roundoff修复后数据",
+    "stage5": "只采用measurements_v2_lag_bound修复后数据",
+    "superseded_results": "保留供追溯，不混入本文件最终均值/中位数",
+    "no_new_experiments": "本文件由现有JSON/CSV/报告汇总，仅做轻量读取、统计和路径验证"
+  },
+  "stages": [
+    {
+      "id": 1,
+      "name": "深度不确定性",
+      "implementation": "方形遮挡/未知扩张的可分离最小值计算及按行列复用光轴项；误差模型和像素结果保持",
+      "comparison": "本轮冻结P5已开启不确定性模型 vs 相同模型计算优化",
+      "accepted_evidence_version": "stage1 final",
+      "metrics": [
+        {
+          "name": "native_depth_filter_time_smooth_radius_0",
+          "before": 1.96610125,
+          "after": 0.940763,
+          "unit": "ms / four 320x240 views",
+          "samples": {
+            "paired_rounds": 9,
+            "batches_per_timing": 8,
+            "views_per_batch": 4,
+            "pixels_per_view": 76800
+          },
+          "evidence": [
+            "stage1_uncertainty/summary.json",
+            "stage1_uncertainty/benchmark.csv"
+          ],
+          "aggregation": "median",
+          "speedup": 2.0899006976252252,
+          "all_paired_rounds_faster": true
+        },
+        {
+          "name": "native_depth_filter_time_smooth_radius_1",
+          "before": 4.45004425,
+          "after": 2.5618495,
+          "unit": "ms / four 320x240 views",
+          "samples": {
+            "paired_rounds": 9,
+            "batches_per_timing": 8,
+            "views_per_batch": 4,
+            "pixels_per_view": 76800
+          },
+          "evidence": [
+            "stage1_uncertainty/summary.json",
+            "stage1_uncertainty/benchmark.csv"
+          ],
+          "aggregation": "median",
+          "speedup": 1.7370435890164508,
+          "all_paired_rounds_faster": true
+        },
+        {
+          "name": "native_depth_filter_time_smooth_radius_4",
+          "before": 21.17524625,
+          "after": 3.54356075,
+          "unit": "ms / four 320x240 views",
+          "samples": {
+            "paired_rounds": 9,
+            "batches_per_timing": 8,
+            "views_per_batch": 4,
+            "pixels_per_view": 76800
+          },
+          "evidence": [
+            "stage1_uncertainty/summary.json",
+            "stage1_uncertainty/benchmark.csv"
+          ],
+          "aggregation": "median",
+          "speedup": 5.975697255931057,
+          "all_paired_rounds_faster": true
+        },
+        {
+          "name": "native_depth_filter_time_occlusion_radius_0",
+          "before": 1.979909625,
+          "after": 0.931627125,
+          "unit": "ms / four 320x240 views",
+          "samples": {
+            "paired_rounds": 9,
+            "batches_per_timing": 8,
+            "views_per_batch": 4,
+            "pixels_per_view": 76800
+          },
+          "evidence": [
+            "stage1_uncertainty/summary.json",
+            "stage1_uncertainty/benchmark.csv"
+          ],
+          "aggregation": "median",
+          "speedup": 2.1252168081731195,
+          "all_paired_rounds_faster": true
+        },
+        {
+          "name": "native_depth_filter_time_occlusion_radius_1",
+          "before": 4.463368125,
+          "after": 2.685772375,
+          "unit": "ms / four 320x240 views",
+          "samples": {
+            "paired_rounds": 9,
+            "batches_per_timing": 8,
+            "views_per_batch": 4,
+            "pixels_per_view": 76800
+          },
+          "evidence": [
+            "stage1_uncertainty/summary.json",
+            "stage1_uncertainty/benchmark.csv"
+          ],
+          "aggregation": "median",
+          "speedup": 1.6618564426927653,
+          "all_paired_rounds_faster": true
+        },
+        {
+          "name": "native_depth_filter_time_occlusion_radius_4",
+          "before": 21.04153112,
+          "after": 3.578485,
+          "unit": "ms / four 320x240 views",
+          "samples": {
+            "paired_rounds": 9,
+            "batches_per_timing": 8,
+            "views_per_batch": 4,
+            "pixels_per_view": 76800
+          },
+          "evidence": [
+            "stage1_uncertainty/summary.json",
+            "stage1_uncertainty/benchmark.csv"
+          ],
+          "aggregation": "median",
+          "speedup": 5.880010987890126,
+          "all_paired_rounds_faster": true
+        },
+        {
+          "name": "native_depth_filter_time_missing_radius_0",
+          "before": 1.9944795,
+          "after": 0.93599275,
+          "unit": "ms / four 320x240 views",
+          "samples": {
+            "paired_rounds": 9,
+            "batches_per_timing": 8,
+            "views_per_batch": 4,
+            "pixels_per_view": 76800
+          },
+          "evidence": [
+            "stage1_uncertainty/summary.json",
+            "stage1_uncertainty/benchmark.csv"
+          ],
+          "aggregation": "median",
+          "speedup": 2.130870671808088,
+          "all_paired_rounds_faster": true
+        },
+        {
+          "name": "native_depth_filter_time_missing_radius_1",
+          "before": 4.69518375,
+          "after": 2.554620875,
+          "unit": "ms / four 320x240 views",
+          "samples": {
+            "paired_rounds": 9,
+            "batches_per_timing": 8,
+            "views_per_batch": 4,
+            "pixels_per_view": 76800
+          },
+          "evidence": [
+            "stage1_uncertainty/summary.json",
+            "stage1_uncertainty/benchmark.csv"
+          ],
+          "aggregation": "median",
+          "speedup": 1.8379180237458914,
+          "all_paired_rounds_faster": true
+        },
+        {
+          "name": "native_depth_filter_time_missing_radius_4",
+          "before": 22.46974275,
+          "after": 3.416238875,
+          "unit": "ms / four 320x240 views",
+          "samples": {
+            "paired_rounds": 9,
+            "batches_per_timing": 8,
+            "views_per_batch": 4,
+            "pixels_per_view": 76800
+          },
+          "evidence": [
+            "stage1_uncertainty/summary.json",
+            "stage1_uncertainty/benchmark.csv"
+          ],
+          "aggregation": "median",
+          "speedup": 6.577333603464718,
+          "all_paired_rounds_faster": true
+        },
+        {
+          "name": "false_free_body_certifications",
+          "before": 0,
+          "after": 0,
+          "unit": "count",
+          "samples": {
+            "fixed_seed_noise_samples": 1000
+          },
+          "evidence": [
+            "stage1_uncertainty/mechanism.csv"
+          ],
+          "note": "本轮旧/新均为0；未经不确定性处理的原始深度为8，8→0属于保留能力而非本轮新增收益。"
+        },
+        {
+          "name": "depth_overestimates",
+          "before": 0,
+          "after": 0,
+          "unit": "count",
+          "samples": {
+            "fixed_seed_noise_samples": 1000
+          },
+          "evidence": [
+            "stage1_uncertainty/mechanism.csv"
+          ],
+          "note": "原始深度高估488；本轮旧/新保守模型均为0。"
+        }
+      ],
+      "regression": {
+        "bit_identical_pixels": 3416657,
+        "random_boundary_pixels": 651857,
+        "native_benchmark_pixels": 2764800,
+        "malformed_inputs_rejected": 7,
+        "evidence": [
+          "stage1_uncertainty/mechanism.stderr",
+          "stage1_uncertainty/summary.json"
+        ],
+        "asan_ubsan_scope": "仅两个改动翻译单元；继承静态核心库未instrument"
+      },
+      "gain_scope": "默认半径1原生四视图过滤开销减少39.8–45.6%；不扩大可通行空间、不改变安全余量。",
+      "tradeoffs": [
+        "320x240额外临时内存约0.59MiB。"
+      ],
+      "unverified": [
+        "真实传感器噪声标定",
+        "ROS/控制核心/整机总时延收益",
+        "Isaac或真机总体性能"
+      ],
+      "evidence": [
+        "stage1_uncertainty/summary.json",
+        "stage1_uncertainty/README.md"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "动态障碍响应",
+      "implementation": "同视角时间合格预测按最宽世界轴建立关联候选索引；小规模保留旧扫描；非法数值失效关闭",
+      "comparison": "本轮冻结动态模块 vs 相同跟踪与运动误差界的新关联实现",
+      "accepted_evidence_version": "stage2 final, exploratory_rotating excluded",
+      "metrics": [
+        {
+          "name": "ingest_time_16_points",
+          "before": 0.211,
+          "after": 0.185,
+          "unit": "process CPU ms / 160 frames",
+          "samples": {
+            "paired_repeats": 5,
+            "frames_per_repeat": 160,
+            "input_points_per_frame": 16,
+            "alternating_views": 2
+          },
+          "evidence": [
+            "stage2_dynamic/summary.json",
+            "stage2_dynamic/baseline.csv",
+            "stage2_dynamic/optimized.csv"
+          ],
+          "aggregation": "arithmetic mean",
+          "speedup": 1.1405405405405404
+        },
+        {
+          "name": "ingest_time_64_points",
+          "before": 1.3606,
+          "after": 0.9616,
+          "unit": "process CPU ms / 160 frames",
+          "samples": {
+            "paired_repeats": 5,
+            "frames_per_repeat": 160,
+            "input_points_per_frame": 64,
+            "alternating_views": 2
+          },
+          "evidence": [
+            "stage2_dynamic/summary.json",
+            "stage2_dynamic/baseline.csv",
+            "stage2_dynamic/optimized.csv"
+          ],
+          "aggregation": "arithmetic mean",
+          "speedup": 1.4149334442595674
+        },
+        {
+          "name": "ingest_time_256_points",
+          "before": 18.2286,
+          "after": 5.6498,
+          "unit": "process CPU ms / 160 frames",
+          "samples": {
+            "paired_repeats": 5,
+            "frames_per_repeat": 160,
+            "input_points_per_frame": 256,
+            "alternating_views": 2
+          },
+          "evidence": [
+            "stage2_dynamic/summary.json",
+            "stage2_dynamic/baseline.csv",
+            "stage2_dynamic/optimized.csv"
+          ],
+          "aggregation": "arithmetic mean",
+          "speedup": 3.2264150943396226
+        },
+        {
+          "name": "ingest_time_900_points",
+          "before": 253.1178,
+          "after": 41.2484,
+          "unit": "process CPU ms / 160 frames",
+          "samples": {
+            "paired_repeats": 5,
+            "frames_per_repeat": 160,
+            "input_points_per_frame": 900,
+            "alternating_views": 2
+          },
+          "evidence": [
+            "stage2_dynamic/summary.json",
+            "stage2_dynamic/baseline.csv",
+            "stage2_dynamic/optimized.csv"
+          ],
+          "aggregation": "arithmetic mean",
+          "speedup": 6.136427109900021
+        },
+        {
+          "name": "malformed_motion_queries_accepted",
+          "before": 4,
+          "after": 0,
+          "unit": "count",
+          "samples": {
+            "negative_cases": 4
+          },
+          "evidence": [
+            "stage2_dynamic/baseline.stderr",
+            "stage2_dynamic/optimized.stderr"
+          ]
+        }
+      ],
+      "regression": {
+        "matching_track_state_digests": 20,
+        "matching_motion_decisions": 38400,
+        "tie_break_invalid_origin_regression": "pass",
+        "evidence": [
+          "stage2_dynamic/README.md",
+          "stage2_dynamic/safety_regression.log"
+        ]
+      },
+      "gain_scope": "同输入动态关联速度提高1.14–6.14倍，输出状态/决定哈希保持，非法数值拒绝加强。",
+      "tradeoffs": [
+        "预筛/排序有准备成本；已用≤64条历史轨迹的旧扫描路径避免小场景开销。",
+        "CPU未绑核，小于1ms的小场景比较不代表稳定机器级延迟。"
+      ],
+      "unverified": [
+        "动态Isaac或真实移动障碍闭环",
+        "动态段证明新增校验的完整控制器开销",
+        "任意点分布都更快"
+      ],
+      "evidence": [
+        "stage2_dynamic/summary.json",
+        "stage2_dynamic/README.md"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "自运动补偿与增量调和场",
+      "implementation": "严格identity SE3/相同图域直接传递旧势猜测；修正方程按绝对残差目标停止，当前边界/掩码及最终残差重新检查",
+      "comparison": "冻结的已有增量算法 vs 新identity/残差计算优化；不是冷解vs暖解",
+      "accepted_evidence_version": "stage3 seven-pair mechanism comparison plus extended regression",
+      "metrics": [
+        {
+          "name": "incremental_field_time",
+          "before": 69.5965,
+          "after": 46.5391,
+          "unit": "wall ms / 100 frames",
+          "samples": {
+            "paired_repeats": 7,
+            "frames_per_repeat": 100
+          },
+          "evidence": [
+            "stage3_incremental/comparison.json"
+          ],
+          "aggregation": "median",
+          "speedup": 1.495441467497223
+        },
+        {
+          "name": "incremental_cg_iterations",
+          "before": 7119,
+          "after": 5369,
+          "unit": "iterations / 100 frames",
+          "samples": {
+            "paired_repeats": 7,
+            "frames_per_repeat": 100
+          },
+          "evidence": [
+            "stage3_incremental/comparison.json"
+          ]
+        },
+        {
+          "name": "max_potential_error_vs_same_domain_cold_solve",
+          "before": 1.69508e-09,
+          "after": 2.51644e-09,
+          "unit": "dimensionless potential",
+          "samples": {
+            "paired_repeats": 7,
+            "frames_per_repeat": 100
+          },
+          "evidence": [
+            "stage3_incremental/comparison.json"
+          ],
+          "direction": "smaller preferred",
+          "note": "误差略增，仍远小于测试1e-6，最终归一化残差契约1e-7不变；不宣称精度改善。"
+        }
+      ],
+      "regression": {
+        "changed_boundary_pose_mask_bad_guess_cases": 40,
+        "max_error_in_changed_cases": 4.52159e-09,
+        "unknown_current_frame_rejected": true,
+        "evidence": [
+          "stage3_incremental/extended_regression.log"
+        ]
+      },
+      "gain_scope": "100帧机制实验迭代7119→5369、暖解中位69.5965→46.5391ms；旧场仍仅是数值猜测/候选。",
+      "tradeoffs": [
+        "与冷解的最大势差1.69508e-9→2.51644e-9。"
+      ],
+      "unverified": [
+        "完整控制周期或真实导航提速",
+        "所有历史回退状态均有收益",
+        "本文件不汇总root的正式集成构建及快照测试"
+      ],
+      "evidence": [
+        "stage3_incremental/comparison.json",
+        "stage3_incremental/README.md"
+      ]
+    },
+    {
+      "id": 4,
+      "name": "带记忆的球面缓存",
+      "implementation": "128点块的相机可见半空间/深度必要条件预筛；v2先局部平移再求包络并按运算量扩展数值余量",
+      "comparison": "冻结原逐点broadphase vs 修复大坐标舍入后的块预筛",
+      "accepted_evidence_version": "measurements_v2_roundoff ONLY",
+      "excluded_superseded_versions": [
+        "stage4_memory/measurements_v1/",
+        "stage4_memory/initial_timing.json"
+      ],
+      "metrics": [
+        {
+          "name": "memory_ingest_time",
+          "before": 162.603,
+          "after": 110.487,
+          "unit": "wall ms / 80 frames",
+          "samples": {
+            "paired_repeats": 3,
+            "frames_per_repeat": 80,
+            "native_hits_per_frame": 76800
+          },
+          "evidence": [
+            "stage4_memory/measurements_v2_roundoff/summary.json"
+          ],
+          "aggregation": "median",
+          "speedup": 1.4716935024029978
+        },
+        {
+          "name": "borrowed_reference_revocations",
+          "before": 946,
+          "after": 946,
+          "unit": "count / deterministic run",
+          "samples": {
+            "paired_repeats": 3,
+            "unique_seeded_parity_cases_per_repeat": 160
+          },
+          "evidence": [
+            "stage4_memory/measurements_v2_roundoff/summary.json"
+          ],
+          "note": "逐点真值撤销的借用引用均保持，重复运行不是新增随机样本。"
+        },
+        {
+          "name": "certified_seen_side_rear_directions",
+          "before": 74,
+          "after": 74,
+          "unit": "directions",
+          "samples": {
+            "distinct_direction_cases": 74
+          },
+          "evidence": [
+            "stage4_memory/measurements_v2_roundoff/old_memory_check.csv",
+            "stage4_memory/measurements_v2_roundoff/new_memory_check.csv"
+          ]
+        },
+        {
+          "name": "expired_direction_acceptances",
+          "before": 0,
+          "after": 0,
+          "unit": "count",
+          "samples": {
+            "direction_case_family": 74
+          },
+          "evidence": [
+            "stage4_memory/measurements_v2_roundoff/old_memory_check.csv",
+            "stage4_memory/measurements_v2_roundoff/new_memory_check.csv"
+          ]
+        },
+        {
+          "name": "large_world_boundary_revocations",
+          "before": 5,
+          "after": 5,
+          "unit": "count",
+          "samples": {
+            "world_offsets": [
+              0,
+              1000000,
+              1000000000,
+              1000000000000,
+              -1000000000
+            ],
+            "cases": 5
+          },
+          "evidence": [
+            "stage4_memory/measurements_v2_roundoff/summary.json"
+          ]
+        }
+      ],
+      "regression": {
+        "all_old_new_processes_exit_zero": true,
+        "same_retained_evidence_all_repeats": true,
+        "roundoff_review_fix_verified": true,
+        "evidence": [
+          "stage4_memory/roundoff_fixed.log",
+          "stage4_memory/measurements_v2_roundoff/summary.json"
+        ]
+      },
+      "gain_scope": "修后缓存维护中位162.603→110.487ms（1.472倍），有限测试同输入证据不变；原74方向能力保持。",
+      "tradeoffs": [
+        "块及每份历史观测的深度最大值需要准备成本。",
+        "v1曾在1e9世界原点漏撤销；该失败保留，只采用修后v2数字。"
+      ],
+      "unverified": [
+        "窄FOV完整飞行任务成功率提升",
+        "四相机实际导航提速",
+        "任意地图/点分布都加速"
+      ],
+      "evidence": [
+        "stage4_memory/measurements_v2_roundoff/summary.json",
+        "stage4_memory/REPORT.md"
+      ]
+    },
+    {
+      "id": 5,
+      "name": "人工操作体验",
+      "implementation": "识别小角振荡后选择双级EMA；同向慢转保留原路径；v2补最终输出.018rad硬界并同步重置两级状态",
+      "comparison": "冻结的前轮第二版已辅助滤波 vs 本轮v2修后滤波；不是未辅助vs辅助",
+      "accepted_evidence_version": "measurements_v2_lag_bound ONLY",
+      "excluded_superseded_versions": [
+        "stage5_operator/measurements_v1/",
+        "stage5_operator/fixture_metrics.json"
+      ],
+      "metrics": [
+        {
+          "name": "jitter_intent_total_variation_60hz",
+          "before": 0.436592809487711,
+          "after": 0.16041124057999684,
+          "unit": "m/s summed command-vector differences",
+          "samples": {
+            "sampling_conditions": 1,
+            "hz": 60,
+            "phase_ticks": 0,
+            "samples": 810,
+            "interval_seconds": [
+              1.5,
+              15
+            ]
+          },
+          "evidence": [
+            "stage5_operator/measurements_v2_lag_bound/summary.json"
+          ]
+        },
+        {
+          "name": "jitter_intent_jerk_rms_60hz",
+          "before": 2.975035204922726,
+          "after": 0.988239508480012,
+          "unit": "m/s^3 command-signal second difference; not robot-motion jerk",
+          "samples": {
+            "hz": 60,
+            "samples": 810,
+            "second_differences": 808
+          },
+          "evidence": [
+            "stage5_operator/measurements_v2_lag_bound/summary.json"
+          ]
+        },
+        {
+          "name": "slow_turn_intent_total_variation_60hz",
+          "before": 0.35879993711447383,
+          "after": 0.35879993711447383,
+          "unit": "m/s summed command-vector differences",
+          "samples": {
+            "hz": 60,
+            "samples": 360,
+            "interval_seconds": [
+              17,
+              23
+            ]
+          },
+          "evidence": [
+            "stage5_operator/measurements_v2_lag_bound/summary.json",
+            "stage5_operator/measurements_v2_lag_bound/slow_turn_parity.json"
+          ]
+        },
+        {
+          "name": "slow_turn_intent_jerk_rms_60hz",
+          "before": 2.5680590720204433,
+          "after": 2.5680590720204433,
+          "unit": "m/s^3 command-signal second difference",
+          "samples": {
+            "hz": 60,
+            "samples": 360
+          },
+          "evidence": [
+            "stage5_operator/measurements_v2_lag_bound/summary.json"
+          ]
+        },
+        {
+          "name": "whole_fixture_intent_jerk_rms_60hz",
+          "before": 225.41110569537406,
+          "after": 225.4039342821117,
+          "unit": "m/s^3 command-signal second difference",
+          "samples": {
+            "hz": 60,
+            "interval_seconds": [
+              0,
+              34
+            ],
+            "samples": 2040
+          },
+          "evidence": [
+            "stage5_operator/measurements_v2_lag_bound/summary.json"
+          ],
+          "note": "启停/逆向主导全段；全段变化很小。"
+        },
+        {
+          "name": "whole_fixture_max_angle_error_60hz",
+          "before": 0.007923718930894342,
+          "after": 0.008332050734839936,
+          "unit": "rad",
+          "samples": {
+            "hz": 60,
+            "generated_samples": 2041
+          },
+          "evidence": [
+            "stage5_operator/measurements_v2_lag_bound/summary.json"
+          ],
+          "direction": "smaller preferred",
+          "note": "角滞后略增，仍小于.018rad；不称所有操控指标同时改善。"
+        },
+        {
+          "name": "closed_loop_assisted_command_total_variation",
+          "before": 0.0214314,
+          "after": 0.00663977,
+          "unit": "m/s summed command-vector differences",
+          "samples": {
+            "analytic_closed_loop_frames": 600,
+            "counted_differences_after_warmup": 499,
+            "paired_runs": 1
+          },
+          "evidence": [
+            "stage5_operator/measurements_v2_lag_bound/summary.json"
+          ]
+        },
+        {
+          "name": "closed_loop_forward_progress",
+          "before": 11.3518,
+          "after": 11.3518,
+          "unit": "m",
+          "samples": {
+            "analytic_closed_loop_frames": 600,
+            "paired_runs": 1
+          },
+          "evidence": [
+            "stage5_operator/measurements_v2_lag_bound/summary.json"
+          ]
+        },
+        {
+          "name": "release_additional_delay",
+          "before": 0,
+          "after": 0,
+          "unit": "frames",
+          "samples": {
+            "sampling_conditions": 6
+          },
+          "evidence": [
+            "stage5_operator/measurements_v2_lag_bound/summary.json"
+          ]
+        },
+        {
+          "name": "large_turn_additional_delay",
+          "before": 0,
+          "after": 0,
+          "unit": "frames",
+          "samples": {
+            "sampling_conditions": 6
+          },
+          "evidence": [
+            "stage5_operator/measurements_v2_lag_bound/summary.json"
+          ]
+        }
+      ],
+      "sampling_condition_comparisons": [
+        {
+          "sample_rate_hz": 50,
+          "phase_ticks": 0,
+          "samples": 675,
+          "interval_seconds": [
+            1.5,
+            15
+          ],
+          "jitter_total_variation": {
+            "before": 0.36557836882154576,
+            "after": 0.1126934960253912,
+            "unit": "m/s summed command-vector differences"
+          },
+          "jitter_intent_jerk_rms": {
+            "before": 2.2631114311563394,
+            "after": 0.6989566436970717,
+            "unit": "m/s^3 command-signal second difference; not measured robot jerk"
+          },
+          "whole_fixture_max_angle_error": {
+            "before": 0.007457436222990891,
+            "after": 0.007927922041434896,
+            "unit": "rad"
+          },
+          "release_mismatches": {
+            "before": 0,
+            "after": 0
+          },
+          "large_turn_mismatches": {
+            "before": 0,
+            "after": 0
+          },
+          "evidence": [
+            "stage5_operator/measurements_v2_lag_bound/summary.json"
+          ]
+        },
+        {
+          "sample_rate_hz": 50,
+          "phase_ticks": 0.5,
+          "samples": 675,
+          "interval_seconds": [
+            1.5,
+            15
+          ],
+          "jitter_total_variation": {
+            "before": 0.36557836882154576,
+            "after": 0.1126934960253912,
+            "unit": "m/s summed command-vector differences"
+          },
+          "jitter_intent_jerk_rms": {
+            "before": 2.2631114311563394,
+            "after": 0.6989566436970717,
+            "unit": "m/s^3 command-signal second difference; not measured robot jerk"
+          },
+          "whole_fixture_max_angle_error": {
+            "before": 0.007457436222990891,
+            "after": 0.007927922041434896,
+            "unit": "rad"
+          },
+          "release_mismatches": {
+            "before": 0,
+            "after": 0
+          },
+          "large_turn_mismatches": {
+            "before": 0,
+            "after": 0
+          },
+          "evidence": [
+            "stage5_operator/measurements_v2_lag_bound/summary.json"
+          ]
+        },
+        {
+          "sample_rate_hz": 60,
+          "phase_ticks": 0,
+          "samples": 810,
+          "interval_seconds": [
+            1.5,
+            15
+          ],
+          "jitter_total_variation": {
+            "before": 0.436592809487711,
+            "after": 0.16041124057999684,
+            "unit": "m/s summed command-vector differences"
+          },
+          "jitter_intent_jerk_rms": {
+            "before": 2.975035204922726,
+            "after": 0.988239508480012,
+            "unit": "m/s^3 command-signal second difference; not measured robot jerk"
+          },
+          "whole_fixture_max_angle_error": {
+            "before": 0.007923718930894342,
+            "after": 0.008332050734839936,
+            "unit": "rad"
+          },
+          "release_mismatches": {
+            "before": 0,
+            "after": 0
+          },
+          "large_turn_mismatches": {
+            "before": 0,
+            "after": 0
+          },
+          "evidence": [
+            "stage5_operator/measurements_v2_lag_bound/summary.json"
+          ]
+        },
+        {
+          "sample_rate_hz": 60,
+          "phase_ticks": 0.5,
+          "samples": 810,
+          "interval_seconds": [
+            1.5,
+            15
+          ],
+          "jitter_total_variation": {
+            "before": 0.4371858687798631,
+            "after": 0.16042199451326375,
+            "unit": "m/s summed command-vector differences"
+          },
+          "jitter_intent_jerk_rms": {
+            "before": 2.971919860036923,
+            "after": 0.9886143363838904,
+            "unit": "m/s^3 command-signal second difference; not measured robot jerk"
+          },
+          "whole_fixture_max_angle_error": {
+            "before": 0.007923988907988169,
+            "after": 0.00838056641558719,
+            "unit": "rad"
+          },
+          "release_mismatches": {
+            "before": 0,
+            "after": 0
+          },
+          "large_turn_mismatches": {
+            "before": 0,
+            "after": 0
+          },
+          "evidence": [
+            "stage5_operator/measurements_v2_lag_bound/summary.json"
+          ]
+        },
+        {
+          "sample_rate_hz": 120,
+          "phase_ticks": 0,
+          "samples": 1620,
+          "interval_seconds": [
+            1.5,
+            15
+          ],
+          "jitter_total_variation": {
+            "before": 0.8633877914132011,
+            "after": 0.48732430515318176,
+            "unit": "m/s summed command-vector differences"
+          },
+          "jitter_intent_jerk_rms": {
+            "before": 8.371072042166533,
+            "after": 3.7182224048382397,
+            "unit": "m/s^3 command-signal second difference; not measured robot jerk"
+          },
+          "whole_fixture_max_angle_error": {
+            "before": 0.008486946201852613,
+            "after": 0.009193623464014394,
+            "unit": "rad"
+          },
+          "release_mismatches": {
+            "before": 0,
+            "after": 0
+          },
+          "large_turn_mismatches": {
+            "before": 0,
+            "after": 0
+          },
+          "evidence": [
+            "stage5_operator/measurements_v2_lag_bound/summary.json"
+          ]
+        },
+        {
+          "sample_rate_hz": 120,
+          "phase_ticks": 0.5,
+          "samples": 1620,
+          "interval_seconds": [
+            1.5,
+            15
+          ],
+          "jitter_total_variation": {
+            "before": 0.8631863775822117,
+            "after": 0.48681986464550253,
+            "unit": "m/s summed command-vector differences"
+          },
+          "jitter_intent_jerk_rms": {
+            "before": 8.37122460061606,
+            "after": 3.7158208646527546,
+            "unit": "m/s^3 command-signal second difference; not measured robot jerk"
+          },
+          "whole_fixture_max_angle_error": {
+            "before": 0.0084846602252036,
+            "after": 0.009192146159138737,
+            "unit": "rad"
+          },
+          "release_mismatches": {
+            "before": 0,
+            "after": 0
+          },
+          "large_turn_mismatches": {
+            "before": 0,
+            "after": 0
+          },
+          "evidence": [
+            "stage5_operator/measurements_v2_lag_bound/summary.json"
+          ]
+        }
+      ],
+      "regression": {
+        "slow_turn_output_mismatches": 0,
+        "slow_turn_compared_samples": 360,
+        "review_counterexample_samples": 203,
+        "fixed_counterexample_max_angle_rad": 0.017996310160701866,
+        "evidence": [
+          "stage5_operator/measurements_v2_lag_bound/slow_turn_parity.json",
+          "stage5_operator/lag_bound_fixed.log"
+        ]
+      },
+      "gain_scope": "6种采样条件抖动段指令总变化/意图jerk降低；解析核心闭环命令总变化.0214314→.00663977，前进不变。",
+      "tradeoffs": [
+        "60Hz最大角误差.007923719→.008332051rad，增加约.000408rad。",
+        "v1曾越过角滞后上限，修后v2重跑全部消融；保留旧失败。",
+        "早期冻结库/并行公共头ABI混用曾导致独立测试退出139，随后用匹配冻结头重测通过。"
+      ],
+      "unverified": [
+        "本轮Isaac实际机体jerk及整体操控改善",
+        "人类被试主观体验",
+        "任意噪声、采样率或指令变化都改善"
+      ],
+      "evidence": [
+        "stage5_operator/measurements_v2_lag_bound/summary.json",
+        "stage5_operator/REPORT.md"
+      ]
+    },
+    {
+      "id": 6,
+      "name": "多机器人共享占据",
+      "implementation": "接收时缓存各源保守运动AABB；只跳过完全分离源；有效第9个危险源容量不足时保持原TTL内的临时拒绝",
+      "comparison": "冻结原共享模块 vs 修复时间浮点边界后的宽相/容量保护",
+      "accepted_evidence_version": "stage6 final summary and final safety_regression",
+      "excluded_superseded_versions": [
+        "stage6_shared/optimized_initial.csv",
+        "stage6_shared/optimized_before_future_edge_fix.csv"
+      ],
+      "metrics": [
+        {
+          "name": "separated_shared_query_time_32_tracks_per_source",
+          "before": 4.0828,
+          "after": 0.1928,
+          "unit": "process CPU ms / 3000 segment queries",
+          "samples": {
+            "paired_repeats": 5,
+            "sources": 8,
+            "tracks_per_source": 32,
+            "queries_per_repeat": 3000
+          },
+          "evidence": [
+            "stage6_shared/summary.json",
+            "stage6_shared/baseline.csv",
+            "stage6_shared/optimized.csv"
+          ],
+          "aggregation": "arithmetic mean",
+          "speedup": 21.17634854771784,
+          "timing_excludes": "merge/AABB cache precomputation; whole controller and communications"
+        },
+        {
+          "name": "separated_shared_query_time_256_tracks_per_source",
+          "before": 32.1436,
+          "after": 0.1942,
+          "unit": "process CPU ms / 3000 segment queries",
+          "samples": {
+            "paired_repeats": 5,
+            "sources": 8,
+            "tracks_per_source": 256,
+            "queries_per_repeat": 3000
+          },
+          "evidence": [
+            "stage6_shared/summary.json",
+            "stage6_shared/baseline.csv",
+            "stage6_shared/optimized.csv"
+          ],
+          "aggregation": "arithmetic mean",
+          "speedup": 165.51802265705456,
+          "timing_excludes": "merge/AABB cache precomputation; whole controller and communications"
+        },
+        {
+          "name": "separated_shared_query_time_1024_tracks_per_source",
+          "before": 121.7392,
+          "after": 0.21780000000000002,
+          "unit": "process CPU ms / 3000 segment queries",
+          "samples": {
+            "paired_repeats": 5,
+            "sources": 8,
+            "tracks_per_source": 1024,
+            "queries_per_repeat": 3000
+          },
+          "evidence": [
+            "stage6_shared/summary.json",
+            "stage6_shared/baseline.csv",
+            "stage6_shared/optimized.csv"
+          ],
+          "aggregation": "arithmetic mean",
+          "speedup": 558.9494949494949,
+          "timing_excludes": "merge/AABB cache precomputation; whole controller and communications"
+        },
+        {
+          "name": "separated_shared_query_time_4096_tracks_per_source",
+          "before": 494.8016,
+          "after": 0.1946,
+          "unit": "process CPU ms / 3000 segment queries",
+          "samples": {
+            "paired_repeats": 5,
+            "sources": 8,
+            "tracks_per_source": 4096,
+            "queries_per_repeat": 3000
+          },
+          "evidence": [
+            "stage6_shared/summary.json",
+            "stage6_shared/baseline.csv",
+            "stage6_shared/optimized.csv"
+          ],
+          "aggregation": "arithmetic mean",
+          "speedup": 2542.6598150051386,
+          "timing_excludes": "merge/AABB cache precomputation; whole controller and communications"
+        },
+        {
+          "name": "ninth_source_hazards_accepted",
+          "before": 32,
+          "after": 0,
+          "unit": "count",
+          "samples": {
+            "capacity_hazard_cases": 32
+          },
+          "evidence": [
+            "stage6_shared/baseline.stderr",
+            "stage6_shared/optimized.stderr"
+          ]
+        },
+        {
+          "name": "invalid_frame_packets_disable_clear_map",
+          "before": 0,
+          "after": 0,
+          "unit": "count",
+          "samples": {
+            "invalid_frame_cases": 32
+          },
+          "evidence": [
+            "stage6_shared/baseline.stderr",
+            "stage6_shared/optimized.stderr"
+          ]
+        },
+        {
+          "name": "expired_capacity_still_rejected",
+          "before": 0,
+          "after": 0,
+          "unit": "count",
+          "samples": {
+            "expiry_cases": 32,
+            "time_seconds": 1.501
+          },
+          "evidence": [
+            "stage6_shared/baseline.stderr",
+            "stage6_shared/optimized.stderr"
+          ]
+        },
+        {
+          "name": "normally_merged_near_hazards_missed",
+          "before": 0,
+          "after": 0,
+          "unit": "count",
+          "samples": {
+            "near_hazard_cases": 32
+          },
+          "evidence": [
+            "stage6_shared/baseline.stderr",
+            "stage6_shared/optimized.stderr"
+          ]
+        }
+      ],
+      "regression": {
+        "paired_query_digest_comparisons": 20,
+        "random_broadphase_exact_matches": 30000,
+        "temporal_edge_queries": 63,
+        "additional_random_queries": 2000,
+        "temporal_and_additional_random_mismatches": 0,
+        "evidence": [
+          "stage6_shared/README.md",
+          "stage6_shared/safety_regression.log"
+        ]
+      },
+      "gain_scope": "容量丢弃导致的32个危险误放行消除；远离所有源的重复查询显著加速。",
+      "tradeoffs": [
+        "merge新增一次线性缓存扫描，未单独计时。",
+        "近障碍或相交包络仍调用原精确扫描，不保证加速。",
+        "有效未能保存的第9个危险源导致原TTL内暂时停机。",
+        "首版时间戳运算顺序曾造成边界误放行，修后重新跑全消融并保留失败。"
+      ],
+      "unverified": [
+        "新多机ROS闭环",
+        "Isaac多机或真机飞行",
+        "共享全链路吞吐/延迟",
+        "自由空间共享共识或自动跨机器人坐标/时钟配准"
+      ],
+      "evidence": [
+        "stage6_shared/summary.json",
+        "stage6_shared/README.md"
+      ]
+    }
+  ],
+  "review_fixes": [
+    {
+      "issue": "共享大时间戳预测时长低估",
+      "status": "fixed and reproduced as exact rejection",
+      "before_evidence": "review/before_time_fix.log",
+      "after_evidence": "review/intermediate_review.log",
+      "final_regression": "stage6_shared/safety_regression.log"
+    },
+    {
+      "issue": "共享未来20ms时间戳浮点边界不等价",
+      "status": "fixed and reproduced as exact rejection",
+      "before_evidence": "review/pre_fix_reconstructed.log",
+      "after_evidence": "review/intermediate_review.log",
+      "final_regression": "stage6_shared/safety_regression.log"
+    },
+    {
+      "issue": "球面块世界坐标均值消去漏撤销",
+      "status": "fixed; v2 data selected",
+      "before_evidence": "review/spherical_roundoff.log",
+      "after_evidence": "stage4_memory/roundoff_fixed.log",
+      "final_regression": "stage4_memory/measurements_v2_roundoff/summary.json"
+    },
+    {
+      "issue": "双级操作滤波最终输出超过.018rad角滞后界",
+      "status": "fixed; v2 data selected",
+      "before_evidence": "review/operator_lag.log",
+      "after_evidence": "stage5_operator/lag_bound_fixed.log",
+      "final_regression": "stage5_operator/measurements_v2_lag_bound/summary.json"
+    }
+  ],
+  "input_summary_sha256": {
+    "stage1_uncertainty/summary.json": "e09c6623f197bb76d46662a350e28c6890811119ee3ee24e30a333bc820c3539",
+    "stage2_dynamic/summary.json": "7d0542ba382b15c9e60ad88e8d8279ce9cc412f6486251ce417c56d1c6406330",
+    "stage3_incremental/comparison.json": "cb049286a7fd2463070ba0beb2959ab6ab21c543db46c18697509a0801a2ac61",
+    "stage4_memory/measurements_v2_roundoff/summary.json": "5c248e3d803c6dcd3cce80df33297c2748a879c1916333e88a74185ff26e93ae",
+    "stage5_operator/measurements_v2_lag_bound/summary.json": "f7181dab39a88c7ef8fd68b9295bf907069e6fe24a02f612bc6742d89e94620b",
+    "stage6_shared/summary.json": "55899d298e3a5b6218c6968ae190950b53d44723d00966ca3ced9556af28a113"
+  }
+}

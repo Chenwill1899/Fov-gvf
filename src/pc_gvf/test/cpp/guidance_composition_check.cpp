@@ -1,6 +1,7 @@
 #include "pc_gvf/depth_angular_core.hpp"
 
 #include "fixture_reader.hpp"
+#include <Eigen/Geometry>
 
 #include <cmath>
 #include <cstdlib>
@@ -220,6 +221,128 @@ int main()
     for (const std::string& name : cases) {
         checkFixture(directory, name);
     }
+    // A stale detour goal must yield to the continuous reference in a clear
+    // angular segment; a newly observed wall must still block direct capture.
+    Camera camera(64,48,90,68,10);SimConfig recapture;recapture.recapture_reference=true;
+    recapture.body_radius=.58;recapture.safety_margin=0;recapture.reference_speed=2.;
+    recapture.planning_horizon=3.;recapture.control_dt=.02;
+    std::vector<double> clear_depth(64*48,10.);
+    Eigen::Vector2d previous(camera.cx()+5,camera.cy()),held(camera.cx()+8,camera.cy());
+    auto direct=computeGuidance(clear_depth,camera,recapture,Eigen::Vector3d::Zero(),
+        Eigen::Vector3d::Zero(),Eigen::Vector3d(0,0,8),previous,&held,Eigen::Matrix3d::Identity(),
+        nullptr,nullptr,nullptr,nullptr,1,true,true);
+    require((direct.returned_goal_pixel-Eigen::Vector2d(camera.cx(),camera.cy())).norm()<1e-12,
+        "clear continuous intent retained obsolete detour goal");
+    for(int y=0;y<48;++y)for(int x=29;x<35;++x)clear_depth[y*64+x]=3.;
+    auto blocked=computeGuidance(clear_depth,camera,recapture,Eigen::Vector3d::Zero(),
+        Eigen::Vector3d::Zero(),Eigen::Vector3d(0,0,8),previous,&held,Eigen::Matrix3d::Identity());
+    require((blocked.returned_goal_pixel-Eigen::Vector2d(camera.cx(),camera.cy())).norm()>1.,
+        "reference recapture crossed observed wall");
+    int checked_goals=0;
+    auto certify_right=[&](const Eigen::Vector2d& goal){++checked_goals;return goal.x()>camera.cx()+3.;};
+    std::fill(clear_depth.begin(),clear_depth.end(),10.);
+    auto constrained=computeGuidance(clear_depth,camera,recapture,Eigen::Vector3d::Zero(),
+        Eigen::Vector3d::Zero(),Eigen::Vector3d(0,0,8),previous,&held,Eigen::Matrix3d::Identity(),
+        nullptr,nullptr,nullptr,nullptr,1,true,true,nullptr,nullptr,true,certify_right);
+    require(checked_goals>0&&checked_goals<=12,"goal certificate exceeded bounded query budget");
+    require(!constrained.solution.field_valid||constrained.returned_goal_pixel.x()>camera.cx()+3.,
+        "direction proposal ignored failed goal certificate");
+    auto no_goal=computeGuidance(clear_depth,camera,recapture,Eigen::Vector3d::Zero(),
+        Eigen::Vector3d::Zero(),Eigen::Vector3d(0,0,8),previous,&held,Eigen::Matrix3d::Identity(),
+        nullptr,nullptr,nullptr,nullptr,1,true,true,nullptr,nullptr,true,[](const Eigen::Vector2d&){return false;});
+    require(!no_goal.solution.field_valid,"all rejected goals still produced a valid candidate field");
+    // A finite waypoint ends the route: a wall beyond the destination must
+    // not turn the vehicle away from an already clear arrival corridor.
+    std::fill(clear_depth.begin(),clear_depth.end(),5.);recapture.finite_goal=true;
+    auto nearby_goal=computeGuidance(clear_depth,camera,recapture,Eigen::Vector3d::Zero(),
+        Eigen::Vector3d::Zero(),Eigen::Vector3d(0,0,2),previous,&held,Eigen::Matrix3d::Identity());
+    require(nearby_goal.solution.field_valid&&
+        (nearby_goal.returned_goal_pixel-Eigen::Vector2d(camera.cx(),camera.cy())).norm()<1e-12,
+        "obstacle beyond finite goal caused needless avoidance");
+    std::fill(clear_depth.begin(),clear_depth.end(),1.);
+    auto before_goal=computeGuidance(clear_depth,camera,recapture,Eigen::Vector3d::Zero(),
+        Eigen::Vector3d::Zero(),Eigen::Vector3d(0,0,2),previous,&held,Eigen::Matrix3d::Identity());
+    require(!before_goal.solution.field_valid,"finite goal ignored a wall before arrival");
+    std::fill(clear_depth.begin(),clear_depth.end(),10.);
+    auto target_only=computeGuidance(clear_depth,camera,recapture,Eigen::Vector3d::Zero(),
+        Eigen::Vector3d::Zero(),Eigen::Vector3d(0,0,2),previous,&held,Eigen::Matrix3d::Identity(),
+        nullptr,nullptr,nullptr,nullptr,1,true,true,nullptr,nullptr,true,{},true);
+    require(target_only.goal_valid&&!target_only.solution.field_valid,"goal-only mode fabricated a harmonic field");
+    require((target_only.command_world-Eigen::Vector3d(0,0,2)).norm()<1e-10,"goal-only proposal changed continuous target direction");
+    // Rectangular image coordinates must not penalize a physically smaller
+    // vertical turn more than a larger horizontal turn.
+    Camera metric_camera(81,41,120,45,10);
+    pc_gvf::depth_angular::BinaryMask metric_mask(81*41,0);
+    for(int y=16;y<=24;++y)for(int x=36;x<=44;++x)metric_mask[y*81+x]=1;
+    SimConfig metric_cfg;metric_cfg.clearance_reward=0.;metric_cfg.hysteresis_weight=0.;metric_cfg.deterministic_left_bias=0.;
+    const Eigen::Vector2d center(40,20);
+    auto pixel_goal=pc_gvf::depth_angular::chooseSafeGoal(center,center,metric_mask,81,41,nullptr,metric_cfg);
+    auto angular_goal=pc_gvf::depth_angular::chooseSafeGoal(center,center,metric_mask,81,41,nullptr,metric_cfg,&metric_camera);
+    require(pixel_goal.valid&&angular_goal.valid,"angle-metric fixture has no free component");
+    require(std::abs(angular_goal.goal.x()-center.x())<1e-12&&std::abs(pixel_goal.goal.y()-center.y())<1e-12,
+        "goal choice used image aspect ratio instead of real ray angle");
+    // Once a direction has the requested additional clearance, an ever
+    // wider opening must not keep pulling the target farther from q.
+    metric_cfg.clearance_reward=1.;
+    auto unbounded=pc_gvf::depth_angular::chooseSafeGoal(center,center,metric_mask,81,41,nullptr,metric_cfg,&metric_camera);
+    metric_cfg.goal_clearance_cap=2.;
+    auto capped=pc_gvf::depth_angular::chooseSafeGoal(center,center,metric_mask,81,41,nullptr,metric_cfg,&metric_camera);
+    require((capped.goal-center).norm()<(unbounded.goal-center).norm(),"clearance reward still attracts unbounded detours");
+    const int cu=static_cast<int>(capped.goal.x()),cv=static_cast<int>(capped.goal.y());
+    require(!metric_mask[cv*81+cu],"clearance cap selected an occupied direction");
+    // A plane at 3 m from the body is 2.78 m from a camera mounted
+    // 22 cm forward. Check physical body clearance under arbitrary rigid
+    // transforms and 10 cm motion since acquisition, including native hits.
+    Camera origin_camera(65,49,90,68,10);
+    SimConfig origin_cfg;origin_cfg.body_radius=.4;origin_cfg.safety_margin=.1;
+    origin_cfg.depth_point_stride=1;
+    std::vector<double> plane_depth(65*49,2.78);
+    const Eigen::Matrix3d origin_rotation=Eigen::AngleAxisd(.7,Eigen::Vector3d(1,2,3).normalized()).toRotationMatrix();
+    const Eigen::Vector3d captured_body(3,1,2);
+    const Eigen::Vector3d sensor_origin=captured_body+origin_rotation*Eigen::Vector3d(0,0,.22);
+    const auto native_plane=pc_gvf::depth_angular::backprojectObstaclePoints(plane_depth,origin_camera,1);
+    for(double motion:{0.,.1})for(bool native:{false,true}) {
+        const Eigen::Vector3d body=captured_body+origin_rotation*Eigen::Vector3d(0,0,motion);
+        const Eigen::Vector3d target=body+origin_rotation*Eigen::Vector3d(0,0,8);
+        auto centered=computeGuidance(plane_depth,origin_camera,origin_cfg,body,Eigen::Vector3d::Zero(),target,
+            Eigen::Vector2d(32,24),nullptr,origin_rotation,nullptr,nullptr,nullptr,nullptr,1,true,false,
+            nullptr,native?&native_plane:nullptr,true,{},true,&sensor_origin);
+        require(std::abs(centered.solution.free_distance[24*65+32]-(2.5-motion))<1e-10,
+            "camera/body origin or acquisition-motion compensation changed physical clearance");
+    }
+    pc_gvf::depth_angular::BinaryMask strip(81*41,0);
+    for(int y=0;y<41;++y)for(int x=38;x<=42;++x)strip[y*81+x]=1;
+    for(int x=0;x<81;++x)strip[x]=strip[40*81+x]=1;
+    for(int y=0;y<41;++y)strip[y*81]=strip[y*81+80]=1;
+    SimConfig continuous;continuous.clearance_reward=.018;continuous.hysteresis_weight=0.;
+    continuous.deterministic_left_bias=0.;continuous.subpixel_goal=true;
+    auto fractional=pc_gvf::depth_angular::chooseSafeGoal(Eigen::Vector2d(40,20.2),Eigen::Vector2d(20,20),strip,81,41,nullptr,continuous);
+    auto fractional_next=pc_gvf::depth_angular::chooseSafeGoal(Eigen::Vector2d(40,20.3),Eigen::Vector2d(20,20),strip,81,41,nullptr,continuous);
+    require(fractional.valid&&fractional_next.valid&&std::abs(fractional.goal.y()-20.2)<1e-8&&
+        std::abs(fractional_next.goal.y()-20.3)<1e-8,"candidate quantized fractional intent into integer goal steps");
+    recapture.subpixel_goal=true;recapture.recapture_reference=false;
+    Eigen::Vector2d fractional_held(40.2,25.3);
+    auto retained_fraction=computeGuidance(clear_depth,camera,recapture,Eigen::Vector3d::Zero(),
+        Eigen::Vector3d::Zero(),Eigen::Vector3d(0,0,2),previous,&fractional_held,Eigen::Matrix3d::Identity(),
+        nullptr,nullptr,nullptr,nullptr,1,true,true,nullptr,nullptr,true,{},true);
+    require(retained_fraction.goal_valid&&(retained_fraction.returned_goal_pixel-fractional_held).norm()<1e-12,
+        "held target discarded continuous subpixel direction");
+    SimConfig projection=recapture;projection.finite_goal=false;projection.recapture_reference=true;
+    std::fill(clear_depth.begin(),clear_depth.end(),10.);
+    for(int y=0;y<48;++y)for(int x=29;x<35;++x)clear_depth[y*64+x]=3.;
+    auto projected_goal=[&](double margin) {
+        projection.goal_projection_clearance=margin;
+        return computeGuidance(clear_depth,camera,projection,Eigen::Vector3d::Zero(),Eigen::Vector3d::Zero(),
+            Eigen::Vector3d(0,0,8),previous,nullptr,Eigen::Matrix3d::Identity(),nullptr,nullptr,nullptr,nullptr,
+            1,true,false,nullptr,nullptr,true,[](const Eigen::Vector2d&){return true;},true);
+    };
+    const auto wide_goal=projected_goal(0),closer_goal=projected_goal(2);
+    const Eigen::Vector2d q_pixel(camera.cx(),camera.cy());
+    require(wide_goal.goal_valid&&closer_goal.goal_valid&&
+        (closer_goal.returned_goal_pixel-q_pixel).norm()<(wide_goal.returned_goal_pixel-q_pixel).norm(),
+        "safe detour projection did not recover operator progress");
+    require((closer_goal.returned_goal_pixel-q_pixel).dot(wide_goal.returned_goal_pixel-q_pixel)>0,
+        "detour projection switched the selected obstacle side");
     std::cout << "guidance_composition_check: passed " << cases.size()
               << " complete Python fixtures\n";
     return 0;

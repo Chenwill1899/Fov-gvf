@@ -1,0 +1,598 @@
+[PERF] run=stall_fix_manual_off log=/home/starry/isaac-data/EGO1P2/performance/stall_fix_20261006/PERFORMANCE.md
+[INPUT] mode=trace scene_mode=cloud
+[INFO] [launch]: All log files can be found below /tmp/fov_gvf_ego1p2_isaac_ros_log/2026-10-06-21-20-26-923800-starry-System-Product-Name-95787
+[INFO] [launch]: Default logging verbosity is set to INFO
+[INFO] [depth_angular_controller-1]: process started with pid [95789]
+[INFO] [position_cmd_to_twist-2]: process started with pid [95791]
+[depth_angular_controller-1] [INFO] [1791292826.956409938] [depth_angular_controller]: PROCESSING_RATES control=60.0 Hz depth_limit=10.0 Hz (0=unlimited)
+[depth_angular_controller-1] [INFO] [1791292826.958597289] [depth_angular_controller]: C++ controller commands publish on /position_cmd; horizontal views=4
+[ROS CHECK] ROS_DOMAIN_ID=42 /position_cmd publishers=1
+Type: pc_gvf_msgs/msg/PositionCommand
+Publisher count: 1
+Subscription count: 1
+/depth_angular_controller
+/position_cmd_to_twist
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+E0000 00:00:1791292827.911170   95830 descriptor_database.cc:633] File already exists in database: grpc/health/v1/health.proto
+W0000 00:00:1791292827.911192   95830 message.cc:301] Protobuf GeneratedMessageFactory: File is already registered: grpc/health/v1/health.proto
+2026-10-06T13:20:27Z [Info] [carb] Logging to file: /home/starry/isaac-data/isaacsim/kit/logs/Kit/Isaac-Sim Python/6.0/kit_20261006_212027.log
+[0.044s] [ext: omni.assets.plugins-0.0.0] startup
+[0.045s] [ext: omni.blobkey-1.1.2] startup
+[0.045s] [ext: omni.kit.async_engine-0.0.3] startup
+[0.319s] [ext: omni.client.lib-1.1.1] startup
+[0.327s] [ext: omni.client-1.3.0] startup
+[0.329s] [ext: omni.protobuf.lib-1.0.0] startup
+[0.330s] [ext: omni.grpc.lib-1.0.0] startup
+[0.333s] [ext: omni.metrics.core-0.0.3] startup
+[0.333s] [ext: omni.datastore-0.0.0] startup
+[0.334s] [ext: omni.gpu_foundation.shadercache.vulkan-1.0.0] startup
+[0.336s] [ext: omni.hsscclient-1.1.4] startup
+[0.336s] [ext: omni.stats-1.0.1] startup
+[0.336s] [ext: omni.ujitso.default-1.0.0] startup
+[0.339s] [ext: omni.gpu_foundation-0.0.0] startup
+[0.460s] [ext: carb.windowing.plugins-1.0.1] startup
+[0.460s] [ext: omni.kit.renderer.init-1.0.1] startup
+2026-10-06T13:20:28Z [655ms] [Warning] [omni.rtx] Skipping unsupported non-NVIDIA GPU: AMD Unknown (RADV RAPHAEL_MENDOCINO)
+2026-10-06T13:20:28Z [655ms] [Warning] [omni.rtx] Skipping unsupported non-NVIDIA GPU: AMD Unknown (RADV RAPHAEL_MENDOCINO)
+
+|---------------------------------------------------------------------------------------------|
+| Driver Version: 580.178.04    | Graphics API: Vulkan
+|=============================================================================================|
+| GPU | Name                             | Active | LDA | GPU Memory | Vendor-ID | LUID       |
+|     |                                  |        |     |            | Device-ID | UUID       |
+|     |                                  |        |     |            | Bus-ID    |            |
+|---------------------------------------------------------------------------------------------|
+| 0   | NVIDIA GeForce RTX 5070          | Yes: 0 |     | 12227   MB | 10de      | 0          |
+|     |                                  |        |     |            | 2f04      | 348d89fe.. |
+|     |                                  |        |     |            | 1         |            |
+|---------------------------------------------------------------------------------------------|
+| 1   | AMD Unknown (RADV RAPHAEL_MEND.. |        |     | 10755   MB | 1002      | 0          |
+|     |                                  |        |     |            | 13c0      | 00000000.. |
+|     |                                  |        |     |            | c         |            |
+|=============================================================================================|
+| OS: 22.04.5 LTS (Jammy Jellyfish) ubuntu, Version: 22.04.5, Kernel: 6.8.0-138-generic
+| XServer Vendor: The X.Org Foundation, XServer Version: 12101004 (1.21.1.4)
+| Processor: AMD Ryzen 5 9600X 6-Core Processor
+| Cores: 6 | Logical Cores: 12
+|---------------------------------------------------------------------------------------------|
+| Total Memory (MB): 31241 | Free Memory: 23049
+| Total Page/Swap (MB): 15624 | Free Page/Swap: 15624
+|---------------------------------------------------------------------------------------------|
+2026-10-06T13:20:28Z [860ms] [Warning] [omni.rtx] CPU performance profile is set to powersave. This profile sets the CPU to the lowest frequency reducing performance.
+2026-10-06T13:20:28Z [868ms] [Warning] [omni.rtx] IOMMU is enabled.
+[0.968s] [ext: omni.kit.pipapi-0.0.0] startup
+[0.969s] [ext: omni.kit.pip_archive-0.0.0] startup
+[0.970s] [ext: isaacsim.pip.newton-0.6.1] startup
+[0.970s] [ext: omni.pip.compute-1.9.2] startup
+[0.970s] [ext: omni.isaac.core_archive-5.3.1] startup
+[0.970s] [ext: omni.kit.telemetry-0.5.2] startup
+[0.985s] [ext: omni.kit.loop-isaac-1.6.0] startup
+[0.987s] [ext: omni.kit.test-2.0.7] startup
+[1.037s] [ext: omni.materialx.libs-1.0.9] startup
+[1.043s] [ext: omni.gpucompute.plugins-0.0.0] startup
+[1.043s] [ext: omni.usd.config-1.0.7] startup
+[1.046s] [ext: omni.usd.libs-1.0.3] startup
+[1.102s] [ext: omni.iray.libs-0.0.1] startup
+[1.106s] [ext: omni.mdl-57.0.3] startup
+[1.169s] [ext: omni.mdl.neuraylib-0.2.20] startup
+[1.171s] [ext: omni.kit.usd.mdl-1.1.9] startup
+[1.257s] [ext: omni.appwindow-1.2.2] startup
+[1.258s] [ext: omni.kit.renderer.core-1.2.2] startup
+2026-10-06T13:20:34Z [6,504ms] [Warning] [carb.windowing-glfw.gamepad] Joystick with unknown remapping detected (will be ignored):  BEITONG BEITONG A2P3A BFM DONGLE [03000000bc2000001c51000011010000]
+[6.535s] [ext: omni.kit.renderer.capture-2.0.1] startup
+[6.536s] [ext: omni.kit.renderer.imgui-2.0.6] startup
+[6.572s] [ext: omni.ui-3.2.0] startup
+[6.580s] [ext: omni.kit.mainwindow-1.0.3] startup
+[6.580s] [ext: carb.audio-0.1.0] startup
+[6.583s] [ext: omni.uiaudio-1.0.0] startup
+[6.583s] [ext: omni.kit.uiapp-0.0.0] startup
+[6.583s] [ext: omni.usd.schema.metrics.assembler-110.1.0] startup
+[6.586s] [ext: omni.usd.schema.audio-0.0.1] startup
+[6.588s] [ext: omni.usd_resolver-1.0.0] startup
+[6.591s] [ext: omni.usd.core-1.8.3] startup
+[6.593s] [ext: omni.metropolis.schema-0.0.3] startup
+[6.594s] [ext: isaacsim.anim.robot.schema-0.1.1] startup
+[6.594s] [ext: omni.usd.schema.anim-0.0.1] startup
+[6.612s] [ext: omni.usd.schema.geospatial-0.0.1] startup
+[6.614s] [ext: omni.usd.schema.omnigraph-1.0.1] startup
+[6.620s] [ext: omni.usd.schema.semantics-0.0.0] startup
+[6.622s] [ext: omni.activity.core-1.0.3] startup
+[6.623s] [ext: omni.cubric-0.1.0] startup
+[6.624s] [ext: omni.graph.exec-0.9.6] startup
+[6.624s] [ext: omni.hydra.scene_delegate-0.3.5] startup
+[6.627s] [ext: usdrt.scenegraph-7.6.3] startup
+[6.648s] [ext: omni.hydra.usdrt_delegate-7.5.2] startup
+[6.653s] [ext: omni.inspect-1.0.2] startup
+[6.654s] [ext: omni.kit.actions.core-1.0.0] startup
+[6.655s] [ext: omni.kit.audiodeviceenum-1.0.2] startup
+[6.656s] [ext: omni.kit.commands-1.5.0] startup
+[6.659s] [ext: omni.kit.exec.core-0.13.5] startup
+[6.660s] [ext: omni.kit.usd_undo-0.1.8] startup
+[6.661s] [ext: omni.kit.window.popup_dialog-2.0.25] startup
+[6.664s] [ext: omni.kit.widget.nucleus_connector-2.3.1] startup
+[6.666s] [ext: omni.timeline-1.1.0] startup
+[6.668s] [ext: omni.usd-1.16.0] startup
+[6.701s] [ext: omni.graph.core-3.1.2] startup
+[6.704s] [ext: omni.kit.notification_manager-1.0.11] startup
+[6.705s] [ext: isaacsim.core.deprecation_manager-0.4.2] startup
+[6.706s] [ext: isaacsim.replicator.agent.schema-0.1.1] startup
+[6.707s] [ext: isaacsim.robot.schema-6.3.7] startup
+[6.711s] [ext: isaacsim.robot_motion.schema-0.2.1] startup
+[6.711s] [ext: omni.anim.behavior.schema-110.1.0] startup
+[6.715s] [ext: omni.anim.graph.schema-110.1.1] startup
+[6.720s] [ext: omni.anim.navigation.schema-110.1.0] startup
+[6.722s] [ext: omni.behavior.tree.schema-110.1.0] startup
+[6.723s] [ext: omni.isaac.ml_archive-3.3.0] startup
+[6.723s] [ext: omni.kit.asset_converter-6.0.1] startup
+[6.732s] [ext: omni.pip.cloud-1.5.4] startup
+[6.734s] [ext: omni.usd.schema.flow-110.0.0] startup
+[6.735s] [ext: omni.usd.schema.mujoco-1.1.1] startup
+[6.735s] [ext: omni.usd.schema.newton-1.2.1] startup
+[6.736s] [ext: omni.usd.schema.omni_lens_distortion-1.0.0] startup
+[6.736s] [ext: omni.usd.schema.omni_projectors-1.0.0] startup
+[6.737s] [ext: omni.usd.schema.omni_sensors-0.0.0] startup
+[6.743s] [ext: omni.usd.schema.omniscripting-1.0.1] startup
+[6.746s] [ext: omni.usd.schema.physical_lighting-0.1.0] startup
+[6.748s] [ext: omni.usd.schema.physx-110.1.13] startup
+[6.772s] [ext: omni.usd.schema.render_settings.rtx-1.0.2] startup
+[6.775s] [ext: omni.usd.schema.usd_particle_field-1.0.0] startup
+[6.775s] [ext: isaacsim.core.version-2.1.1] startup
+[6.776s] [ext: omni.kit.menu.core-1.2.0] startup
+[6.776s] [ext: omni.kit.menu.utils-2.2.4] startup
+[6.782s] [ext: isaacsim.app.about-2.3.1] startup
+[6.785s] [ext: isaacsim.asset.transformer-1.2.5] startup
+[6.788s] [ext: omni.scene.optimizer.core-110.1.0] startup
+[6.818s] [ext: isaacsim.asset.importer.utils-1.8.1] startup
+[6.820s] [ext: omni.convexdecomposition-110.1.13] startup
+[6.821s] [ext: omni.physics-110.1.13] startup
+[6.823s] [ext: omni.physx.gpu-110.1.13] startup
+[6.824s] [ext: omni.physx.foundation-110.1.13] startup
+[6.825s] [ext: omni.usdphysics-110.1.13] startup
+[6.826s] [ext: omni.physx.cooking-110.1.13] startup
+[6.827s] [ext: omni.physx-110.1.13] startup
+[6.834s] [ext: omni.physics.physx-110.1.13] startup
+[6.835s] [ext: isaacsim.asset.exporter.urdf-2.0.5] startup
+[6.842s] [ext: omni.kit.clipboard-1.1.1] startup
+[6.842s] [ext: omni.kit.usd.layers-2.6.1] startup
+[6.847s] [ext: omni.kit.widget.context_menu-1.4.0] startup
+[6.848s] [ext: omni.kit.context_menu-1.9.0] startup
+[6.849s] [ext: omni.kit.helper.file_utils-0.1.10] startup
+[6.850s] [ext: omni.kit.widget.nucleus_info-2.0.2] startup
+[6.851s] [ext: omni.kit.search_core-1.0.8] startup
+[6.851s] [ext: omni.kit.widget.path_field-2.0.13] startup
+[6.852s] [ext: omni.kit.widget.browser_bar-2.0.10] startup
+[6.852s] [ext: omni.kit.widget.filebrowser-2.13.4] startup
+[6.856s] [ext: omni.kit.widget.options_menu-1.1.6] startup
+[6.858s] [ext: omni.kit.widget.options_button-1.0.3] startup
+[6.858s] [ext: omni.kit.widget.search_delegate-1.0.9] startup
+[6.859s] [ext: omni.ui.scene-2.0.3] startup
+[6.862s] [ext: omni.kit.window.filepicker-2.15.5] startup
+[6.872s] [ext: omni.kit.window.file_importer-1.1.21] startup
+[6.874s] [ext: omni.kit.material.library-3.1.2] startup
+[6.878s] [ext: isaacsim.asset.transformer.rules-1.7.10] startup
+[6.886s] [ext: omni.usdex.libs-2.2.2] startup
+[6.892s] [ext: isaacsim.asset.importer.mjcf-3.10.1] startup
+[6.894s] [ext: isaacsim.asset.importer.urdf-3.11.2] startup
+[6.897s] [ext: omni.kit.primitive.mesh-1.1.0] startup
+[6.899s] [ext: omni.kit.stage_template.core-1.1.22] startup
+[6.899s] [ext: omni.kit.stage_templates-2.0.2] startup
+[6.900s] [ext: omni.usd.metrics.assembler-110.1.2] startup
+[6.902s] [ext: omni.warp.core-1.13.0] startup
+[7.088s] [ext: isaacsim.core.experimental.utils-0.17.2] startup
+[7.088s] [ext: omni.physics.stageupdate-110.1.13] startup
+[7.090s] [ext: omni.physics.tensors-110.1.13] startup
+[7.093s] [ext: omni.physx.tensors-110.1.13] startup
+[7.096s] [ext: isaacsim.core.simulation_manager-1.15.6] startup
+[7.106s] [ext: isaacsim.storage.native-1.9.3] startup
+[7.107s] [ext: omni.usd.metrics.assembler.physics-110.1.13] startup
+[7.108s] [ext: isaacsim.core.utils-4.1.7] startup
+[7.109s] [ext: isaacsim.core.prims-0.11.7] startup
+[7.989s] [ext: isaacsim.core.api-5.2.13] startup
+[7.994s] [ext: isaacsim.core.cloner-1.7.3] startup
+[7.995s] [ext: isaacsim.test.docstring-1.3.2] startup
+[7.997s] [ext: isaacsim.core.experimental.prims-1.8.9] startup
+[8.015s] [ext: isaacsim.core.experimental.primdata-0.3.2] startup
+[8.017s] [ext: omni.graph.tools-1.81.0] startup
+[8.036s] [ext: omni.graph-1.142.5] startup
+[8.070s] [ext: isaacsim.core.experimental.actuators-0.1.2] startup
+[8.082s] [ext: isaacsim.core.experimental.materials-0.7.1] startup
+[8.085s] [ext: isaacsim.core.experimental.objects-0.8.1] startup
+[8.138s] [ext: omni.hydra.engine.stats-1.0.5] startup
+[8.140s] [ext: omni.hydra.rtx.shadercache.vulkan-1.0.0] startup
+[8.141s] [ext: omni.index.libs-387500.4413.0] startup
+[8.141s] [ext: omni.index-1.0.1] startup
+[8.141s] [ext: omni.ujitso.client-0.0.0] startup
+[8.142s] [ext: omni.usd.schema.playback-1.0.0] startup
+[8.144s] [ext: omni.volume-0.5.2] startup
+[8.148s] [ext: omni.hydra.rtx-1.0.4] startup
+2026-10-06T13:20:35Z [8,138ms] [Warning] [omni.log] Source: omni.hydra was already registered.
+[8.169s] [ext: omni.kit.hydra_texture-1.6.0] startup
+[8.171s] [ext: omni.kit.raycast.query-1.2.0] startup
+[8.174s] [ext: omni.kit.viewport.legacy_gizmos-1.0.24] startup
+[8.176s] [ext: omni.kit.viewport.registry-104.0.6] startup
+[8.177s] [ext: omni.kit.viewport.scene_camera_model-1.0.7] startup
+[8.179s] [ext: omni.kit.widget.viewport-109.2.0] startup
+[8.183s] [ext: omni.kit.window.drop_support-1.0.8] startup
+[8.183s] [ext: omni.kit.viewport.window-109.0.2] startup
+[8.197s] [ext: omni.kit.viewport.utility-2.0.1] startup
+[8.198s] [ext: isaacsim.core.rendering_manager-0.4.3] startup
+[8.217s] [ext: omni.graph.action_core-1.1.9] startup
+[8.219s] [ext: omni.graph.action_nodes_core-2.11.0] startup
+[8.221s] [ext: omni.graph.action_nodes-2.11.0] startup
+[8.236s] [ext: omni.graph.action-2.10.2] startup
+[8.237s] [ext: omni.graph.image.core-0.6.1] startup
+[8.238s] [ext: omni.graph.image.nodes-1.3.1] startup
+[8.238s] [ext: omni.graph.nodes_core-2.11.0] startup
+[8.242s] [ext: omni.graph.nodes-2.12.0] startup
+[8.246s] [ext: omni.kit.hotkeys.core-1.3.12] startup
+[8.247s] [ext: omni.kit.property.adapter.core-1.1.1] startup
+[8.249s] [ext: omni.kit.property.adapter.usd-1.0.5] startup
+[8.250s] [ext: omni.kit.widget.filter-1.1.5] startup
+[8.251s] [ext: omni.kit.widget.highlight_label-1.0.3] startup
+[8.252s] [ext: omni.kit.widget.searchfield-1.1.8] startup
+[8.253s] [ext: omni.kit.window.file_exporter-1.0.36] startup
+[8.254s] [ext: omni.kit.widget.stage-4.4.0] startup
+[8.261s] [ext: omni.kit.window.content_browser_registry-0.0.6] startup
+[8.261s] [ext: omni.kit.window.file-2.0.10] startup
+[8.264s] [ext: omni.kit.window.content_browser-3.1.8] startup
+[8.272s] [ext: omni.kit.window.property-1.15.1] startup
+[8.280s] [ext: omni.kit.property.usd-4.9.4] startup
+[8.289s] [ext: omni.graph.scriptnode-2.10.2] startup
+[8.297s] [ext: omni.kit.widget.searchable_combobox-1.0.7] startup
+[8.298s] [ext: omni.kit.widget.settings-2.0.0] startup
+[8.300s] [ext: omni.kit.window.preferences-1.8.3] startup
+[8.307s] [ext: omni.kit.viewport.menubar.core-107.2.2] startup
+[8.322s] [ext: omni.syntheticdata-0.6.15] startup
+[8.354s] [ext: omni.replicator.nv-1.1.1] startup
+[8.359s] [ext: omni.videoencoding-0.2.1] startup
+[8.361s] [ext: omni.replicator.core-1.13.27] startup
+2026-10-06T13:20:35Z [8,348ms] [Warning] [pxr.Semantics] pxr.Semantics is deprecated - please use Semantics instead
+2026-10-06T13:20:36Z [8,420ms] [Warning] [omni.replicator.core.scripts.extension] No material configuration file, adding configuration to material settings directly.
+[8.586s] [ext: isaacsim.core.nodes-5.10.5] startup
+[8.614s] [ext: isaacsim.core.throttling-2.3.5] startup
+[8.615s] [ext: omni.kit.manipulator.viewport-107.0.1] startup
+[8.616s] [ext: omni.graph.visualization.nodes-2.1.4] startup
+[8.628s] [ext: omni.kit.window.extensions-1.5.10] startup
+[8.634s] [ext: isaacsim.gui.components-1.8.5] startup
+[8.638s] [ext: isaacsim.robot.surface_gripper-3.6.2] startup
+[8.647s] [ext: isaacsim.robot.manipulators-3.4.4] startup
+[8.657s] [ext: isaacsim.robot_motion.lula-4.1.3] startup
+[8.662s] [ext: isaacsim.robot_motion.motion_generation-8.2.9] startup
+[8.667s] [ext: isaacsim.cortex.framework-1.0.18] startup
+[8.668s] [ext: isaacsim.cortex.behaviors-2.0.17] startup
+[8.669s] [ext: isaacsim.examples.base-1.3.2] startup
+[8.671s] [ext: omni.kit.widget.zoombar-1.0.7] startup
+[8.671s] [ext: omni.kit.browser.core-2.3.18] startup
+[8.674s] [ext: omni.kit.browser.folder.core-2.0.2] startup
+[8.678s] [ext: omni.kit.widget.stage_icons-1.0.8] startup
+[8.679s] [ext: omni.kit.window.stage-2.6.1] startup
+[8.681s] [ext: omni.kit.menu.stage-1.2.7] startup
+[8.682s] [ext: omni.kit.usd.collect-3.0.6] startup
+[8.685s] [ext: omni.kit.widget.prompt-1.0.7] startup
+[8.686s] [ext: omni.kit.tool.collect-2.2.19] startup
+[8.688s] [ext: isaacsim.examples.browser-0.3.2] startup
+[8.690s] [ext: omni.kit.search.files-1.0.4] startup
+[8.691s] [ext: omni.kit.widget.calendar-1.0.9] startup
+[8.692s] [ext: omni.kit.widget.extended_searchfield-1.0.31] startup
+[8.701s] [ext: omni.simready.content.browser-0.3.7] startup
+[8.791s] [ext: isaacsim.gui.content_browser-0.4.3] startup
+[8.793s] [ext: omni.kit.selection-0.1.6] startup
+[8.794s] [ext: isaacsim.gui.menu-2.10.5] startup
+[8.801s] [ext: isaacsim.gui.property-1.6.4] startup
+[8.807s] [ext: omni.kit.viewport.actions-110.0.0] startup
+[8.811s] [ext: omni.kit.viewport.menubar.display-107.1.3] startup
+[8.813s] [ext: isaacsim.gui.sensors.icon-2.2.1] startup
+[8.815s] [ext: omni.behavior.scripting.core-110.1.0] startup
+[8.818s] [ext: isaacsim.replicator.behavior-1.5.4] startup
+[8.819s] [ext: isaacsim.replicator.experimental.domain_randomization-1.2.5] startup
+[8.832s] [ext: isaacsim.replicator.domain_randomization-1.2.2] startup
+[8.901s] [ext: isaacsim.replicator.writers-1.5.4] startup
+[8.927s] [ext: isaacsim.robot.experimental.wheeled_robots-0.2.11] startup
+[8.948s] [ext: isaacsim.robot.policy.examples-5.2.12] startup
+[8.966s] [ext: isaacsim.robot.wheeled_robots-5.2.4] startup
+[8.970s] [ext: isaacsim.robot.wheeled_robots.nodes-0.1.5] startup
+[8.986s] [ext: isaacsim.robot_motion.experimental.motion_generation-6.1.3] startup
+[8.996s] [ext: isaacsim.robot_motion.cumotion-1.3.1] startup
+[9.008s] [ext: omni.kit.numpy.common-0.1.3] startup
+[9.010s] [ext: isaacsim.sensors.camera-1.7.9] startup
+[9.037s] [ext: isaacsim.sensors.experimental.physics-3.0.2] startup
+[9.044s] [ext: omni.sensors.net-1.0.1] startup
+[9.046s] [ext: omni.sensors.nv.common-3.0.0] startup
+[9.055s] [ext: omni.sensors.nv.materials-2.0.0] startup
+[9.057s] [ext: omni.sensors.nv.acoustic-3.0.0] startup
+[9.059s] [ext: omni.sensors.nv.ids-2.0.1] startup
+[9.061s] [ext: omni.sensors.nv.lidar-3.0.0] startup
+[9.063s] [ext: omni.sensors.nv.radar-3.0.0] startup
+[9.066s] [ext: isaacsim.sensors.experimental.rtx-1.4.6] startup
+[9.295s] [ext: isaacsim.sensors.physics.nodes-1.5.3] startup
+[9.301s] [ext: isaacsim.util.debug_draw-3.2.3] startup
+[9.305s] [ext: isaacsim.sensors.physx-2.5.5] startup
+[9.311s] [ext: isaacsim.sensors.rtx-15.17.1] startup
+[9.320s] [ext: isaacsim.simulation_app-2.18.4] startup
+[9.320s] [ext: omni.anim.curve.core-1.6.0] startup
+[9.329s] [ext: omni.graph.ui_nodes-2.11.1] startup
+[9.352s] [ext: omni.hydra.scene_api-0.1.3] startup
+[9.355s] [ext: omni.kit.manipulator.camera-110.0.0] startup
+[9.359s] [ext: omni.kit.manipulator.selector-1.1.4] startup
+[9.360s] [ext: omni.kit.manipulator.transform-107.0.0] startup
+[9.363s] [ext: omni.kit.widget.toolbar-2.1.0] startup
+[9.368s] [ext: omni.kit.manipulator.tool.snap-1.5.14] startup
+[9.371s] [ext: omni.kit.viewport.manipulator.transform-107.0.4] startup
+[9.373s] [ext: omni.kit.manipulator.prim.core-108.0.2] startup
+[9.378s] [ext: omni.kit.manipulator.prim.usd-107.0.3] startup
+[9.379s] [ext: omni.kit.manipulator.prim-108.0.0] startup
+[9.379s] [ext: omni.kit.manipulator.selection-109.0.1] startup
+[9.380s] [ext: omni.kit.menu.create-2.0.2] startup
+[9.382s] [ext: omni.kit.property.audio-1.0.16] startup
+[9.385s] [ext: omni.kit.property.camera-1.0.14] startup
+[9.386s] [ext: omni.kit.property.geometry-2.1.2] startup
+[9.389s] [ext: omni.kit.property.light-1.0.14] startup
+2026-10-06T13:20:36Z [9,389ms] [Warning] [omni.usd] Encountered USD Warnings but USD Diagnostics are currently muted. To view USD Warnings, please set the '/persistent/app/usd/muteUsdDiagnostics' setting to false in Preferences page.
+[9.416s] [ext: omni.kit.property.material-1.14.6] startup
+[9.421s] [ext: omni.kit.property.render-1.2.2] startup
+[9.422s] [ext: omni.kit.property.transform-1.6.9] startup
+[9.426s] [ext: omni.kit.property.bundle-1.5.1] startup
+[9.427s] [ext: omni.kit.usdz_export-1.1.0] startup
+[9.429s] [ext: omni.kit.tool.asset_importer-6.0.1] startup
+[9.434s] [ext: omni.kit.ui.actions-1.0.5] startup
+[9.436s] [ext: omni.kit.viewport.menubar.camera-107.0.10] startup
+[9.440s] [ext: omni.kit.viewport.menubar.lighting-107.3.2] startup
+[9.442s] [ext: omni.kit.viewport.menubar.render-110.0.0] startup
+[9.444s] [ext: omni.kit.viewport.menubar.settings-110.0.1] startup
+[9.447s] [ext: omni.kit.window.console-1.1.9] startup
+[9.451s] [ext: omni.kit.window.status_bar-0.1.11] startup
+[9.454s] [ext: omni.kit.window.toolbar-3.0.3] startup
+[9.456s] [ext: omni.ocio-0.1.1] startup
+[9.458s] [ext: omni.physx.commands-110.1.13] startup
+[9.462s] [ext: omni.replicator.replicator_yaml-2.0.12] startup
+[9.475s] [ext: omni.rtx.window.settings-0.8.0] startup
+[9.480s] [ext: omni.rtx.settings.core-0.7.1] startup
+[9.483s] [ext: omni.usd.metrics.assembler.ui-110.1.1] startup
+[9.489s] [ext: semantics.schema.editor-2.0.2] startup
+[9.491s] [ext: semantics.schema.property-2.0.2] startup
+[9.493s] [ext: omni.kit.menu.common-2.0.2] startup
+[9.494s] [ext: isaacsim.exp.base-6.0.1] startup
+[9.494s] [ext: isaacsim.exp.base.python-6.0.1] startup
+[9.495s] Simulation App Starting
+[10.333s] Simulation App Startup Complete
+[10.338s] app ready
+Starting kit application with the following args:  ['/home/starry/isaac-data/isaacsim/exts/isaacsim.simulation_app/isaacsim/simulation_app/simulation_app.py', '/home/starry/isaac-data/isaacsim/apps/isaacsim.exp.base.python.kit', '--/app/tokens/exe-path=/home/starry/isaac-data/isaacsim/kit', '--/persistent/app/viewport/displayOptions=3094', '--/rtx/materialDb/syncLoads=True', '--/rtx/hydra/materialSyncLoads=True', '--/omni/kit/plugin/syncUsdLoads=True', '--/app/renderer/resolution/width=1280', '--/app/renderer/resolution/height=720', '--/app/window/width=1440', '--/app/window/height=900', '--/renderer/multiGpu/enabled=False', '--/app/fastShutdown=True', '--/app/installSignalHandlers=0', '--ext-folder', '/home/starry/isaac-data/isaacsim/exts', '--ext-folder', '/home/starry/isaac-data/isaacsim/apps', '--/renderer/activeGpu=0', '--/physics/cudaDevice=0', '--/plugins/carb.tasking.plugin/threadCount=12', '--/plugins/omni.tbb.globalcontrol/maxThreadCount=12', '--portable', '--no-window', '--/app/window/hideUi=1']
+Passing the following args to the base kit application:  []
+Warp 1.13.0 initialized:
+   CUDA Toolkit 12.9, Driver 13.0
+   Devices:
+     "cpu"      : "x86_64"
+     "cuda:0"   : "NVIDIA GeForce RTX 5070" (11 GiB, sm_120, mempool enabled)
+   Kernel cache:
+     /home/starry/.cache/warp/1.13.0
+[LIGHTING] sun=800.0 (1) dome=0.0 (1) ambient=0.05 constant_color=(0.6, 0.65, 0.7)
+[RENDER] mode=MinimalRendering minimal_shading_mode=2 anti_aliasing=TAA
+[DEPTH CAMERAS] count=4 resolution_each=320x240 horizontal_coverage=360deg
+[ESDF] path=/home/starry/isaac-data/EGO1P2/scenes/ego_swarm_cloud/occupancy.bin shape=(400, 300, 50) resolution=0.40m
+[depth_angular_controller-1] [INFO] [1791292840.478129808] [depth_angular_controller]: WAITING_ODOMETRY
+[NAV] t=0.0s position=(-64.00,-11.20,2.80) yaw=0.0deg command=(0.00,0.00,0.00) manual_active=0 collision_blocks=0
+[depth_angular_controller-1] [INFO] [1791292841.072150188] [depth_angular_controller]: WAITING_VERIFIED_START_POSE
+[depth_angular_controller-1] [INFO] [1791292841.107022964] [depth_angular_controller]: VERIFIED_FREE_SEED center=(-64.000,-11.200,2.800) radius=2.500 balls=1: verified fixed Cloud free ball; USD and occupancy SHA-256 matched
+[depth_angular_controller-1] [INFO] [1791292841.107133883] [depth_angular_controller]: ZERO_INTENT
+[depth_angular_controller-1] [INFO] [1791292842.009005191] [depth_angular_controller]: 3D guidance switched to view 0
+[depth_angular_controller-1] [INFO] [1791292842.009068791] [depth_angular_controller]: DEPTH_PROPOSAL conservative_grid=64x48 measured_state=1 direction_only=1
+[depth_angular_controller-1] [INFO] [1791292842.009415502] [depth_angular_controller]: DEPTH_PROPOSAL_CERTIFIED
+[depth_angular_controller-1] [INFO] [1791292842.009422235] [depth_angular_controller]: PAPER_BUILD reason=FULL_MOTION_CERTIFICATE required=0.0000 best=0.0000 free=0 refined=0 tubes=0 revoked_tubes=0 proofs=0
+[depth_angular_controller-1] [INFO] [1791292842.009430050] [depth_angular_controller]: PAPER_EVIDENCE retained=4 balls=1 revoked_balls=0 expired_views=0 evicted_views=0 radius=0.580 clearance=0.000 best_prefix=0.000
+[depth_angular_controller-1] [INFO] [1791292843.009679411] [depth_angular_controller]: PAPER_BUILD reason=FULL_MOTION_CERTIFICATE required=0.0000 best=0.0000 free=0 refined=0 tubes=1 revoked_tubes=0 proofs=53
+[depth_angular_controller-1] [INFO] [1791292843.009715959] [depth_angular_controller]: PAPER_EVIDENCE retained=8 balls=4 revoked_balls=0 expired_views=0 evicted_views=0 radius=0.580 clearance=0.000 best_prefix=0.000
+[10.919s] [ext: isaacsim.sensors.rtx.nodes-0.1.2] startup
+[10.927s] [ext: isaacsim.ros2.core-1.9.4] startup
+[10.941s] Attempting to load system rclpy
+[10.941s] Could not import system rclpy: No module named 'rclpy'
+[10.941s] Attempting to load internal rclpy for ROS Distro: humble
+[10.952s] rclpy loaded
+[10.956s] [ext: isaacsim.ros2.nodes-1.18.13] startup
+[10.992s] [ext: isaacsim.ros2.examples-1.2.4] startup
+[10.996s] [ext: isaacsim.ros2.ui-1.6.5] startup
+[11.225s] [ext: isaacsim.ros2.bridge-5.1.2] startup
+2026-10-06T13:20:41Z [13,510ms] [Warning] [omni.timeline.plugin] Deprecated: direct use of ITimeline callbacks is deprecated. Use ITimeline::getTimeline (Python: omni.timeline.get_timeline_interface) instead.
+[depth_angular_controller-1] [INFO] [1791292844.186007339] [depth_angular_controller]: PAPER_BUILD reason=FULL_MOTION_CERTIFICATE required=0.0000 best=0.0000 free=0 refined=0 tubes=4 revoked_tubes=0 proofs=112
+[depth_angular_controller-1] [INFO] [1791292844.186051762] [depth_angular_controller]: PAPER_EVIDENCE retained=12 balls=15 revoked_balls=0 expired_views=0 evicted_views=0 radius=0.580 clearance=0.000 best_prefix=0.000
+[depth_angular_controller-1] [INFO] [1791292845.243384381] [depth_angular_controller]: PAPER_BUILD reason=FULL_MOTION_CERTIFICATE required=0.0000 best=0.0000 free=0 refined=0 tubes=8 revoked_tubes=0 proofs=128
+[depth_angular_controller-1] [INFO] [1791292845.243424386] [depth_angular_controller]: PAPER_EVIDENCE retained=16 balls=30 revoked_balls=0 expired_views=0 evicted_views=0 radius=0.580 clearance=0.000 best_prefix=0.000
+[depth_angular_controller-1] [INFO] [1791292846.072579377] [depth_angular_controller]: [PERF CTRL] run=stall_fix_manual_off elapsed=19.11s callbacks=288 commands=287 guidance=227 command_fps(ros/wall)=60.00/57.20 guidance_wall_fps=55.62 avoid_ms(mean/p50/p95/max)=0.490/0.514/0.720/1.325 cycle_ms(mean/p95/max)=17.484/20.844/79.960 depth_to_cmd_ms(mean/p95/max)=75.110/116.667/116.667 callback_to_publish_ms(mean/p95/max)=1.590/5.978/12.791
+[depth_angular_controller-1] [INFO] [1791292846.072639430] [depth_angular_controller]: EVIDENCE_COST ingest(mean/p95/max)=1.101/5.443/12.740 record=0.013/0.019/0.050 ms
+[depth_angular_controller-1] [INFO] [1791292846.072645121] [depth_angular_controller]: EVIDENCE_PHASE per_view_mean_ms balls=0.051 tubes=0.009 history=0.187 eviction=0.000
+[position_cmd_to_twist-2] [INFO] [1791292846.224071348] [position_cmd_to_twist]: [PERF BRIDGE] run=stall_fix_manual_off elapsed=19.15s received=295 published=295 fps(ros/wall)=60.00/57.33 controller_to_bridge_ms(mean/p50/p95/max)=0.000/0.000/0.000/0.000 bridge_process_ms(mean/p95/max)=0.097/0.133/0.207
+[NAV] t=5.0s position=(-58.43,-9.53,2.66) yaw=0.0deg command=(1.92,0.50,-0.16) manual_active=1 collision_blocks=0
+[depth_angular_controller-1] [INFO] [1791292846.297347086] [depth_angular_controller]: PAPER_BUILD reason=FULL_MOTION_CERTIFICATE required=0.0000 best=0.0000 free=0 refined=0 tubes=12 revoked_tubes=0 proofs=128
+[depth_angular_controller-1] [INFO] [1791292846.297386500] [depth_angular_controller]: PAPER_EVIDENCE retained=16 balls=32 revoked_balls=0 expired_views=0 evicted_views=4 radius=0.580 clearance=0.000 best_prefix=0.000
+[depth_angular_controller-1] [INFO] [1791292847.481244650] [depth_angular_controller]: PAPER_BUILD reason=FULL_MOTION_CERTIFICATE required=0.0000 best=0.0000 free=0 refined=0 tubes=16 revoked_tubes=0 proofs=128
+[depth_angular_controller-1] [INFO] [1791292847.481285046] [depth_angular_controller]: PAPER_EVIDENCE retained=16 balls=32 revoked_balls=0 expired_views=0 evicted_views=8 radius=0.580 clearance=0.000 best_prefix=0.000
+[depth_angular_controller-1] [INFO] [1791292848.475289641] [depth_angular_controller]: PAPER_BUILD reason=FULL_MOTION_CERTIFICATE required=0.0000 best=0.0000 free=0 refined=0 tubes=20 revoked_tubes=0 proofs=128
+[depth_angular_controller-1] [INFO] [1791292848.475331921] [depth_angular_controller]: PAPER_EVIDENCE retained=16 balls=32 revoked_balls=0 expired_views=0 evicted_views=12 radius=0.580 clearance=0.000 best_prefix=0.000
+[depth_angular_controller-1] [INFO] [1791292849.670637223] [depth_angular_controller]: PAPER_BUILD reason=FULL_MOTION_CERTIFICATE required=0.0000 best=0.0000 free=0 refined=0 tubes=24 revoked_tubes=0 proofs=128
+[depth_angular_controller-1] [INFO] [1791292849.670685013] [depth_angular_controller]: PAPER_EVIDENCE retained=16 balls=32 revoked_balls=0 expired_views=0 evicted_views=16 radius=0.580 clearance=0.000 best_prefix=0.000
+[depth_angular_controller-1] [INFO] [1791292850.859492804] [depth_angular_controller]: PAPER_BUILD reason=FULL_MOTION_CERTIFICATE required=0.0000 best=0.0000 free=0 refined=0 tubes=28 revoked_tubes=0 proofs=128
+[depth_angular_controller-1] [INFO] [1791292850.859532499] [depth_angular_controller]: PAPER_EVIDENCE retained=16 balls=32 revoked_balls=0 expired_views=0 evicted_views=20 radius=0.580 clearance=0.000 best_prefix=0.000
+[depth_angular_controller-1] [INFO] [1791292851.079460933] [depth_angular_controller]: [PERF CTRL] run=stall_fix_manual_off elapsed=24.12s callbacks=555 commands=554 guidance=494 command_fps(ros/wall)=60.00/55.26 guidance_wall_fps=54.35 avoid_ms(mean/p50/p95/max)=0.489/0.484/0.672/1.924 cycle_ms(mean/p95/max)=18.096/23.134/84.583 depth_to_cmd_ms(mean/p95/max)=75.101/116.667/133.333 callback_to_publish_ms(mean/p95/max)=2.066/7.053/12.791
+[depth_angular_controller-1] [INFO] [1791292851.079543479] [depth_angular_controller]: EVIDENCE_COST ingest(mean/p95/max)=1.526/6.473/12.740 record=0.014/0.019/0.050 ms
+[depth_angular_controller-1] [INFO] [1791292851.079551093] [depth_angular_controller]: EVIDENCE_PHASE per_view_mean_ms balls=0.057 tubes=0.029 history=0.269 eviction=0.001
+[position_cmd_to_twist-2] [INFO] [1791292851.778679093] [position_cmd_to_twist]: [PERF BRIDGE] run=stall_fix_manual_off elapsed=24.71s received=595 published=595 fps(ros/wall)=60.00/55.56 controller_to_bridge_ms(mean/p50/p95/max)=0.000/0.000/0.000/0.000 bridge_process_ms(mean/p95/max)=0.095/0.121/0.211
+[NAV] t=10.0s position=(-48.62,-8.99,2.05) yaw=0.0deg command=(1.97,-0.31,-0.08) manual_active=1 collision_blocks=0
+[depth_angular_controller-1] [INFO] [1791292851.862037910] [depth_angular_controller]: PAPER_BUILD reason=FULL_MOTION_CERTIFICATE required=0.0000 best=0.0000 free=0 refined=0 tubes=33 revoked_tubes=0 proofs=128
+[depth_angular_controller-1] [INFO] [1791292851.862079729] [depth_angular_controller]: PAPER_EVIDENCE retained=16 balls=32 revoked_balls=0 expired_views=0 evicted_views=24 radius=0.580 clearance=0.000 best_prefix=0.000
+[depth_angular_controller-1] [INFO] [1791292853.066861150] [depth_angular_controller]: ZERO_INTENT
+[depth_angular_controller-1] [INFO] [1791292856.091853125] [depth_angular_controller]: [PERF CTRL] run=stall_fix_manual_off elapsed=29.13s callbacks=836 commands=835 guidance=600 command_fps(ros/wall)=60.00/55.53 guidance_wall_fps=54.20 avoid_ms(mean/p50/p95/max)=0.529/0.516/0.757/1.924 cycle_ms(mean/p95/max)=18.009/23.959/84.583 depth_to_cmd_ms(mean/p95/max)=75.139/116.667/133.333 callback_to_publish_ms(mean/p95/max)=2.305/7.260/12.791
+[depth_angular_controller-1] [INFO] [1791292856.091948014] [depth_angular_controller]: EVIDENCE_COST ingest(mean/p95/max)=1.828/6.842/12.740 record=0.014/0.019/0.050 ms
+[depth_angular_controller-1] [INFO] [1791292856.091953564] [depth_angular_controller]: EVIDENCE_PHASE per_view_mean_ms balls=0.073 tubes=0.069 history=0.288 eviction=0.001
+[depth_angular_controller-1] [INFO] [1791292856.183776118] [depth_angular_controller]: DEPTH_PROPOSAL_CERTIFIED
+[depth_angular_controller-1] [INFO] [1791292856.183809641] [depth_angular_controller]: PAPER_BUILD reason=FULL_MOTION_CERTIFICATE required=0.0000 best=0.0000 free=0 refined=0 tubes=40 revoked_tubes=0 proofs=128
+[depth_angular_controller-1] [INFO] [1791292856.183816734] [depth_angular_controller]: PAPER_EVIDENCE retained=16 balls=32 revoked_balls=0 expired_views=0 evicted_views=36 radius=0.580 clearance=0.000 best_prefix=0.000
+[position_cmd_to_twist-2] [INFO] [1791292857.123265362] [position_cmd_to_twist]: [PERF BRIDGE] run=stall_fix_manual_off elapsed=30.06s received=895 published=895 fps(ros/wall)=60.00/55.74 controller_to_bridge_ms(mean/p50/p95/max)=0.000/0.000/0.000/0.000 bridge_process_ms(mean/p95/max)=0.096/0.121/0.249
+[NAV] t=15.0s position=(-44.73,-9.68,2.00) yaw=0.0deg command=(0.90,-0.00,0.03) manual_active=1 collision_blocks=0
+[depth_angular_controller-1] [INFO] [1791292857.213485964] [depth_angular_controller]: PAPER_BUILD reason=FULL_MOTION_CERTIFICATE required=0.0000 best=0.0000 free=0 refined=0 tubes=41 revoked_tubes=0 proofs=128
+[depth_angular_controller-1] [INFO] [1791292857.213524396] [depth_angular_controller]: PAPER_EVIDENCE retained=16 balls=32 revoked_balls=0 expired_views=0 evicted_views=40 radius=0.580 clearance=0.000 best_prefix=0.000
+[depth_angular_controller-1] [INFO] [1791292858.505489292] [depth_angular_controller]: PAPER_BUILD reason=FULL_MOTION_CERTIFICATE required=0.0000 best=0.0000 free=0 refined=0 tubes=44 revoked_tubes=0 proofs=128
+[depth_angular_controller-1] [INFO] [1791292858.505529418] [depth_angular_controller]: PAPER_EVIDENCE retained=16 balls=32 revoked_balls=0 expired_views=0 evicted_views=42 radius=0.580 clearance=0.000 best_prefix=0.000
+[depth_angular_controller-1] [INFO] [1791292859.601142177] [depth_angular_controller]: PAPER_BUILD reason=FULL_MOTION_CERTIFICATE required=0.0000 best=0.0000 free=0 refined=0 tubes=48 revoked_tubes=0 proofs=128
+[depth_angular_controller-1] [INFO] [1791292859.601189576] [depth_angular_controller]: PAPER_EVIDENCE retained=16 balls=32 revoked_balls=0 expired_views=0 evicted_views=46 radius=0.580 clearance=0.000 best_prefix=0.000
+[depth_angular_controller-1] [INFO] [1791292860.696856597] [depth_angular_controller]: PAPER_BUILD reason=FULL_MOTION_CERTIFICATE required=0.0000 best=0.0000 free=0 refined=0 tubes=52 revoked_tubes=0 proofs=128
+[depth_angular_controller-1] [INFO] [1791292860.696897073] [depth_angular_controller]: PAPER_EVIDENCE retained=16 balls=32 revoked_balls=0 expired_views=0 evicted_views=50 radius=0.580 clearance=0.000 best_prefix=0.000
+[depth_angular_controller-1] [INFO] [1791292861.098410753] [depth_angular_controller]: [PERF CTRL] run=stall_fix_manual_off elapsed=34.14s callbacks=1102 commands=1101 guidance=861 command_fps(ros/wall)=60.00/54.93 guidance_wall_fps=45.05 avoid_ms(mean/p50/p95/max)=0.503/0.489/0.751/1.952 cycle_ms(mean/p95/max)=18.206/23.877/84.583 depth_to_cmd_ms(mean/p95/max)=75.087/116.667/133.333 callback_to_publish_ms(mean/p95/max)=2.413/7.220/12.791
+[depth_angular_controller-1] [INFO] [1791292861.098532922] [depth_angular_controller]: EVIDENCE_COST ingest(mean/p95/max)=1.918/6.812/12.740 record=0.014/0.019/0.262 ms
+[depth_angular_controller-1] [INFO] [1791292861.098540406] [depth_angular_controller]: EVIDENCE_PHASE per_view_mean_ms balls=0.073 tubes=0.076 history=0.303 eviction=0.001
+[depth_angular_controller-1] [INFO] [1791292861.920311100] [depth_angular_controller]: PAPER_BUILD reason=FULL_MOTION_CERTIFICATE required=0.0000 best=0.0000 free=0 refined=0 tubes=56 revoked_tubes=0 proofs=128
+[depth_angular_controller-1] [INFO] [1791292861.920353891] [depth_angular_controller]: PAPER_EVIDENCE retained=16 balls=32 revoked_balls=0 expired_views=0 evicted_views=54 radius=0.580 clearance=0.000 best_prefix=0.000
+[position_cmd_to_twist-2] [INFO] [1791292862.989869315] [position_cmd_to_twist]: [PERF BRIDGE] run=stall_fix_manual_off elapsed=35.92s received=1195 published=1195 fps(ros/wall)=60.00/54.51 controller_to_bridge_ms(mean/p50/p95/max)=0.000/0.000/0.000/0.000 bridge_process_ms(mean/p95/max)=0.099/0.124/1.604
+[NAV] t=20.0s position=(-35.30,-9.79,1.93) yaw=0.0deg command=(2.00,0.10,-0.00) manual_active=1 collision_blocks=0
+[depth_angular_controller-1] [INFO] [1791292863.078382519] [depth_angular_controller]: PAPER_BUILD reason=FULL_MOTION_CERTIFICATE required=0.0000 best=0.0000 free=0 refined=0 tubes=60 revoked_tubes=0 proofs=128
+[depth_angular_controller-1] [INFO] [1791292863.078427513] [depth_angular_controller]: PAPER_EVIDENCE retained=16 balls=32 revoked_balls=0 expired_views=0 evicted_views=58 radius=0.580 clearance=0.000 best_prefix=0.000
+[depth_angular_controller-1] [INFO] [1791292864.180958734] [depth_angular_controller]: PAPER_BUILD reason=FULL_MOTION_CERTIFICATE required=0.0000 best=0.0000 free=0 refined=0 tubes=64 revoked_tubes=0 proofs=128
+[depth_angular_controller-1] [INFO] [1791292864.181002306] [depth_angular_controller]: PAPER_EVIDENCE retained=16 balls=32 revoked_balls=0 expired_views=0 evicted_views=62 radius=0.580 clearance=0.000 best_prefix=0.000
+[depth_angular_controller-1] [INFO] [1791292865.279006750] [depth_angular_controller]: PAPER_BUILD reason=FULL_MOTION_CERTIFICATE required=0.0000 best=0.0000 free=0 refined=0 tubes=68 revoked_tubes=0 proofs=128
+[depth_angular_controller-1] [INFO] [1791292865.279047105] [depth_angular_controller]: PAPER_EVIDENCE retained=16 balls=32 revoked_balls=0 expired_views=0 evicted_views=66 radius=0.580 clearance=0.000 best_prefix=0.000
+[depth_angular_controller-1] [INFO] [1791292866.108176739] [depth_angular_controller]: [PERF CTRL] run=stall_fix_manual_off elapsed=39.15s callbacks=1370 commands=1369 guidance=1129 command_fps(ros/wall)=60.00/54.64 guidance_wall_fps=46.81 avoid_ms(mean/p50/p95/max)=0.522/0.510/0.752/1.952 cycle_ms(mean/p95/max)=18.301/23.645/84.583 depth_to_cmd_ms(mean/p95/max)=75.140/116.667/133.333 callback_to_publish_ms(mean/p95/max)=2.455/6.983/12.791
+[depth_angular_controller-1] [INFO] [1791292866.108719018] [depth_angular_controller]: EVIDENCE_COST ingest(mean/p95/max)=1.919/6.610/12.740 record=0.015/0.020/0.262 ms
+[depth_angular_controller-1] [INFO] [1791292866.108729628] [depth_angular_controller]: EVIDENCE_PHASE per_view_mean_ms balls=0.070 tubes=0.069 history=0.313 eviction=0.001
+[depth_angular_controller-1] [INFO] [1791292866.315573783] [depth_angular_controller]: PAPER_BUILD reason=FULL_MOTION_CERTIFICATE required=0.0000 best=0.0000 free=0 refined=0 tubes=72 revoked_tubes=0 proofs=128
+[depth_angular_controller-1] [INFO] [1791292866.316025492] [depth_angular_controller]: PAPER_EVIDENCE retained=16 balls=32 revoked_balls=0 expired_views=0 evicted_views=70 radius=0.580 clearance=0.000 best_prefix=0.000
+[depth_angular_controller-1] [INFO] [1791292867.367999831] [depth_angular_controller]: PAPER_BUILD reason=FULL_MOTION_CERTIFICATE required=0.0000 best=0.0000 free=0 refined=0 tubes=76 revoked_tubes=0 proofs=128
+[depth_angular_controller-1] [INFO] [1791292867.368437934] [depth_angular_controller]: PAPER_EVIDENCE retained=16 balls=32 revoked_balls=0 expired_views=0 evicted_views=74 radius=0.580 clearance=0.000 best_prefix=0.000
+[position_cmd_to_twist-2] [INFO] [1791292868.308952244] [position_cmd_to_twist]: [PERF BRIDGE] run=stall_fix_manual_off elapsed=41.24s received=1495 published=1495 fps(ros/wall)=60.00/54.88 controller_to_bridge_ms(mean/p50/p95/max)=0.000/0.000/0.000/0.000 bridge_process_ms(mean/p95/max)=0.100/0.127/1.604
+[NAV] t=25.0s position=(-25.34,-9.57,2.08) yaw=0.4deg command=(1.97,0.11,0.00) manual_active=1 collision_blocks=0
+[depth_angular_controller-1] [INFO] [1791292868.396684260] [depth_angular_controller]: ZERO_INTENT
+[depth_angular_controller-1] [INFO] [1791292871.112511850] [depth_angular_controller]: [PERF CTRL] run=stall_fix_manual_off elapsed=44.15s callbacks=1648 commands=1647 guidance=1260 command_fps(ros/wall)=60.00/54.79 guidance_wall_fps=47.74 avoid_ms(mean/p50/p95/max)=0.521/0.510/0.746/1.952 cycle_ms(mean/p95/max)=18.250/23.285/84.583 depth_to_cmd_ms(mean/p95/max)=75.106/116.667/133.333 callback_to_publish_ms(mean/p95/max)=2.424/6.741/12.791
+[depth_angular_controller-1] [INFO] [1791292871.112676279] [depth_angular_controller]: EVIDENCE_COST ingest(mean/p95/max)=1.916/6.416/12.740 record=0.015/0.020/0.789 ms
+[depth_angular_controller-1] [INFO] [1791292871.112687991] [depth_angular_controller]: EVIDENCE_PHASE per_view_mean_ms balls=0.067 tubes=0.062 history=0.320 eviction=0.001
+[depth_angular_controller-1] [INFO] [1791292871.814104131] [depth_angular_controller]: DEPTH_PROPOSAL_CERTIFIED
+[depth_angular_controller-1] [INFO] [1791292871.814139016] [depth_angular_controller]: PAPER_BUILD reason=FULL_MOTION_CERTIFICATE required=0.0000 best=0.0000 free=0 refined=0 tubes=84 revoked_tubes=0 proofs=128
+[depth_angular_controller-1] [INFO] [1791292871.814148865] [depth_angular_controller]: PAPER_EVIDENCE retained=16 balls=32 revoked_balls=0 expired_views=0 evicted_views=90 radius=0.580 clearance=0.000 best_prefix=0.000
+[depth_angular_controller-1] [INFO] [1791292872.881795507] [depth_angular_controller]: PAPER_BUILD reason=FULL_MOTION_CERTIFICATE required=0.0000 best=0.0000 free=0 refined=0 tubes=85 revoked_tubes=0 proofs=128
+[depth_angular_controller-1] [INFO] [1791292872.881837826] [depth_angular_controller]: PAPER_EVIDENCE retained=16 balls=32 revoked_balls=0 expired_views=0 evicted_views=94 radius=0.580 clearance=0.000 best_prefix=0.000
+[position_cmd_to_twist-2] [INFO] [1791292873.988714594] [position_cmd_to_twist]: [PERF BRIDGE] run=stall_fix_manual_off elapsed=46.92s received=1795 published=1795 fps(ros/wall)=60.00/54.52 controller_to_bridge_ms(mean/p50/p95/max)=0.000/0.000/0.000/0.000 bridge_process_ms(mean/p95/max)=0.101/0.130/1.604
+[NAV] t=30.0s position=(-23.27,-7.87,2.07) yaw=68.8deg command=(0.06,1.48,-0.00) manual_active=1 collision_blocks=0
+[depth_angular_controller-1] [INFO] [1791292874.076381016] [depth_angular_controller]: PAPER_BUILD reason=FULL_MOTION_CERTIFICATE required=0.0000 best=0.0000 free=0 refined=0 tubes=88 revoked_tubes=0 proofs=128
+[depth_angular_controller-1] [INFO] [1791292874.076420300] [depth_angular_controller]: PAPER_EVIDENCE retained=16 balls=32 revoked_balls=0 expired_views=0 evicted_views=98 radius=0.580 clearance=0.000 best_prefix=0.000
+[depth_angular_controller-1] [INFO] [1791292875.150914060] [depth_angular_controller]: PAPER_BUILD reason=FULL_MOTION_CERTIFICATE required=0.0000 best=0.0000 free=0 refined=0 tubes=91 revoked_tubes=0 proofs=128
+[depth_angular_controller-1] [INFO] [1791292875.150978210] [depth_angular_controller]: PAPER_EVIDENCE retained=16 balls=32 revoked_balls=0 expired_views=0 evicted_views=102 radius=0.580 clearance=0.000 best_prefix=0.000
+[depth_angular_controller-1] [INFO] [1791292876.123930722] [depth_angular_controller]: [PERF CTRL] run=stall_fix_manual_off elapsed=49.17s callbacks=1917 commands=1916 guidance=1496 command_fps(ros/wall)=60.00/54.63 guidance_wall_fps=43.82 avoid_ms(mean/p50/p95/max)=0.510/0.497/0.737/1.952 cycle_ms(mean/p95/max)=18.304/23.299/84.583 depth_to_cmd_ms(mean/p95/max)=75.134/116.667/133.333 callback_to_publish_ms(mean/p95/max)=2.463/6.561/12.791
+[depth_angular_controller-1] [INFO] [1791292876.124098858] [depth_angular_controller]: EVIDENCE_COST ingest(mean/p95/max)=1.951/6.155/12.740 record=0.016/0.021/0.789 ms
+[depth_angular_controller-1] [INFO] [1791292876.124104579] [depth_angular_controller]: EVIDENCE_PHASE per_view_mean_ms balls=0.067 tubes=0.057 history=0.334 eviction=0.001
+[depth_angular_controller-1] [INFO] [1791292876.213196581] [depth_angular_controller]: PAPER_BUILD reason=FULL_MOTION_CERTIFICATE required=0.0000 best=0.0000 free=0 refined=0 tubes=94 revoked_tubes=0 proofs=128
+[depth_angular_controller-1] [INFO] [1791292876.213230374] [depth_angular_controller]: PAPER_EVIDENCE retained=16 balls=32 revoked_balls=0 expired_views=0 evicted_views=105 radius=0.580 clearance=0.000 best_prefix=0.000
+[depth_angular_controller-1] [INFO] [1791292877.304763607] [depth_angular_controller]: PAPER_BUILD reason=FULL_MOTION_CERTIFICATE required=0.0000 best=0.0000 free=0 refined=0 tubes=97 revoked_tubes=0 proofs=128
+[depth_angular_controller-1] [INFO] [1791292877.304805295] [depth_angular_controller]: PAPER_EVIDENCE retained=16 balls=32 revoked_balls=0 expired_views=0 evicted_views=109 radius=0.580 clearance=0.000 best_prefix=0.000
+[depth_angular_controller-1] [INFO] [1791292878.312275617] [depth_angular_controller]: PAPER_BUILD reason=FULL_MOTION_CERTIFICATE required=0.0000 best=0.0000 free=0 refined=0 tubes=100 revoked_tubes=0 proofs=128
+[depth_angular_controller-1] [INFO] [1791292878.312314430] [depth_angular_controller]: PAPER_EVIDENCE retained=16 balls=32 revoked_balls=0 expired_views=0 evicted_views=113 radius=0.580 clearance=0.000 best_prefix=0.000
+[position_cmd_to_twist-2] [INFO] [1791292879.297106642] [position_cmd_to_twist]: [PERF BRIDGE] run=stall_fix_manual_off elapsed=52.23s received=2095 published=2095 fps(ros/wall)=60.00/54.80 controller_to_bridge_ms(mean/p50/p95/max)=0.000/0.000/0.000/0.000 bridge_process_ms(mean/p95/max)=0.100/0.130/1.604
+[NAV] t=35.0s position=(-23.26,-0.37,2.07) yaw=68.8deg command=(-0.00,1.50,-0.00) manual_active=1 collision_blocks=0
+[depth_angular_controller-1] [INFO] [1791292879.387542299] [depth_angular_controller]: PAPER_BUILD reason=FULL_MOTION_CERTIFICATE required=0.0000 best=0.0000 free=0 refined=0 tubes=103 revoked_tubes=0 proofs=128
+[depth_angular_controller-1] [INFO] [1791292879.387586492] [depth_angular_controller]: PAPER_EVIDENCE retained=16 balls=32 revoked_balls=0 expired_views=0 evicted_views=117 radius=0.580 clearance=0.000 best_prefix=0.000
+[depth_angular_controller-1] [INFO] [1791292880.426382234] [depth_angular_controller]: PAPER_BUILD reason=FULL_MOTION_CERTIFICATE required=0.0000 best=0.0000 free=0 refined=0 tubes=106 revoked_tubes=0 proofs=128
+[depth_angular_controller-1] [INFO] [1791292880.426424103] [depth_angular_controller]: PAPER_EVIDENCE retained=16 balls=32 revoked_balls=0 expired_views=0 evicted_views=121 radius=0.580 clearance=0.000 best_prefix=0.000
+[depth_angular_controller-1] [INFO] [1791292881.131317027] [depth_angular_controller]: [PERF CTRL] run=stall_fix_manual_off elapsed=54.17s callbacks=2192 commands=2191 guidance=1771 command_fps(ros/wall)=60.00/54.67 guidance_wall_fps=45.24 avoid_ms(mean/p50/p95/max)=0.494/0.477/0.734/1.952 cycle_ms(mean/p95/max)=18.292/23.192/84.583 depth_to_cmd_ms(mean/p95/max)=75.089/116.667/133.333 callback_to_publish_ms(mean/p95/max)=2.488/6.348/12.791
+[depth_angular_controller-1] [INFO] [1791292881.131923988] [depth_angular_controller]: EVIDENCE_COST ingest(mean/p95/max)=1.975/5.888/12.740 record=0.016/0.021/0.789 ms
+[depth_angular_controller-1] [INFO] [1791292881.131934437] [depth_angular_controller]: EVIDENCE_PHASE per_view_mean_ms balls=0.065 tubes=0.054 history=0.344 eviction=0.001
+[depth_angular_controller-1] [INFO] [1791292881.769967260] [depth_angular_controller]: PAPER_BUILD reason=FULL_MOTION_CERTIFICATE required=0.0000 best=0.0000 free=0 refined=0 tubes=110 revoked_tubes=0 proofs=128
+[depth_angular_controller-1] [INFO] [1791292881.770016182] [depth_angular_controller]: PAPER_EVIDENCE retained=16 balls=32 revoked_balls=0 expired_views=0 evicted_views=125 radius=0.580 clearance=0.000 best_prefix=0.000
+[depth_angular_controller-1] [INFO] [1791292882.790268746] [depth_angular_controller]: ZERO_INTENT
+[position_cmd_to_twist-2] [INFO] [1791292884.597087032] [position_cmd_to_twist]: [PERF BRIDGE] run=stall_fix_manual_off elapsed=57.53s received=2395 published=2395 fps(ros/wall)=60.00/55.03 controller_to_bridge_ms(mean/p50/p95/max)=0.000/0.000/0.000/0.000 bridge_process_ms(mean/p95/max)=0.099/0.131/1.604
+[NAV] t=40.0s position=(-23.46,4.97,2.36) yaw=68.8deg command=(0.00,0.00,0.00) manual_active=0 collision_blocks=0
+[depth_angular_controller-1] [INFO] [1791292885.732011330] [depth_angular_controller]: 3D guidance switched to view 1
+[depth_angular_controller-1] [INFO] [1791292885.732437571] [depth_angular_controller]: DEPTH_PROPOSAL_CERTIFIED
+[depth_angular_controller-1] [INFO] [1791292885.732450445] [depth_angular_controller]: PAPER_BUILD reason=FULL_MOTION_CERTIFICATE required=0.0000 best=0.0000 free=0 refined=0 tubes=114 revoked_tubes=0 proofs=128
+[depth_angular_controller-1] [INFO] [1791292885.732459051] [depth_angular_controller]: PAPER_EVIDENCE retained=16 balls=32 revoked_balls=0 expired_views=0 evicted_views=135 radius=0.580 clearance=0.000 best_prefix=0.000
+[depth_angular_controller-1] [INFO] [1791292886.134332447] [depth_angular_controller]: [PERF CTRL] run=stall_fix_manual_off elapsed=59.18s callbacks=2485 commands=2484 guidance=1885 command_fps(ros/wall)=59.98/55.10 guidance_wall_fps=42.70 avoid_ms(mean/p50/p95/max)=0.497/0.482/0.732/1.952 cycle_ms(mean/p95/max)=18.148/23.192/84.583 depth_to_cmd_ms(mean/p95/max)=74.978/116.667/133.333 callback_to_publish_ms(mean/p95/max)=2.465/6.438/12.791
+[depth_angular_controller-1] [INFO] [1791292886.134554885] [depth_angular_controller]: EVIDENCE_COST ingest(mean/p95/max)=1.975/6.108/12.740 record=0.015/0.020/0.789 ms
+[depth_angular_controller-1] [INFO] [1791292886.134571036] [depth_angular_controller]: EVIDENCE_PHASE per_view_mean_ms balls=0.064 tubes=0.051 history=0.349 eviction=0.001
+[depth_angular_controller-1] [INFO] [1791292886.236761313] [depth_angular_controller]: 3D guidance switched to view 2
+[depth_angular_controller-1] [INFO] [1791292886.786692486] [depth_angular_controller]: PAPER_BUILD reason=FULL_MOTION_CERTIFICATE required=0.0000 best=0.0000 free=0 refined=0 tubes=115 revoked_tubes=0 proofs=128
+[depth_angular_controller-1] [INFO] [1791292886.786731238] [depth_angular_controller]: PAPER_EVIDENCE retained=16 balls=32 revoked_balls=0 expired_views=0 evicted_views=139 radius=0.580 clearance=0.000 best_prefix=0.000
+[depth_angular_controller-1] [INFO] [1791292888.012233140] [depth_angular_controller]: PAPER_BUILD reason=FULL_MOTION_CERTIFICATE required=0.0000 best=0.0000 free=0 refined=0 tubes=118 revoked_tubes=0 proofs=128
+[depth_angular_controller-1] [INFO] [1791292888.012272484] [depth_angular_controller]: PAPER_EVIDENCE retained=16 balls=32 revoked_balls=0 expired_views=0 evicted_views=143 radius=0.580 clearance=0.000 best_prefix=0.000
+[depth_angular_controller-1] [INFO] [1791292889.071061509] [depth_angular_controller]: PAPER_BUILD reason=FULL_MOTION_CERTIFICATE required=0.0000 best=0.0000 free=0 refined=0 tubes=121 revoked_tubes=0 proofs=128
+[depth_angular_controller-1] [INFO] [1791292889.071104260] [depth_angular_controller]: PAPER_EVIDENCE retained=16 balls=32 revoked_balls=0 expired_views=0 evicted_views=147 radius=0.580 clearance=0.000 best_prefix=0.000
+[depth_angular_controller-1] [INFO] [1791292889.980840538] [depth_angular_controller]: 3D guidance switched to view 3
+[position_cmd_to_twist-2] [INFO] [1791292890.097996291] [position_cmd_to_twist]: [PERF BRIDGE] run=stall_fix_manual_off elapsed=63.03s received=2693 published=2693 fps(ros/wall)=59.96/54.93 controller_to_bridge_ms(mean/p50/p95/max)=0.000/0.000/0.000/0.000 bridge_process_ms(mean/p95/max)=0.099/0.128/1.604
+[NAV] t=45.0s position=(-27.76,3.36,2.80) yaw=-23.3deg command=(-1.34,-0.66,0.05) manual_active=1 collision_blocks=0
+[depth_angular_controller-1] [INFO] [1791292890.183382358] [depth_angular_controller]: PAPER_BUILD reason=FULL_MOTION_CERTIFICATE required=0.0000 best=0.0000 free=0 refined=0 tubes=124 revoked_tubes=0 proofs=128
+[depth_angular_controller-1] [INFO] [1791292890.183424607] [depth_angular_controller]: PAPER_EVIDENCE retained=16 balls=32 revoked_balls=0 expired_views=0 evicted_views=151 radius=0.580 clearance=0.000 best_prefix=0.000
+[depth_angular_controller-1] [INFO] [1791292891.139690430] [depth_angular_controller]: [PERF CTRL] run=stall_fix_manual_off elapsed=64.18s callbacks=2751 commands=2750 guidance=2151 command_fps(ros/wall)=59.96/54.91 guidance_wall_fps=43.76 avoid_ms(mean/p50/p95/max)=0.497/0.482/0.720/1.952 cycle_ms(mean/p95/max)=18.213/23.361/84.659 depth_to_cmd_ms(mean/p95/max)=74.531/116.667/133.333 callback_to_publish_ms(mean/p95/max)=2.513/6.632/12.791
+[depth_angular_controller-1] [INFO] [1791292891.139937965] [depth_angular_controller]: EVIDENCE_COST ingest(mean/p95/max)=2.013/6.267/12.740 record=0.015/0.020/0.789 ms
+[depth_angular_controller-1] [INFO] [1791292891.139945790] [depth_angular_controller]: EVIDENCE_PHASE per_view_mean_ms balls=0.064 tubes=0.050 history=0.359 eviction=0.001
+[depth_angular_controller-1] [INFO] [1791292891.295830376] [depth_angular_controller]: PAPER_BUILD reason=FULL_MOTION_CERTIFICATE required=0.0000 best=0.0000 free=0 refined=0 tubes=127 revoked_tubes=0 proofs=128
+[depth_angular_controller-1] [INFO] [1791292891.295870120] [depth_angular_controller]: PAPER_EVIDENCE retained=16 balls=32 revoked_balls=0 expired_views=0 evicted_views=155 radius=0.580 clearance=0.000 best_prefix=0.000
+[depth_angular_controller-1] [INFO] [1791292892.382496140] [depth_angular_controller]: PAPER_BUILD reason=FULL_MOTION_CERTIFICATE required=0.0000 best=0.0000 free=0 refined=0 tubes=130 revoked_tubes=0 proofs=128
+[depth_angular_controller-1] [INFO] [1791292892.382533931] [depth_angular_controller]: PAPER_EVIDENCE retained=16 balls=32 revoked_balls=0 expired_views=0 evicted_views=159 radius=0.580 clearance=0.000 best_prefix=0.000
+[depth_angular_controller-1] [INFO] [1791292893.733831151] [depth_angular_controller]: COMPUTE_DEADLINE
+[depth_angular_controller-1] [INFO] [1791292893.733885263] [depth_angular_controller]: PAPER_BUILD reason=STATE_OUTSIDE_COMPONENT required=1.2390 best=5.7425 free=840 refined=1 tubes=133 revoked_tubes=0 proofs=128
+[depth_angular_controller-1] [INFO] [1791292893.733896765] [depth_angular_controller]: PAPER_EVIDENCE retained=16 balls=32 revoked_balls=0 expired_views=0 evicted_views=163 radius=0.580 clearance=0.000 best_prefix=5.742
+[depth_angular_controller-1] [INFO] [1791292894.348774943] [depth_angular_controller]: DEPTH_PROPOSAL_CERTIFIED
+[depth_angular_controller-1] [INFO] [1791292894.872784581] [depth_angular_controller]: PAPER_BUILD reason=FULL_MOTION_CERTIFICATE required=0.0000 best=0.0000 free=0 refined=0 tubes=135 revoked_tubes=0 proofs=128
+[depth_angular_controller-1] [INFO] [1791292894.872821390] [depth_angular_controller]: PAPER_EVIDENCE retained=16 balls=32 revoked_balls=0 expired_views=0 evicted_views=167 radius=0.580 clearance=0.000 best_prefix=5.742
+[depth_angular_controller-1] [INFO] [1791292895.486325416] [depth_angular_controller]: 3D guidance switched to view 0
+[position_cmd_to_twist-2] [INFO] [1791292895.605259711] [position_cmd_to_twist]: [PERF BRIDGE] run=stall_fix_manual_off elapsed=68.54s received=2944 published=2942 fps(ros/wall)=58.98/53.95 controller_to_bridge_ms(mean/p50/p95/max)=0.311/0.000/0.000/483.333 bridge_process_ms(mean/p95/max)=0.099/0.129/1.604
+[NAV] t=50.0s position=(-33.82,2.66,2.54) yaw=-137.9deg command=(-1.35,-0.07,-0.41) manual_active=1 collision_blocks=0
+[depth_angular_controller-1] [INFO] [1791292895.909817019] [depth_angular_controller]: PAPER_BUILD reason=FULL_MOTION_CERTIFICATE required=0.0000 best=0.0000 free=0 refined=0 tubes=137 revoked_tubes=0 proofs=128
+[depth_angular_controller-1] [INFO] [1791292895.909855411] [depth_angular_controller]: PAPER_EVIDENCE retained=16 balls=32 revoked_balls=0 expired_views=0 evicted_views=171 radius=0.580 clearance=0.000 best_prefix=5.742
+[depth_angular_controller-1] [INFO] [1791292896.141324143] [depth_angular_controller]: [PERF CTRL] run=stall_fix_manual_off elapsed=69.18s callbacks=2975 commands=2974 guidance=2375 command_fps(ros/wall)=58.99/53.99 guidance_wall_fps=43.86 avoid_ms(mean/p50/p95/max)=0.979/0.485/0.757/571.186 cycle_ms(mean/p95/max)=18.523/23.823/594.442 depth_to_cmd_ms(mean/p95/max)=73.347/116.667/133.333 callback_to_publish_ms(mean/p95/max)=2.993/6.909/594.245
+[depth_angular_controller-1] [INFO] [1791292896.141591696] [depth_angular_controller]: EVIDENCE_COST ingest(mean/p95/max)=2.093/6.429/21.985 record=0.022/0.022/0.964 ms
+[depth_angular_controller-1] [INFO] [1791292896.141607105] [depth_angular_controller]: EVIDENCE_PHASE per_view_mean_ms balls=0.065 tubes=0.060 history=0.368 eviction=0.001
+[depth_angular_controller-1] [INFO] [1791292896.843259830] [depth_angular_controller]: ZERO_INTENT
+[position_cmd_to_twist-2] [INFO] [1791292900.465416625] [position_cmd_to_twist]: [PERF BRIDGE] run=stall_fix_manual_off elapsed=73.40s received=3244 published=3242 fps(ros/wall)=59.07/54.58 controller_to_bridge_ms(mean/p50/p95/max)=0.283/0.000/0.000/483.333 bridge_process_ms(mean/p95/max)=0.098/0.128/1.604
+[NAV] t=55.0s position=(-36.10,2.43,1.91) yaw=-160.4deg command=(0.00,0.00,0.00) manual_active=1 collision_blocks=0
+[depth_angular_controller-1] [INFO] [1791292900.540654400] [depth_angular_controller]: 3D guidance switched to view 2
+[depth_angular_controller-1] [INFO] [1791292900.540981906] [depth_angular_controller]: DEPTH_PROPOSAL_CERTIFIED
+[depth_angular_controller-1] [INFO] [1791292900.540988719] [depth_angular_controller]: PAPER_BUILD reason=FULL_MOTION_CERTIFICATE required=0.0000 best=0.0000 free=0 refined=0 tubes=141 revoked_tubes=0 proofs=128
+[depth_angular_controller-1] [INFO] [1791292900.540995792] [depth_angular_controller]: PAPER_EVIDENCE retained=16 balls=32 revoked_balls=0 expired_views=0 evicted_views=179 radius=0.580 clearance=0.000 best_prefix=5.742
+[depth_angular_controller-1] [INFO] [1791292901.155292177] [depth_angular_controller]: [PERF CTRL] run=stall_fix_manual_off elapsed=74.20s callbacks=3287 commands=3286 guidance=2447 command_fps(ros/wall)=59.08/54.67 guidance_wall_fps=41.36 avoid_ms(mean/p50/p95/max)=0.967/0.485/0.802/571.186 cycle_ms(mean/p95/max)=18.290/23.726/594.442 depth_to_cmd_ms(mean/p95/max)=73.410/116.667/133.333 callback_to_publish_ms(mean/p95/max)=3.009/6.884/594.245
+[depth_angular_controller-1] [INFO] [1791292901.155554390] [depth_angular_controller]: EVIDENCE_COST ingest(mean/p95/max)=2.173/6.390/21.985 record=0.021/0.022/0.964 ms
+[depth_angular_controller-1] [INFO] [1791292901.155563527] [depth_angular_controller]: EVIDENCE_PHASE per_view_mean_ms balls=0.065 tubes=0.067 history=0.381 eviction=0.001
+[depth_angular_controller-1] [INFO] [1791292901.529393470] [depth_angular_controller]: PAPER_BUILD reason=FULL_MOTION_CERTIFICATE required=0.0000 best=0.0000 free=0 refined=0 tubes=142 revoked_tubes=0 proofs=128
+[depth_angular_controller-1] [INFO] [1791292901.529431632] [depth_angular_controller]: PAPER_EVIDENCE retained=16 balls=32 revoked_balls=0 expired_views=0 evicted_views=179 radius=0.580 clearance=0.000 best_prefix=5.742
+[depth_angular_controller-1] [INFO] [1791292902.487519158] [depth_angular_controller]: PAPER_BUILD reason=FULL_MOTION_CERTIFICATE required=0.0000 best=0.0000 free=0 refined=0 tubes=145 revoked_tubes=0 proofs=128
+[depth_angular_controller-1] [INFO] [1791292902.487562569] [depth_angular_controller]: PAPER_EVIDENCE retained=16 balls=32 revoked_balls=0 expired_views=0 evicted_views=183 radius=0.580 clearance=0.000 best_prefix=5.742
+[depth_angular_controller-1] [INFO] [1791292903.573004875] [depth_angular_controller]: PAPER_BUILD reason=FULL_MOTION_CERTIFICATE required=0.0000 best=0.0000 free=0 refined=0 tubes=148 revoked_tubes=0 proofs=128
+[depth_angular_controller-1] [INFO] [1791292903.573169404] [depth_angular_controller]: PAPER_EVIDENCE retained=16 balls=32 revoked_balls=0 expired_views=0 evicted_views=187 radius=0.580 clearance=0.000 best_prefix=5.742
+[depth_angular_controller-1] [INFO] [1791292904.798772335] [depth_angular_controller]: PAPER_BUILD reason=FULL_MOTION_CERTIFICATE required=0.0000 best=0.0000 free=0 refined=0 tubes=152 revoked_tubes=0 proofs=128
+[depth_angular_controller-1] [INFO] [1791292904.798824163] [depth_angular_controller]: PAPER_EVIDENCE retained=15 balls=32 revoked_balls=0 expired_views=0 evicted_views=191 radius=0.580 clearance=0.000 best_prefix=5.742
+[position_cmd_to_twist-2] [INFO] [1791292905.822465365] [position_cmd_to_twist]: [PERF BRIDGE] run=stall_fix_manual_off elapsed=78.76s received=3545 published=3543 fps(ros/wall)=59.15/54.70 controller_to_bridge_ms(mean/p50/p95/max)=0.263/0.000/0.000/483.333 bridge_process_ms(mean/p95/max)=0.097/0.127/1.604
+[NAV] t=60.0s position=(-29.95,0.38,2.53) yaw=-160.4deg command=(1.50,-0.50,0.15) manual_active=1 collision_blocks=0
+[depth_angular_controller-1] [INFO] [1791292905.974228234] [depth_angular_controller]: PAPER_BUILD reason=FULL_MOTION_CERTIFICATE required=0.0000 best=0.0000 free=0 refined=0 tubes=155 revoked_tubes=0 proofs=128
+[depth_angular_controller-1] [INFO] [1791292905.974269141] [depth_angular_controller]: PAPER_EVIDENCE retained=16 balls=32 revoked_balls=0 expired_views=0 evicted_views=194 radius=0.580 clearance=0.000 best_prefix=5.742
+[depth_angular_controller-1] [INFO] [1791292906.157311545] [depth_angular_controller]: [PERF CTRL] run=stall_fix_manual_off elapsed=79.20s callbacks=3558 commands=3557 guidance=2718 command_fps(ros/wall)=59.15/54.64 guidance_wall_fps=42.36 avoid_ms(mean/p50/p95/max)=0.921/0.484/0.783/571.186 cycle_ms(mean/p95/max)=18.303/24.066/594.442 depth_to_cmd_ms(mean/p95/max)=73.590/116.667/133.333 callback_to_publish_ms(mean/p95/max)=3.022/7.090/594.245
+[depth_angular_controller-1] [INFO] [1791292906.157610978] [depth_angular_controller]: EVIDENCE_COST ingest(mean/p95/max)=2.203/6.585/21.985 record=0.021/0.022/0.964 ms
+[depth_angular_controller-1] [INFO] [1791292906.157629563] [depth_angular_controller]: EVIDENCE_PHASE per_view_mean_ms balls=0.064 tubes=0.071 history=0.385 eviction=0.001
+[depth_angular_controller-1] [INFO] [1791292907.245174129] [depth_angular_controller]: PAPER_BUILD reason=FULL_MOTION_CERTIFICATE required=0.0000 best=0.0000 free=0 refined=0 tubes=158 revoked_tubes=0 proofs=128
+[depth_angular_controller-1] [INFO] [1791292907.245220827] [depth_angular_controller]: PAPER_EVIDENCE retained=16 balls=32 revoked_balls=0 expired_views=0 evicted_views=198 radius=0.580 clearance=0.000 best_prefix=5.742
+[depth_angular_controller-1] [INFO] [1791292908.442640092] [depth_angular_controller]: PAPER_BUILD reason=FULL_MOTION_CERTIFICATE required=0.0000 best=0.0000 free=0 refined=0 tubes=162 revoked_tubes=0 proofs=128
+[depth_angular_controller-1] [INFO] [1791292908.442686599] [depth_angular_controller]: PAPER_EVIDENCE retained=16 balls=32 revoked_balls=0 expired_views=0 evicted_views=202 radius=0.580 clearance=0.000 best_prefix=5.742
+[depth_angular_controller-1] [INFO] [1791292909.459453472] [depth_angular_controller]: PAPER_BUILD reason=FULL_MOTION_CERTIFICATE required=0.0000 best=0.0000 free=0 refined=0 tubes=165 revoked_tubes=0 proofs=128
+[depth_angular_controller-1] [INFO] [1791292909.459499900] [depth_angular_controller]: PAPER_EVIDENCE retained=16 balls=32 revoked_balls=0 expired_views=0 evicted_views=206 radius=0.580 clearance=0.000 best_prefix=5.742
+[depth_angular_controller-1] [INFO] [1791292910.564009508] [depth_angular_controller]: PAPER_BUILD reason=FULL_MOTION_CERTIFICATE required=0.0000 best=0.0000 free=0 refined=0 tubes=168 revoked_tubes=0 proofs=128
+[depth_angular_controller-1] [INFO] [1791292910.564053211] [depth_angular_controller]: PAPER_EVIDENCE retained=16 balls=32 revoked_balls=0 expired_views=0 evicted_views=210 radius=0.580 clearance=0.000 best_prefix=5.742
+[depth_angular_controller-1] [INFO] [1791292911.159173207] [depth_angular_controller]: [PERF CTRL] run=stall_fix_manual_off elapsed=84.20s callbacks=3821 commands=3820 guidance=2981 command_fps(ros/wall)=59.21/54.49 guidance_wall_fps=43.09 avoid_ms(mean/p50/p95/max)=0.879/0.477/0.766/571.186 cycle_ms(mean/p95/max)=18.352/24.059/594.442 depth_to_cmd_ms(mean/p95/max)=73.700/116.667/133.333 callback_to_publish_ms(mean/p95/max)=2.995/7.087/594.245
+[depth_angular_controller-1] [INFO] [1791292911.159638281] [depth_angular_controller]: EVIDENCE_COST ingest(mean/p95/max)=2.193/6.579/21.985 record=0.021/0.022/0.964 ms
+[depth_angular_controller-1] [INFO] [1791292911.159664320] [depth_angular_controller]: EVIDENCE_PHASE per_view_mean_ms balls=0.064 tubes=0.069 history=0.385 eviction=0.001
+[position_cmd_to_twist-2] [INFO] [1791292911.585222777] [position_cmd_to_twist]: [PERF BRIDGE] run=stall_fix_manual_off elapsed=84.52s received=3844 published=3842 fps(ros/wall)=59.21/54.49 controller_to_bridge_ms(mean/p50/p95/max)=0.243/0.000/0.000/483.333 bridge_process_ms(mean/p95/max)=0.097/0.127/1.604
+[NAV] t=65.0s position=(-22.44,-2.06,2.95) yaw=-160.4deg command=(1.50,-0.50,0.13) manual_active=1 collision_blocks=0
+[depth_angular_controller-1] [INFO] [1791292911.676184924] [depth_angular_controller]: PAPER_BUILD reason=FULL_MOTION_CERTIFICATE required=0.0000 best=0.0000 free=0 refined=0 tubes=172 revoked_tubes=0 proofs=128
+[depth_angular_controller-1] [INFO] [1791292911.676627055] [depth_angular_controller]: PAPER_EVIDENCE retained=16 balls=32 revoked_balls=0 expired_views=0 evicted_views=214 radius=0.580 clearance=0.000 best_prefix=5.742
+[depth_angular_controller-1] [INFO] [1791292912.727031002] [depth_angular_controller]: PAPER_BUILD reason=FULL_MOTION_CERTIFICATE required=0.0000 best=0.0000 free=0 refined=0 tubes=175 revoked_tubes=0 proofs=128
+[depth_angular_controller-1] [INFO] [1791292912.727074203] [depth_angular_controller]: PAPER_EVIDENCE retained=16 balls=32 revoked_balls=0 expired_views=0 evicted_views=218 radius=0.580 clearance=0.000 best_prefix=5.742
+[depth_angular_controller-1] [INFO] [1791292913.787174714] [depth_angular_controller]: PAPER_BUILD reason=FULL_MOTION_CERTIFICATE required=0.0000 best=0.0000 free=0 refined=0 tubes=178 revoked_tubes=0 proofs=128
+[depth_angular_controller-1] [INFO] [1791292913.787218857] [depth_angular_controller]: PAPER_EVIDENCE retained=16 balls=32 revoked_balls=0 expired_views=0 evicted_views=222 radius=0.580 clearance=0.000 best_prefix=5.742
+[depth_angular_controller-1] [INFO] [1791292915.061163938] [depth_angular_controller]: ZERO_INTENT
+[depth_angular_controller-1] [INFO] [1791292916.169871847] [depth_angular_controller]: [PERF CTRL] run=stall_fix_manual_off elapsed=89.21s callbacks=4090 commands=4089 guidance=3190 command_fps(ros/wall)=59.26/54.44 guidance_wall_fps=43.66 avoid_ms(mean/p50/p95/max)=0.855/0.477/0.765/571.186 cycle_ms(mean/p95/max)=18.370/24.015/594.442 depth_to_cmd_ms(mean/p95/max)=73.777/116.667/133.333 callback_to_publish_ms(mean/p95/max)=2.961/6.983/594.245
+[depth_angular_controller-1] [INFO] [1791292916.170221293] [depth_angular_controller]: EVIDENCE_COST ingest(mean/p95/max)=2.174/6.502/21.985 record=0.024/0.023/1.205 ms
+[depth_angular_controller-1] [INFO] [1791292916.170235380] [depth_angular_controller]: EVIDENCE_PHASE per_view_mean_ms balls=0.063 tubes=0.068 history=0.381 eviction=0.001
+[position_cmd_to_twist-2] [INFO] [1791292917.154743979] [position_cmd_to_twist]: [PERF BRIDGE] run=stall_fix_manual_off elapsed=90.09s received=4144 published=4142 fps(ros/wall)=59.27/54.44 controller_to_bridge_ms(mean/p50/p95/max)=0.225/0.000/0.000/483.333 bridge_process_ms(mean/p95/max)=0.098/0.128/1.604
+[NAV] t=70.0s position=(-16.92,-3.59,3.45) yaw=-160.4deg command=(0.00,0.00,0.00) manual_active=0 collision_blocks=0
+[MANUAL RESULT] TIMEOUT position=(-16.918,-3.590,3.445)
+[PERF ISAAC FINAL] run=stall_fix_manual_off result=MANUAL_TIMEOUT wall=78.54s sim_frames=4323 fps(sim/wall)=60.03/55.04 command_changes=2525 collision_blocks=0 frame_interval_ms(mean/p50/p95/max)=18.041/16.729/19.646/85.689
+[91.687s] Simulation App Shutting Down
+[depth_angular_controller-1] [INFO] [1791292919.578378486] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[position_cmd_to_twist-2] [INFO] [1791292919.579206853] [position_cmd_to_twist]: [PERF BRIDGE FINAL] run=stall_fix_manual_off elapsed=92.51s received=4270 published=4268 fps(ros/wall)=59.29/54.75 controller_to_bridge_ms(mean/p50/p95/max)=0.219/0.000/0.000/483.333 bridge_process_ms(mean/p95/max)=0.097/0.127/1.604
+[position_cmd_to_twist-2] Failed to publish log message to rosout: publisher's context is invalid, at ./src/rcl/publisher.c:389
+[depth_angular_controller-1] [INFO] [1791292919.579400998] [depth_angular_controller]: [PERF CTRL FINAL] run=stall_fix_manual_off elapsed=92.62s callbacks=4271 commands=4270 guidance=3190 command_fps(ros/wall)=59.29/54.78 guidance_wall_fps=43.66 avoid_ms(mean/p50/p95/max)=0.855/0.477/0.765/571.186 cycle_ms(mean/p95/max)=18.256/23.948/594.442 depth_to_cmd_ms(mean/p95/max)=73.777/116.667/133.333 callback_to_publish_ms(mean/p95/max)=2.932/6.948/594.245
+[depth_angular_controller-1] [INFO] [1791292919.579704478] [depth_angular_controller]: EVIDENCE_COST ingest(mean/p95/max)=2.175/6.473/21.985 record=0.024/0.023/1.205 ms
+[depth_angular_controller-1] [INFO] [1791292919.579708045] [depth_angular_controller]: EVIDENCE_PHASE per_view_mean_ms balls=0.063 tubes=0.072 history=0.378 eviction=0.001
+[INFO] [depth_angular_controller-1]: process has finished cleanly [pid 95789]
+[INFO] [position_cmd_to_twist-2]: process has finished cleanly [pid 95791]

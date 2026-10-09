@@ -1,0 +1,23 @@
+Starting >>> pc_gvf_msgs
+Finished <<< pc_gvf_msgs [0.16s]
+Starting >>> pc_gvf_platforms
+Finished <<< pc_gvf_platforms [0.32s]
+Starting >>> pc_gvf
+--- stderr: pc_gvf
+/home/starry/isaac-data/EGO1P1/src/pc_gvf/src/depth_angular_controller_node.cpp: In member function ‘void pc_gvf::depth_angular::DepthAngularControllerNode::paperControl(const rclcpp::Time&, const rclcpp::Time&, const pc_gvf::depth_angular::Camera&, const std::vector<double>&, uint64_t, std::size_t, const std::vector<std::shared_ptr<const pc_gvf::depth_angular::DepthObservation> >&, const Vector3d&, const Vector3d&, const Vector3d&, double)’:
+/home/starry/isaac-data/EGO1P1/src/pc_gvf/src/depth_angular_controller_node.cpp:1040:31: warning: variable ‘yaw’ set but not used [-Wunused-but-set-variable]
+ 1040 |         const Eigen::Matrix3d yaw = Eigen::AngleAxisd(camera_yaw_offsets_[view],
+      |                               ^~~
+/home/starry/isaac-data/EGO1P1/src/pc_gvf/src/depth_angular_controller_node.cpp: In member function ‘void pc_gvf::depth_angular::DepthAngularControllerNode::control()’:
+/home/starry/isaac-data/EGO1P1/src/pc_gvf/src/depth_angular_controller_node.cpp:1182:17: error: ‘current_paper_views’ was not declared in this scope
+ 1182 |                 current_paper_views.push_back(std::make_shared<DepthObservation>(observed));
+      |                 ^~~~~~~~~~~~~~~~~~~
+gmake[2]: *** [CMakeFiles/depth_angular_controller.dir/build.make:76：CMakeFiles/depth_angular_controller.dir/src/depth_angular_controller_node.cpp.o] 错误 1
+gmake[1]: *** [CMakeFiles/Makefile2:187：CMakeFiles/depth_angular_controller.dir/all] 错误 2
+gmake: *** [Makefile:146：all] 错误 2
+---
+Failed   <<< pc_gvf [7.47s, exited with code 2]
+
+Summary: 2 packages finished [8.06s]
+  1 package failed: pc_gvf
+  1 package had stderr output: pc_gvf

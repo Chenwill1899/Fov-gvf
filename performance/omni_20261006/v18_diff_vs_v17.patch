@@ -1,0 +1,46 @@
+--- v17/src/pc_gvf/src/depth_angular_controller_node.cpp
++++ v18/src/pc_gvf/src/depth_angular_controller_node.cpp
+@@ -1241,7 +1241,16 @@
+             if(use_fixed_goal_)intent_length=std::min(intent_length,(fixed_goal_-position).norm());
+             const bool intent_certified=paper_intent_corridor_ &&
+                 paper_->proposalCorridor(observation,position,intent.normalized(),intent_length,stamp.seconds());
+-            if(!intent_certified || cfg.include_atlas)
++            int local_candidates=0;
++            Eigen::Vector3d local=Eigen::Vector3d::Zero();
++            // Keep fixed-goal component selection and per-view obstacle
++            // hysteresis continuous, even when the instantaneous intent ray
++            // looks open in the spherical proposal. All views still compete
++            // in world coordinates; no camera is selected in advance.
++            if(use_fixed_goal_ && !intent_certified)
++                local=omniLocalCandidate(observation,current_views,position,velocity,
++                    intent,speed,omni_corridor,stamp.seconds(),dt,cfg.retain_previous,&local_candidates);
++            if((!intent_certified && local.norm()<=1e-8) || cfg.include_atlas)
+                 omni_result=omniDepthProposal(current_views,position,intent,previous,
+                     stamp.seconds(),omni_corridor,cfg,[&](const Eigen::Vector3d& d){
+                         return paper_->proposalCorridor(observation,position,d,omni_corridor,stamp.seconds());
+@@ -1252,17 +1261,15 @@
+                 omni_result.fresh_views=static_cast<int>(current_views.size());
+                 ++omni_result.certificates;
+             }
+-            int local_candidates=0;
+-            // A moving operator intent needs the continuous spherical target.
+-            // A fixed goal can prioritize the mature local component search;
+-            // manual mode uses those candidates only for certified recovery.
+-            if(!omni_result.valid || (use_fixed_goal_ && omni_result.direction.dot(intent.normalized())<1.-1e-9)) {
+-                const Eigen::Vector3d local=omniLocalCandidate(observation,current_views,position,velocity,
++            // Manual intent keeps the continuous spherical policy; local
++            // candidates are only a recovery when no sphere ray certifies.
++            if(!use_fixed_goal_ && !omni_result.valid)
++                local=omniLocalCandidate(observation,current_views,position,velocity,
+                     intent,speed,omni_corridor,stamp.seconds(),dt,cfg.retain_previous,&local_candidates);
+-                if(local.norm()>1e-8) {
+-                    omni_result.direction=local;omni_result.valid=true;
+-                    omni_result.used_short_horizon=false;omni_result.retained_previous=false;
+-                }
++            if(local.norm()>1e-8) {
++                omni_result.direction=local;omni_result.valid=true;
++                omni_result.used_short_horizon=false;omni_result.retained_previous=false;
++                omni_result.fresh_views=static_cast<int>(current_views.size());
+             }
+             if(omni_result.valid) {
+                 proposal=speed*omni_result.direction;
