@@ -1,3 +1,16 @@
+### 2026-10-20 10:30 — [EGO2P6] GitHub新分支上传成功并删除旧ego1p0名称
+
+- 状态：EGO2P6源码快照已上传、旧远端ego1p0删除成功；本完成记录随后随新分支追加上传。
+- 目的：完成用户将当前版本上传到原仓库、以EGO2P6替代旧ego1p0分支的要求。
+- 项目路径：/home/starry/isaac-data/EGO2P6；https://github.com/Chenwill1899/Fov-gvf/tree/EGO2P6。
+- 涉及文件：349份当前版本文件（源码、配置、必要测试夹具、场景、说明和165份紧凑实验证据）；.gitignore、docs/README.md、AGENTS.md、CURRENT_CHECKPOINT.json、WORK_LOG.md；HISTORY/CHANGELOG.md、README.md、FOV_GVF_FAMILY.md、PROJECT_INDEX.md和发布回执；Git EGO2P6引用。
+- 修改内容：源码快照提交7e6f2f6cd0f10001227fd7c8f1ecea3ffcf73846，文件树71d86f83d85731a1201b27e5506e97bf37ec85ae，349文件共92,110,943字节，最大18,000,000字节。以旧远端f28f5fe16cc71057191381d7e5c565e5ebd66ce6为父级，保留全部旧提交历史；普通推送创建EGO2P6。远端复核新SHA一致、dev未变、旧tip未变后，用指定旧tip的force-with-lease条件仅删除ego1p0。新本地EGO2P6设为活动分支并跟踪origin/EGO2P6，原本地ego1p1/ego1p0引用保留。
+- 验证：提交前349个Git索引blob逐一与实际文件字节核对，工作树干净、旧tip为新提交祖先；首次新分支push和旧分支delete均返回0。只读远端复核默认dev及其804f26e2e631d0571f5e1cc5088100481df1b16d保持，标签无变化。上传前常见私钥/令牌/密码字面量扫描无匹配；runtime未进入树，实验表已纳入。算法/场景/脚本SHA相对任务开始不变；本发布未重新运行构建/算法测试/仿真，沿用本日3包构建、174工具平台、8参数与入口验证。
+- 过程记录：初始沙箱DNS受限后使用获准网络读取。完整旧历史网络下载较慢，后发现P5保留同一f28f5fe16cc71057191381d7e5c565e5ebd66ce6及对象；精确匹配本任务唯一fetch PID后SIGINT停止（退出130/EOF），从P5只读本地fetch成功补齐全部历史，未修改P5源码。明确移除本任务中断下载遗留tmp_pack_gVadi2共72,441,867字节，详见cancelled_fetch_cleanup.json；完整历史对象和新快照保留，不执行历史裁剪。
+- 影响与边界：远端新增EGO2P6、删除ego1p0名称；旧版本仍在EGO2P6历史中。默认dev、其它引用与其它项目源码不变；本机编译安装/缓存不上传，源码检出需先按docs/README重建。性能结论保持最新正式47/50及已知长尾/卡停边界，不将发布视为新验收。
+- 回滚/备份：/home/starry/isaac-data/HISTORY/snapshots/EGO2P6_github_20261020_102254保存原元数据/索引/本地引用、代码SHA、349文件blob清单、源快照提交和发布回执；恢复旧远端分支可由保留祖先f28f5fe16cc71057191381d7e5c565e5ebd66ce6重建，需另获明确操作授权。
+- 后续事项：追加上传本记录并复核最终远端SHA/默认分支/旧分支缺失，最终机器回执保存于HISTORY/EGO2P6_GIT_PUBLISH_20261020.json。
+
 ### 2026-10-20 10:23 — [EGO2P6] 准备发布GitHub EGO2P6分支并替换旧ego1p0名称
 
 - 状态：本地发布准备；尚未宣称上传或删除完成。

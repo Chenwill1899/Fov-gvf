@@ -15,4 +15,4 @@
 
 - 实验驱动、独立审计、汇总脚本及其回归统一在src/pc_gvf/tools/，项目根目录不再保留tools/。自动路线仍从scripts/run_goal.sh启动。
 
-- 当前GitHub发布使用Chenwill1899/Fov-gvf的EGO2P6分支；docs/performance紧凑报告应版本化，docs/performance/runtime生成物保持忽略。用户本次明确授权在新分支上传验证后删除旧远端ego1p0，dev及其它引用保持。
+- 当前GitHub发布使用Chenwill1899/Fov-gvf的EGO2P6分支；docs/performance紧凑报告应版本化，docs/performance/runtime生成物保持忽略。2026-10-20按用户明确授权以EGO2P6替代旧远端ego1p0，dev及其它引用保持。
