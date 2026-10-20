@@ -1,6 +1,9 @@
 #include "pc_gvf/paper_guidance.hpp"
 #include "pc_gvf/verified_start.hpp"
+#include "pc_gvf/goal_proposal_cache.hpp"
 #include <cstdlib>
+#include <cstdio>
+#include <unistd.h>
 #include <Eigen/Geometry>
 #include <cmath>
 #include <fstream>
@@ -15,14 +18,106 @@ int main(){
     check(certifyDefaultCloudStart(scene,occupancy,Eigen::Vector3d(-64,-11.2,2.8),2.5,&evidence),"verified spawn rejected");
     check(!certifyDefaultCloudStart(scene,occupancy,Eigen::Vector3d(-64,-11.2,2.8),3.0,&evidence),"seed extends beyond geometry bounds");
     check(!certifyDefaultCloudStart(scene,"/nonexistent/occupancy",Eigen::Vector3d(-64,-11.2,2.8),2.5,&evidence),"missing geometry accepted");
-    std::ifstream stream(occupancy,std::ios::binary);std::vector<unsigned char> cells(400*300*50);
-    stream.read(reinterpret_cast<char*>(cells.data()),cells.size());bool tested=false;
-    for(int x=10;x<390&&!tested;++x)for(int y=10;y<290&&!tested;++y)for(int z=5;z<45&&!tested;++z)
-        if(cells[(x*300+y)*50+z]) {
-            const Eigen::Vector3d center=Eigen::Vector3d(-80,-60,0)+.4*(Eigen::Vector3d(x,y,z)+Eigen::Vector3d::Constant(.5));
-            check(!certifyDefaultCloudStart(scene,occupancy,center,.4,&evidence),"occupied seed accepted");tested=true;
-        }
-    check(tested,"occupied geometry test had no fixture");
+    const std::string archive=root+"/src/pc_gvf/test/fixtures/verified_maps";
+    const std::string old_scene=archive+"/ego_swarm_cloud/ego_swarm_cloud_navigation.usd";
+    const std::string old_occupancy=archive+"/ego_swarm_cloud/occupancy.bin";
+    const std::string long_scene=archive+"/speed_cloud_long/speed_cloud_long.usda";
+    const std::string long_occupancy=archive+"/speed_cloud_long/occupancy.bin";
+    check(certifyDefaultCloudStart(old_scene,old_occupancy,Eigen::Vector3d(-64,-11.2,2.8),2.5,&evidence),"archived spawn rejected");
+    check(certifyDefaultCloudStart(long_scene,long_occupancy,Eigen::Vector3d(-64,-11.2,2.8),2.5,&evidence),"archived derived spawn rejected");
+    check(!certifyDefaultCloudStart(scene,old_occupancy,Eigen::Vector3d(-64,-11.2,2.8),2.5,&evidence),"unified scene accepted old short grid");
+    check(!certifyDefaultCloudStart(old_scene,occupancy,Eigen::Vector3d(-64,-11.2,2.8),2.5,&evidence),"old scene accepted unified grid");
+    check(!certifyDefaultCloudStart(scene,occupancy,Eigen::Vector3d(399,-11.2,2.8),2.5,&evidence),"unified boundary seed accepted");
+    char temporary[]="/tmp/pc_gvf_scene_identity_XXXXXX";
+    const int fd=mkstemp(temporary);check(fd>=0,"temporary scene creation failed");close(fd);
+    {std::ifstream source(scene,std::ios::binary);std::ofstream altered(temporary,std::ios::binary);
+     altered<<source.rdbuf();altered.put('x');}
+    check(!certifyDefaultCloudStart(temporary,occupancy,Eigen::Vector3d(-64,-11.2,2.8),2.5,&evidence),"modified unified USD accepted");
+    std::remove(temporary);
+    std::ifstream stream(occupancy,std::ios::binary);std::vector<unsigned char> cells(1200*300*50);
+    stream.read(reinterpret_cast<char*>(cells.data()),cells.size());
+    // Check occupied evidence in every section, including the reflected middle.
+    for(int section=0;section<3;++section) {
+        bool tested=false;
+        for(int x=section*400+10;x<section*400+390&&!tested;++x)for(int y=10;y<290&&!tested;++y)for(int z=5;z<45&&!tested;++z)
+            if(cells[(x*300+y)*50+z]) {
+                const Eigen::Vector3d center=Eigen::Vector3d(-80,-60,0)+.4*(Eigen::Vector3d(x,y,z)+Eigen::Vector3d::Constant(.5));
+                check(!certifyDefaultCloudStart(scene,occupancy,center,.4,&evidence),"occupied unified seed accepted");tested=true;
+            }
+        check(tested,"occupied geometry section had no fixture");
+    }
+    GoalProposalCache target_cache;
+    target_cache.save(Eigen::Vector3d::Zero(),Eigen::Vector3d(3,0,0),Eigen::Vector3d(1,1,0),5.,1.);
+    check(target_cache.proposal(Eigen::Vector3d(.2,0,0),Eigen::Vector3d(3,0,0),1.1).norm()>2.99,"recent world proposal lost");
+    check(target_cache.proposal(Eigen::Vector3d::Zero(),Eigen::Vector3d(3,0,0),1.16).norm()==0.,"proposal lifetime extended");
+    check(target_cache.proposal(Eigen::Vector3d::Zero(),Eigen::Vector3d(3,0,0),.99).norm()==0.,"future proposal accepted");
+    check(target_cache.proposal(Eigen::Vector3d::Zero(),Eigen::Vector3d(0,3,0),1.1).norm()==0.,"changed intent reused old target");
+    check(target_cache.proposal(Eigen::Vector3d(1,0,0),Eigen::Vector3d(3,0,0),1.1).norm()==0.,"large displacement reused old target");
+    check(target_cache.proposal(Eigen::Vector3d(.2,0,0),Eigen::Vector3d(3,0,0),4.9,5.).norm()>2.99,"stationary watchdog recovery proposal lost");
+    check(target_cache.proposal(Eigen::Vector3d::Zero(),Eigen::Vector3d(3,0,0),6.01,5.).norm()==0.,"watchdog proposal lifetime extended");
+    // A curved free corridor can admit a turn while its straight emergency
+    // stop leaves known volume. This is the watchdog branch, not an obstacle
+    // found only by the simulator's external guard.
+    {
+    PaperConfig emergency_cfg;emergency_cfg.motion.max_accel=1.2;
+    emergency_cfg.motion.brake_accel=1.2;emergency_cfg.motion.delay=.2;
+    emergency_cfg.motion.rollout_horizon=.2;
+    Camera blind_camera(16,12,90,68,10);
+    DepthObservation blind(blind_camera,std::vector<double>(192,0.),Eigen::Vector3d::Zero(),fixedCameraRotation(),1,1);
+    std::vector<Eigen::Vector3d> curved;
+    Eigen::Vector3d fixture_p=Eigen::Vector3d::Zero(),fixture_v(3,0,0);
+    for(int k=0;k<160;++k) {
+        curved.push_back(fixture_p);
+        Eigen::Vector3d acceleration=Eigen::Vector3d::Zero();
+        if(k>=8&&k<16)acceleration=clampNorm((Eigen::Vector3d(0,3,0)-fixture_v)/.22,1.2);
+        else if(k>=16&&fixture_v.norm()>1e-7)acceleration=-std::min(1.2,fixture_v.norm()/.025)*fixture_v.normalized();
+        const Eigen::Vector3d next_v=fixture_v+.025*acceleration;
+        fixture_p+=.0125*(fixture_v+next_v);fixture_v=next_v;
+    }
+    PaperGuidance original_branch(emergency_cfg);original_branch.setVerifiedNeighborhood(curved,.65);
+    check(original_branch.motionSafe(blind,Eigen::Vector3d::Zero(),Eigen::Vector3d(3,0,0),Eigen::Vector3d(0,3,0),1),"known turning corridor refused");
+    check(!original_branch.motionSafe(blind,Eigen::Vector3d::Zero(),Eigen::Vector3d(3,0,0),Eigen::Vector3d::Zero(),1),"blind straight stop fixture is not negative");
+    emergency_cfg.emergency_braking_certificate=true;
+    PaperGuidance both_branches(emergency_cfg);both_branches.setVerifiedNeighborhood(curved,.65);
+    check(!both_branches.motionSafe(blind,Eigen::Vector3d::Zero(),Eigen::Vector3d(3,0,0),Eigen::Vector3d(0,3,0),1),"unproved emergency branch accepted");
+    PaperGuidance open_branches(emergency_cfg);open_branches.setVerifiedSeed(Eigen::Vector3d::Zero(),10.);
+    check(open_branches.motionSafe(blind,Eigen::Vector3d::Zero(),Eigen::Vector3d(3,0,0),Eigen::Vector3d(0,3,0),1),"both known branches rejected");
+    }
+    // Regression: a64 previously charged a 5 mm acceleration bulge even to
+    // a stationary emergency stop. A body exactly contained in known volume
+    // can remain there; neither a real displacement nor restart room is free.
+    {
+    PaperConfig stationary_cfg;
+    stationary_cfg.motion.body_radius=.48;stationary_cfg.motion.safety_margin=.02;
+    stationary_cfg.motion.rollout_margin=.02;stationary_cfg.observation_timeout=.3;
+    stationary_cfg.motion.max_accel=64.;stationary_cfg.motion.brake_accel=64.;
+    stationary_cfg.motion.velocity_tau=.03;stationary_cfg.motion.delay=.2;
+    stationary_cfg.motion.rollout_horizon=.2;stationary_cfg.emergency_braking_certificate=true;
+    Camera blind_camera(16,12,90,68,10);
+    DepthObservation blind(blind_camera,std::vector<double>(192,0.),
+        Eigen::Vector3d::Zero(),fixedCameraRotation(),1,1);
+    PaperGuidance stationary(stationary_cfg);
+    const Eigen::Vector3d rest=Eigen::Vector3d::Zero();
+    const double radius=stationary.envelopeRadius();
+    check(std::abs(radius-.58)<1e-12,"stationary regression envelope changed");
+    check(stationary.setVerifiedSeed(rest,radius),"stationary regression seed rejected");
+    check(stationary.envelopeKnown(blind,rest,radius,1),"stationary body is not known");
+    check(!stationary.envelopeKnown(blind,rest,radius+.005,1),"stationary fixture permits old extra bulge");
+    check(stationary.motionSafe(blind,rest,rest,rest,1),"known stationary emergency stop rejected");
+    check(!stationary.motionSafe(blind,rest,rest,Eigen::Vector3d(.1,0,0),1),
+        "stationary footprint authorized acceleration into unknown space");
+    check(!stationary.motionSafe(blind,rest,Eigen::Vector3d(4,0,0),rest,1),
+        "stationary footprint authorized an unknown braking corridor");
+    check(!stationary.motionSafe(blind,rest,Eigen::Vector3d(4,0,0),Eigen::Vector3d(0,4,0),1),
+        "stationary footprint authorized an unknown turn");
+    check(!stationary.motionSafe(blind,rest,rest,rest,1.31),
+        "stationary proof bypassed observation expiry");
+    stationary_cfg.restart_clearance=.001;
+    PaperGuidance restart(stationary_cfg);restart.setVerifiedSeed(rest,radius);
+    check(!restart.motionSafe(blind,rest,rest,rest,1),"stationary proof discarded requested restart room");
+    PaperGuidance unknown(stationary_cfg);
+    check(!unknown.motionSafe(blind,rest,rest,rest,1),"unobserved stationary body accepted");
+    }
     PaperConfig cfg;cfg.history_duration=3.0;
     Camera camera(48,36,90,68,10);std::vector<double> clear(48*36,10),unknown(48*36,0);
     DepthObservation first(camera,clear,Eigen::Vector3d(.22,0,.02),fixedCameraRotation(),1,1);
@@ -65,6 +160,29 @@ int main(){
     overlap.ingestObservation(union_intrusion);
     check(!overlap.envelopeKnown(union_intrusion,Eigen::Vector3d::Zero(),.59,1.1),
         "union retained a revoked constituent sphere");
+    // Warm a real control step using only a narrow union. Newly ingested
+    // contradictory geometry must invalidate every frame-local positive proof,
+    // with and without permission to use pending certified volumes generally.
+    for(bool retain_pending:{false,true}) {
+        auto cache_cfg=cfg;cache_cfg.retain_verified_travel=true;
+        cache_cfg.retain_certified_volume=retain_pending;cache_cfg.history_uncertainty_rate=0.;
+        cache_cfg.emergency_braking_certificate=true;
+        PaperGuidance cached_union(cache_cfg);
+        cached_union.setVerifiedNeighborhood({Eigen::Vector3d(-.075,0,0),Eigen::Vector3d(.075,0,0)},.60);
+        auto missing=no_view;
+        const Eigen::Vector3d crawl_intent=.02*Eigen::Vector3d::UnitX();
+        const auto warm=cached_union.stepWithProposal(missing,Eigen::Vector3d::Zero(),Eigen::Vector3d::Zero(),
+            crawl_intent,crawl_intent,1.,.02);
+        check(warm.accepted,"narrow-union cache fixture did not warm a real motion proof");
+        missing.stamp=1.1;++missing.version;
+        missing.obstacle_points=std::make_shared<std::vector<Eigen::Vector3d>>(1,
+            missing.rotation.transpose()*(-missing.origin));
+        cached_union.ingestObservation(missing);
+        const auto conflict=cached_union.stepWithProposal(missing,Eigen::Vector3d::Zero(),Eigen::Vector3d::Zero(),
+            crawl_intent,crawl_intent,1.1,.02);
+        check(!conflict.accepted&&conflict.command.norm()<1e-8,
+            "frame-local positive union proof survived contradictory native evidence");
+    }
     PaperGuidance planner(cfg);
     check(planner.setVerifiedSeed(Eigen::Vector3d::Zero(),2.5),"seed installation failed");
     check(!planner.setVerifiedSeed(Eigen::Vector3d(10,0,0),2.5),"seed recentered after installation");

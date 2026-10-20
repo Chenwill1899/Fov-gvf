@@ -125,7 +125,7 @@ class BeitongMode2:
             self.path = self.XINPUT_DEVICE
         else:
             self.path = self.BFM_DEVICE
-        self.horizontal_speed = _nonnegative_env("JOYSTICK_HORIZONTAL_SPEED", 2.0)
+        self.horizontal_speed = _nonnegative_env("JOYSTICK_HORIZONTAL_SPEED", 6.0)
         self.vertical_speed = _nonnegative_env("JOYSTICK_VERTICAL_SPEED", 1.5)
         self.max_yaw_rate = math.radians(
             _nonnegative_env("JOYSTICK_YAW_RATE_DEG", 75.0))

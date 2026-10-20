@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+from collections import deque
 import math
 import statistics
 import time
@@ -22,25 +23,31 @@ def wrap(angle):
 
 
 class TimingSeries:
+    # Percentiles: latest 8192; mean/max: all valid samples.
     def __init__(self):
-        self.values = []
+        self.values = deque(maxlen=8192)
+        self.count = 0
+        self.total = 0.0
+        self.peak = 0.0
 
     def add(self, value):
         if math.isfinite(value) and value >= 0.0:
             self.values.append(float(value))
+            self.count += 1
+            self.total += value
+            self.peak = max(self.peak, value)
 
     def mean(self):
-        return statistics.fmean(self.values) if self.values else 0.0
+        return self.total / self.count if self.count else 0.0
 
     def percentile(self, fraction):
         if not self.values:
             return 0.0
         ordered = sorted(self.values)
-        index = round(fraction * (len(ordered) - 1))
-        return ordered[index]
+        return ordered[round(fraction * (len(ordered) - 1))]
 
     def maximum(self):
-        return max(self.values, default=0.0)
+        return self.peak
 
 
 def command_stamp_is_fresh(now_ns, stamp_ns, timeout):
@@ -57,12 +64,15 @@ def convert(vx, vy, yaw, mode, max_vx, max_vy, max_w, yaw_kp, deadband,
         out.linear.x = min(max_vx, max(0.0, speed * max(0.0, math.cos(error))))
         out.angular.z = min(max_w, max(-max_w, yaw_kp * error + yaw_dot))
     else:
-        c, s = math.cos(yaw), math.sin(yaw)
-        body = (c * vx + s * vy, -s * vx + c * vy, vz)
+        if mode == "world":
+            vector = (vx, vy, vz)
+        else:
+            c, s = math.cos(yaw), math.sin(yaw)
+            vector = (c * vx + s * vy, -s * vx + c * vy, vz)
         scale = min([1.0] + [max(0.0, limit) / abs(value)
-                    for value, limit in zip(body, (max_vx, max_vy, max_vz))
+                    for value, limit in zip(vector, (max_vx, max_vy, max_vz))
                     if abs(value) > 1.0e-12])
-        out.linear.x, out.linear.y, out.linear.z = (scale * value for value in body)
+        out.linear.x, out.linear.y, out.linear.z = (scale * value for value in vector)
         out.angular.z = min(max_w, max(-max_w, yaw_dot))
     if mode == "diff_drive":
         out.linear.z = min(max_vz, max(-max_vz, vz))
@@ -74,8 +84,8 @@ class CommandBridge(Node):
         super().__init__("position_cmd_to_twist")
         p = lambda name, default: self.declare_parameter(name, default).value
         self.mode = p("mode", "holonomic")
-        if self.mode not in {"holonomic", "diff_drive"}:
-            raise ValueError("mode must be holonomic or diff_drive")
+        if self.mode not in {"world", "holonomic", "diff_drive"}:
+            raise ValueError("mode must be world, holonomic or diff_drive")
         self.max_vx, self.max_vy, self.max_vz, self.max_w = (
             p("max_vx", 0.6), p("max_vy", 0.4), p("max_vz", 0.0), p("max_w", 1.2))
         self.yaw_kp, self.deadband = p("yaw_kp", 2.0), p("heading_deadband", 0.05)
@@ -136,7 +146,7 @@ class CommandBridge(Node):
             self.last_valid_command_wall = None
             return
         self.last_valid_command_wall=callback_start
-        if self.yaw is not None:
+        if self.mode == "world" or self.yaw is not None:
             self.pub.publish(convert(msg.velocity.x, msg.velocity.y, self.yaw, self.mode,
                                      self.max_vx, self.max_vy, self.max_w, self.yaw_kp,
                                      self.deadband, msg.yaw_dot,

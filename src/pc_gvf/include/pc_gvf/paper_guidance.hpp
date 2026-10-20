@@ -4,6 +4,9 @@
 #include "pc_gvf/dynamic_obstacles.hpp"
 #include "pc_gvf/spherical_memory.hpp"
 #include "pc_gvf/shared_obstacles.hpp"
+#include "pc_gvf/proof_query_memo.hpp"
+#include <algorithm>
+#include <cstdint>
 #include <memory>
 #include <array>
 #include <map>
@@ -82,6 +85,16 @@ struct PaperConfig {
     double certificate_resolution = .005;
     // Extra observed room at the predicted stop, retained on measured arrival.
     double restart_clearance = 0.0;
+    // Optional world-space half-space intersection. This only removes free
+    // volume; depth/retained evidence is still required above the plane.
+    bool free_space_floor_enabled = false;
+    double free_space_floor_z = 0.0;
+    bool free_space_ceiling_enabled = false;
+    double free_space_ceiling_z = 20.0;
+    // Operational XY domain, not a claim that its interior is observed/free.
+    bool working_bounds_enabled = false;
+    double working_min_x = -80., working_max_x = 399.8;
+    double working_min_y = -60., working_max_y = 59.8;
     // Teleoperation policies; ROS enables them, pure-paper baselines do not.
     bool intent_guard = false;
     bool smooth_speed = false;
@@ -96,8 +109,58 @@ struct PaperConfig {
     // Compensate first-order velocity tracking, still certify the final command.
     bool response_preview = false;
     bool certified_direct = false;
+    // Also prove the straight emergency stop used on timeout/watchdog frames.
+    bool emergency_braking_certificate = false;
+    // Experimental policies; independent switches retain the strict baseline.
+    bool execution_consistent = false;
+    bool assisted_vertical = false;
+    bool bounded_exploration = false;
+    double execution_dt = 1. / 60.;
+    double tracking_margin = .015;
+    double assist_speed = .4;
+    double assist_radius = .8;
+    double probe_speed = .3;
+    double probe_vertical_speed = .2;
+    double probe_distance_budget = 3.5;
+    double probe_time_budget = 12.;
+    double probe_volume_budget = 5.;
+    double probe_anchor_range = 3.;
+    double probe_clearance = .08;
 };
-// A capsule proven to lie in observed free volume along a measured segment.
+struct ActiveNavigationState {
+    Eigen::Vector3d anchor = Eigen::Vector3d::Zero(), last_position = Eigen::Vector3d::Zero();
+    Eigen::Vector3d center = Eigen::Vector3d::Zero(), previous_intent = Eigen::Vector3d::Zero();
+    double last_time = -1., anchor_stamp = -1.;
+    double unknown_distance = 0., unknown_time = 0., unknown_volume = 0.;
+    double turn_sign = 1.;
+    std::uint64_t episode = 0;
+    bool anchor_valid = false, episode_active = false, assist_active = false, recovering = false;
+    std::vector<Eigen::Vector3d> critical_targets;
+    Eigen::Vector3d progress_position = Eigen::Vector3d::Zero();
+    double progress_time = -1.;
+    std::uint64_t observed_targets = 0;
+    bool paused = false;
+    double unknown_exposure = 0.;
+    bool unknown_volume_started = false;
+    bool last_unknown = false;
+    bool verified_retreat = false;
+    // -1 ceiling recovery, +1 floor recovery; retained across the exit band.
+    int boundary_inward = 0;
+    // Short-lived untrusted nomination, including a completed slow solve whose
+    // command was later cancelled. Every reuse needs a fresh whole-motion proof.
+    Eigen::Vector3d certified_command = Eigen::Vector3d::Zero();
+    Eigen::Vector3d certified_position = Eigen::Vector3d::Zero();
+    Eigen::Vector3d certified_intent = Eigen::Vector3d::Zero();
+    Eigen::Vector3d certified_anchor = Eigen::Vector3d::Zero();
+    double certified_stamp = -1.;
+    bool certified_recovering = false;
+    int certified_boundary_inward = 0;
+    // Independent of the movable reliable return destination.
+    Eigen::Vector3d episode_origin = Eigen::Vector3d::Zero();
+    bool episode_origin_valid = false;
+    double episode_stamp = -1.;
+};
+// An exact capsule proved free along a measured or fully certified motion segment.
 struct CertifiedTube {
     Eigen::Vector3d a, b;
     double radius = 0.0;
@@ -150,6 +213,13 @@ struct PaperResult {
     double required_prefix = 0.0, best_prefix = 0.0;
     int free_directions = 0;
     bool grid_refined = false;
+    std::string authorization = "NONE", navigation_mode = "NORMAL";
+    std::uint64_t probe_episode = 0;
+    double unknown_distance = 0., unknown_time = 0., unknown_volume = 0.;
+    double expected_visibility = 0.;
+    double unknown_exposure = 0.;
+    Eigen::Vector3d recovery_anchor = Eigen::Vector3d::Zero();
+    std::vector<Eigen::Vector3d> preview_path, observation_targets;
 };
 class PaperGuidance {
 public:
@@ -163,6 +233,18 @@ public:
     void reset();
     // Synchronize post-planning watchdog overrides with the next planning step.
     void confirmPublishedCommand(const Eigen::Vector3d& command);
+    const Eigen::Vector3d& publishedCommand() const { return previous_command_; }
+    // Commit a runtime override using the actual delayed target and physical
+    // stopping envelope, rather than the exploratory candidate just cancelled.
+    void confirmExecutionOverride(const DepthObservation&,const Eigen::Vector3d&,
+        const Eigen::Vector3d&,const Eigen::Vector3d&,const Eigen::Vector3d&,double);
+    bool requestVerifiedRetreat(const DepthObservation&,const Eigen::Vector3d&,double);
+    // Cancel assistance on release/stale input; the episode budget survives.
+    void cancelActiveNavigation();
+    bool activeNavigationEnabled() const { return cfg_.assisted_vertical || cfg_.bounded_exploration; }
+    bool activeNavigationRequested(const DepthObservation&,const Eigen::Vector3d&,
+        const Eigen::Vector3d&,double);
+    const ActiveNavigationState& activeNavigationState() const { return active_; }
     void ingestObservation(const DepthObservation& observation);
     bool setVerifiedSeed(const Eigen::Vector3d& center,double radius);
     bool setVerifiedNeighborhood(const std::vector<Eigen::Vector3d>& centers,double radius);
@@ -181,7 +263,7 @@ public:
         const Eigen::Vector3d& intent, double now, double dt,
         const Eigen::Vector3d* proposal = nullptr) const;
     static PaperResult replay(std::istream& in,std::ostream* audit = nullptr,
-        bool enable_incremental_for_ablation = false);
+        bool enable_incremental_for_ablation = false, bool enable_active_for_ablation = false);
     std::size_t revokedBalls() const { return revoked_balls_; }
     std::size_t expiredViews() const { return expired_views_; }
     std::size_t evictedViews() const { return evicted_views_; }
@@ -213,11 +295,30 @@ public:
         const Eigen::Vector3d& velocity, const Eigen::Vector3d& command, double now) const;
 private:
     friend struct PaperReplayCodec;
+    bool withinWorkingBounds(const Eigen::Vector3d& a,const Eigen::Vector3d& b,double r) const {
+        return !cfg_.working_bounds_enabled ||
+            (std::min(a.x(),b.x())-r>=cfg_.working_min_x && std::max(a.x(),b.x())+r<=cfg_.working_max_x &&
+             std::min(a.y(),b.y())-r>=cfg_.working_min_y && std::max(a.y(),b.y())+r<=cfg_.working_max_y);
+    }
+    PaperResult activeStep(const DepthObservation&,const Eigen::Vector3d&,
+        const Eigen::Vector3d&,const Eigen::Vector3d&,double,double);
+    bool episodeObservationProgress(const DepthObservation&,const Eigen::Vector3d&,double) const;
+    std::vector<CertifiedTube> executionPath(const Eigen::Vector3d& position,
+        const Eigen::Vector3d& velocity,const Eigen::Vector3d& command,bool emergency = false) const;
+    ActiveNavigationState active_;
     PaperResult stepImpl(const DepthObservation& observation,const Eigen::Vector3d& position,
         const Eigen::Vector3d& velocity,const Eigen::Vector3d& intent,double now,double dt);
     bool certifyMotion(const DepthObservation& observation, const Eigen::Vector3d& position,
         const Eigen::Vector3d& velocity, const Eigen::Vector3d& command, double now,
-        std::vector<std::pair<Eigen::Vector3d,double>>* prefix) const;
+        std::vector<std::pair<Eigen::Vector3d,double>>* prefix,
+        std::vector<CertifiedTube>* tubes = nullptr) const;
+    bool certifyMotionPath(const DepthObservation& observation, const Eigen::Vector3d& position,
+        const Eigen::Vector3d& velocity, const Eigen::Vector3d& command, double now,
+        std::vector<std::pair<Eigen::Vector3d,double>>* prefix,
+        std::vector<CertifiedTube>* tubes = nullptr) const;
+    bool certifyAndRetainMotion(const DepthObservation& observation, const Eigen::Vector3d& position,
+        const Eigen::Vector3d& velocity, const Eigen::Vector3d& command, double now,
+        std::vector<std::pair<Eigen::Vector3d,double>>* prefix);
     bool build(const DepthObservation& observation, const Eigen::Vector3d& position,
         const Eigen::Vector3d& direction, const Eigen::Vector2d& state, double speed, double now,
         const Eigen::Vector2d* source_hint, const Eigen::Vector2d* goal_hint, double measured_speed);
@@ -225,9 +326,12 @@ private:
         Eigen::Vector2d* anchor) const;
     bool segmentKnown(const DepthObservation& observation,const Eigen::Vector3d& a,
         const Eigen::Vector3d& b,double radius,double now,bool pending = false) const;
+    bool segmentKnownImpl(const DepthObservation& observation,const Eigen::Vector3d& a,
+        const Eigen::Vector3d& b,double radius,double now,bool pending) const;
     bool envelopeKnownImpl(const DepthObservation& observation,const Eigen::Vector3d& center,
         double radius,double now,bool pending) const;
     void rememberTube(const DepthObservation& observation,const Eigen::Vector3d& position,double now);
+    void appendVerifiedTube(CertifiedTube tube,const Eigen::Vector3d& position);
     std::vector<std::shared_ptr<const DepthObservation>> history_;
     std::array<double,4> ingestion_cost_ms_{{0,0,0,0}};
     std::map<int,std::pair<double,std::uint64_t>> checked_observations_;
@@ -235,11 +339,23 @@ private:
     std::map<int,double> last_retained_stamp_;
     using EnvelopeCache = std::map<std::tuple<int,int,int>,std::pair<Eigen::Vector3d,double>>;
     mutable std::array<EnvelopeCache,4> envelope_caches_;
+    // Exact-query scratch memory, separate for pending-proof policy and each
+    // worker. Cleared with the observation/step scope, never serialized as free
+    // space. Positive entries are existing proofs; negative entries expire on
+    // this worker's derived-proof revision change.
+    mutable std::array<std::array<CapsuleProofMemo,4>,2> segment_proof_memos_;
     bool cache_enabled_ = false;
     Eigen::Vector2d diagnostic_state_ = Eigen::Vector2d::Zero(), diagnostic_rate_ = Eigen::Vector2d::Zero();
     double diagnostic_time_ = 0.0;
     bool diagnostic_valid_ = false;
     Eigen::Vector3d field_position_ = Eigen::Vector3d::Zero();
+    // Direction-only recovery target from a completed external proposal.
+    // It carries no depth/free-space certificate and reuse never renews its age.
+    Eigen::Vector3d recovery_goal_ = Eigen::Vector3d::Zero();
+    Eigen::Vector3d recovery_goal_intent_ = Eigen::Vector3d::Zero();
+    double recovery_goal_stamp_ = -1.;
+    // Last freshly certified speed ceiling; zero retains legacy O behavior.
+    double recovery_goal_speed_ = 0.;
     std::vector<std::pair<Eigen::Vector3d,double>> seeds_;
     bool seed_initialized_ = false;
     std::vector<std::pair<Eigen::Vector3d,double>> verified_travel_;
@@ -248,6 +364,9 @@ private:
     // these exact geometries before arrival; fresh native hits revoke conflicts.
     std::vector<std::pair<Eigen::Vector3d,double>> pending_motion_;
     std::vector<CertifiedTube> verified_tubes_;
+    // Complete latest static command + emergency proof, independent of the
+    // spatial-history eviction budget. Replaced only by a successful handoff.
+    std::vector<CertifiedTube> committed_motion_;
     std::vector<std::pair<Eigen::Vector3d,double>> reached_proofs_;
     Eigen::Vector3d last_reached_ = Eigen::Vector3d::Zero();
     double last_reached_time_ = -1;
@@ -277,6 +396,7 @@ private:
     Eigen::Vector3d previous_intent_ = Eigen::Vector3d::Zero();
     Eigen::Vector3d reference_intent_ = Eigen::Vector3d::Zero();
     double last_update_ = -1.0, coupling_error_ = 0.0, field_lookahead_ = 0.0;
+    mutable std::array<std::uint64_t,4> envelope_cache_revisions_{{0,0,0,0}};
 };
 } }
 #endif

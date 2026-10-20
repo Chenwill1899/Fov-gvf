@@ -58,3 +58,62 @@ class GoalTrial:
                     final_position=list(position), goal=list(self.goal),
                     final_distance_m=math.dist(position, self.goal), collision_blocks=blocks,
                     protocol=self.protocol, exploration_stall_s=self.exploration_stall_s)
+
+
+class SequenceGoalTrial(GoalTrial):
+    """Explicit continuous-controller test; each leg retains normal arrival hold.
+
+    Completed legs never count as independent fresh-process route repeats.
+    Intent release between legs exercises retained budgets and subsequent turns.
+    """
+    def __init__(self, protocol, exploration_stall_s=0.0):
+        super().__init__(protocol, exploration_stall_s)
+        goals = protocol.get("waypoints")
+        if not isinstance(goals, list) or not goals:
+            raise ValueError("continuous test requires waypoints")
+        if any(len(g) != 3 or not all(math.isfinite(float(v)) for v in g) for g in goals):
+            raise ValueError("waypoints must be finite 3-D points")
+        self.waypoints = [tuple(float(v) for v in g) for g in goals]
+        if self.waypoints[-1] != tuple(protocol["goal"]):
+            raise ValueError("final waypoint must equal protocol goal")
+        self.leg_index = 0
+        self.goal = self.waypoints[0]
+        self.pause_until = self.warmup
+        self.leg_started = self.warmup
+        self.completed_legs = []
+        self.leg_timeout = float(protocol.get("leg_timeout_s", 180.0))
+        self.release_s = float(protocol.get("between_leg_release_s", 1.0))
+        if not math.isfinite(self.leg_timeout) or self.leg_timeout <= 0 or not math.isfinite(self.release_s) or self.release_s < 0:
+            raise ValueError("invalid continuous test timing")
+
+    def intent(self, position, now):
+        if now < self.pause_until:
+            return (0.0, 0.0, 0.0)
+        return super().intent(position, now)
+
+    def update(self, position, velocity, now, wall, blocked):
+        if blocked:
+            return "COLLISION_GUARD"
+        if now < self.pause_until:
+            return "RUNNING"
+        if now - self.leg_started >= self.leg_timeout:
+            return "LEG_TIMEOUT"
+        status = super().update(position, velocity, now, wall, blocked)
+        if status == "ARRIVED":
+            self.completed_legs.append(dict(index=self.leg_index, goal=list(self.goal),
+                start_s=self.leg_started, end_s=now, elapsed_s=now-self.leg_started))
+            self.leg_index += 1
+            if self.leg_index == len(self.waypoints):
+                return "ARRIVED"
+            self.goal = self.waypoints[self.leg_index]
+            self.pause_until = now + self.release_s
+            self.leg_started = self.pause_until
+            self.hold_start = self.stall_start = None
+            return "RUNNING"
+        return status
+
+    def result(self, status, position, now, wall, blocks):
+        out = super().result(status, position, now, wall, blocks)
+        out.update(test_kind="continuous_waypoints", planned_legs=len(self.waypoints),
+            completed_legs=self.completed_legs, active_leg=self.leg_index)
+        return out

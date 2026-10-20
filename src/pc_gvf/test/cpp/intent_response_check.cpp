@@ -67,7 +67,7 @@ int main(int argc,char** argv) {
     // Capture with 2deg accumulated, then cross the 0.05rad threshold before the next field interval.
     std::stringstream replay(std::ios::in|std::ios::out|std::ios::binary);
     retained.saveReplay(replay,o,Eigen::Vector3d::Zero(),heading(2),heading(3),1.14,.02);
-    require(replay.str().substr(0,8)=="EGOPAPRM","cumulative state replay version missing");
+    require(replay.str().substr(0,8)=="EGOPAPRQ","cumulative state replay version missing");
     auto expected=retained.step(o,Eigen::Vector3d::Zero(),heading(2),heading(3),1.14,.02);
     replay.seekg(0);auto actual=PaperGuidance::replay(replay);
     require(expected.command_changed&&expected.refreshed&&!expected.continued,"cumulative change delayed by field interval");

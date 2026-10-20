@@ -330,6 +330,13 @@ const Eigen::Vector3d& Camera::ray(int u, int v) const
 
 void Camera::rebuildRays()
 {
+    // The exact same expressions as the containment test, computed once per
+    // camera model instead of on every recursive ball/unknown-pixel query.
+    pixel_x_edges_.resize(width_+1);pixel_y_edges_.resize(height_+1);
+    for(int x=0;x<=width_;++x)pixel_x_edges_[x]=(x-.5-cx_)/fx_;
+    for(int y=0;y<=height_;++y)pixel_y_edges_[y]=(y-.5-cy_)/fy_;
+    frustum_bounds_={{pixel_x_edges_.front(),pixel_x_edges_.back(),pixel_y_edges_.front(),pixel_y_edges_.back()}};
+    for(int i=0;i<4;++i)frustum_normals_[i]=std::hypot(1.0,frustum_bounds_[i]);
     rays_camera_.resize(static_cast<std::size_t>(width_) * height_);
     for (int v = 0; v < height_; ++v) {
         for (int u = 0; u < width_; ++u) {

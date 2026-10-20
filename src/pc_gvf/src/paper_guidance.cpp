@@ -18,6 +18,22 @@ namespace pc_gvf { namespace depth_angular {
 namespace {
 constexpr double nan = std::numeric_limits<double>::quiet_NaN();
 int idx(int x, int y, int width) { return y * width + x; }
+bool permanentVolumeMode(const PaperConfig& cfg) {
+    return cfg.retain_certified_volume && cfg.retain_verified_travel &&
+        cfg.history_uncertainty_rate==0. && !cfg.dynamic_obstacles;
+}
+bool staticEvidenceTree(const DepthObservation& o,int depth,int& remaining) {
+    // Fail closed on malformed/deep/cyclic graphs without retaining a new
+    // provenance member or changing the replay format. Normal views are flat.
+    if(depth>16 || --remaining<0 || o.memory_uncertainty_rate!=0.)return false;
+    for(const auto& view:o.supporting_views)
+        if(!view || !staticEvidenceTree(*view,depth+1,remaining))return false;
+    return true;
+}
+bool staticEvidenceTree(const DepthObservation& o) {
+    int remaining=512;
+    return staticEvidenceTree(o,0,remaining);
+}
 double clip(double x, double a, double b) { return std::max(a, std::min(b, x)); }
 Eigen::Vector2d local(const AngularField& f, const Eigen::Vector2d& y) { return (y-f.offset)/f.spacing; }
 // Certify a query ball against two already certified balls. Their radical
@@ -423,14 +439,12 @@ bool sphereObserved(const DepthObservation& o,const Eigen::Vector3d& center,doub
         o.depth.size()!=o.camera.rays().size()||!o.origin.allFinite()||!o.rotation.allFinite())return false;
     const Eigen::Vector3d p=o.rotation.transpose()*(center-o.origin);
     if(!p.allFinite()||p.z()<=radius)return false;
-    const double ax=(-.5-o.camera.cx())/o.camera.fx();
-    const double bx=(o.camera.width()-.5-o.camera.cx())/o.camera.fx();
-    const double ay=(-.5-o.camera.cy())/o.camera.fy();
-    const double by=(o.camera.height()-.5-o.camera.cy())/o.camera.fy();
-    if(p.x()-ax*p.z()<=radius*std::hypot(1.0,ax)||
-       bx*p.z()-p.x()<=radius*std::hypot(1.0,bx)||
-       p.y()-ay*p.z()<=radius*std::hypot(1.0,ay)||
-       by*p.z()-p.y()<=radius*std::hypot(1.0,by))return false;
+    const auto& bounds=o.camera.frustumBounds();const auto& normals=o.camera.frustumNormals();
+    const double ax=bounds[0],bx=bounds[1],ay=bounds[2],by=bounds[3];
+    if(p.x()-ax*p.z()<=radius*normals[0]||
+       bx*p.z()-p.x()<=radius*normals[1]||
+       p.y()-ay*p.z()<=radius*normals[2]||
+       by*p.z()-p.y()<=radius*normals[3])return false;
     // Exact tangents of the projected sphere bound the relevant pixel cells.
     const double denominator=p.z()*p.z()-radius*radius;
     const double sx=radius*std::sqrt(p.x()*p.x()+denominator);
@@ -443,8 +457,8 @@ bool sphereObserved(const DepthObservation& o,const Eigen::Vector3d& center,doub
         const double measured=o.depth[idx(x,y,o.camera.width())];
         const double depth=std::isfinite(measured)&&measured>0?measured:0.0;
         if(depth>p.z()+radius)continue;
-        const double left=(x-.5-o.camera.cx())/o.camera.fx(),right=(x+.5-o.camera.cx())/o.camera.fx();
-        const double top=(y-.5-o.camera.cy())/o.camera.fy(),bottom=(y+.5-o.camera.cy())/o.camera.fy();
+        const double left=o.camera.pixelXEdge(x),right=o.camera.pixelXEdge(x+1);
+        const double top=o.camera.pixelYEdge(y),bottom=o.camera.pixelYEdge(y+1);
         if(unknownColumnDistance2(p,left,right,top,bottom,depth)<=radius*radius+1e-12)return false;
     }
     return true;
@@ -505,6 +519,15 @@ Eigen::Matrix3d intentChartRotation(const Eigen::Vector3d& velocity,const Eigen:
     chart.col(1)=forward.cross(chart.col(0));return chart;
 }
 PaperGuidance::PaperGuidance(const PaperConfig& config) : cfg_(config) {
+    const double active_positive[] = {cfg_.execution_dt,cfg_.assist_speed,cfg_.assist_radius,
+        cfg_.probe_speed,cfg_.probe_vertical_speed,cfg_.probe_distance_budget,cfg_.probe_time_budget,
+        cfg_.probe_volume_budget,cfg_.probe_anchor_range};
+    for(double x:active_positive)if(!std::isfinite(x)||x<=0.)throw std::invalid_argument("invalid active navigation parameter");
+    if(cfg_.execution_dt>.05||!std::isfinite(cfg_.tracking_margin)||cfg_.tracking_margin<0.||
+       !std::isfinite(cfg_.probe_clearance)||cfg_.probe_clearance<0.)
+        throw std::invalid_argument("invalid execution or exploration margin");
+    if((cfg_.assisted_vertical||cfg_.bounded_exploration)&&!cfg_.execution_consistent)
+        throw std::invalid_argument("active navigation requires execution-consistent rollout");
     if(cfg_.dynamic_obstacles) {
         cfg_.retain_verified_travel=false;cfg_.retain_certified_volume=false;
         cfg_.history_duration=std::min(.5,cfg_.history_duration);
@@ -525,6 +548,15 @@ PaperGuidance::PaperGuidance(const PaperConfig& config) : cfg_(config) {
         cfg_.motion.planning_horizon,cfg_.depth_uncertainty,cfg_.uncertainty_rate,cfg_.restart_clearance,cfg_.proposal_command_accel};
     for(double value:nonnegative)
         if(!std::isfinite(value)||value<0)throw std::invalid_argument("paper margin must be finite and nonnegative");
+    if(!std::isfinite(cfg_.working_min_x)||!std::isfinite(cfg_.working_max_x)||
+       !std::isfinite(cfg_.working_min_y)||!std::isfinite(cfg_.working_max_y)||
+       (cfg_.working_bounds_enabled&&(cfg_.working_min_x>=cfg_.working_max_x||cfg_.working_min_y>=cfg_.working_max_y)))
+        throw std::invalid_argument("invalid working bounds");
+    if(!std::isfinite(cfg_.free_space_ceiling_z)||
+       (cfg_.free_space_floor_enabled&&cfg_.free_space_ceiling_enabled&&
+        cfg_.free_space_ceiling_z<=cfg_.free_space_floor_z))throw std::invalid_argument("invalid free-space ceiling");
+    if(!std::isfinite(cfg_.free_space_floor_z))
+        throw std::invalid_argument("paper free-space floor must be finite");
     if (!std::isfinite(cfg_.command_change_angle) || cfg_.command_change_angle < 0 ||
         cfg_.command_change_angle >= std::acos(-1.0))
         throw std::invalid_argument("invalid paper command-change angle");
@@ -540,6 +572,7 @@ PaperGuidance::PaperGuidance(const PaperConfig& config) : cfg_(config) {
 }
 void PaperGuidance::reset() {
     diagnostic_valid_=false; target_holding_=false; observation_.reset(); field_=AngularField(); box_=FlowBox(); reference_world_.clear();
+    recovery_goal_.setZero();recovery_goal_intent_.setZero();recovery_goal_stamp_=-1.;recovery_goal_speed_=0.;
     proposal_reference_valid_=false;proposal_reference_.setZero();
     previous_command_.setZero(); proposal_acceleration_.setZero(); previous_intent_.setZero(); reference_intent_.setZero(); last_update_=-1;
 }
@@ -551,6 +584,11 @@ void PaperGuidance::confirmPublishedCommand(const Eigen::Vector3d& command) {
     if(previous_command_.norm()<1e-8)diagnostic_valid_=false;
 }
 void PaperGuidance::ingestObservation(const DepthObservation& observation) {
+#ifdef PC_GVF_GOAL_TUBE_REUSE
+    // No positive free-volume proof may survive new obstacle evidence.
+    for(auto& cache:envelope_caches_)cache.clear();
+    for(auto& policy:segment_proof_memos_)for(auto& memo:policy)memo.clear();
+#endif
     if(cfg_.dynamic_obstacles||cfg_.shared_obstacles)dynamic_.ingest(observation);
     if(cfg_.spherical_memory)spherical_.ingest(observation);
     ingestion_cost_ms_.fill(0.);
@@ -562,7 +600,7 @@ void PaperGuidance::ingestObservation(const DepthObservation& observation) {
         !observation.origin.allFinite()||!observation.rotation.allFinite())return;
     const auto previous_view=checked_observations_.find(observation.view);
     if(previous_view!=checked_observations_.end()&&observation.stamp<previous_view->second.first-.1) {
-        history_.clear();checked_observations_.clear();last_retained_stamp_.clear();seeds_.clear();verified_travel_.clear();pending_motion_.clear();verified_tubes_.clear();reached_proofs_.clear();last_reached_time_=-1;reset();
+        history_.clear();checked_observations_.clear();last_retained_stamp_.clear();seeds_.clear();verified_travel_.clear();pending_motion_.clear();verified_tubes_.clear();committed_motion_.clear();reached_proofs_.clear();last_reached_time_=-1;reset();
     }
     const auto identity=std::make_pair(observation.stamp,observation.version);
     const auto checked=checked_observations_.find(observation.view);
@@ -580,6 +618,11 @@ void PaperGuidance::ingestObservation(const DepthObservation& observation) {
     const auto last_retained=last_retained_stamp_.find(observation.view);
     bool retain=last_retained==last_retained_stamp_.end()||
         observation.stamp-last_retained->second>=cfg_.history_sample_interval;
+    // A tagged time-growing view keeps its existing aging behavior. Do not
+    // strip a time-growing child from an untagged parent and then persist that
+    // parent as static history. Fresh-hit revocation below must still run.
+    if(permanentVolumeMode(cfg_) && observation.memory_uncertainty_rate==0. &&
+       !staticEvidenceTree(observation))retain=false;
     for(auto it=history_.rbegin();it!=history_.rend();++it)
         if((*it)->view==observation.view) {
             if(observation.stamp-(*it)->stamp<cfg_.history_sample_interval)retain=false;
@@ -633,6 +676,7 @@ void PaperGuidance::ingestObservation(const DepthObservation& observation) {
         }
     };
     std::vector<CertifiedTube> primitives=verified_tubes_;
+    primitives.insert(primitives.end(),committed_motion_.begin(),committed_motion_.end());
     for(const auto& proof:reached_proofs_)primitives.push_back({proof.first,proof.first,proof.second});
     std::unordered_map<std::array<int,3>,std::vector<std::size_t>,CellHash> tube_cells;
     auto cell=[](const Eigen::Vector3d& p) {
@@ -665,10 +709,15 @@ void PaperGuidance::ingestObservation(const DepthObservation& observation) {
     }),verified_tubes_.end());
     const auto tube_end=revoked.begin()+index;
     revoked_tubes_+=std::count(revoked.begin(),tube_end,1);
+    committed_motion_.erase(std::remove_if(committed_motion_.begin(),committed_motion_.end(),[&](const CertifiedTube&) {
+        return revoked[index++];
+    }),committed_motion_.end());
+    const auto committed_end=revoked.begin()+index;
+    revoked_tubes_+=std::count(tube_end,committed_end,1);
     reached_proofs_.erase(std::remove_if(reached_proofs_.begin(),reached_proofs_.end(),[&](const auto&) {
         return revoked[index++];
     }),reached_proofs_.end());
-    revoked_balls_+=std::count(tube_end,revoked.end(),1);
+    revoked_balls_+=std::count(committed_end,revoked.end(),1);
     phase(1);
     Eigen::Vector3d hits_lo=Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity());
     Eigen::Vector3d hits_hi=-hits_lo;
@@ -801,7 +850,8 @@ void PaperGuidance::ingestObservation(const DepthObservation& observation) {
         if(repair_static) {
             auto repaired=std::make_shared<DepthObservation>(*history_[i]);
             repaired->depth=std::move(repaired_depth[i]);repaired->revoked=false;
-            repaired->supporting_views.clear();repaired->obstacle_points.reset();
+            repaired->supporting_views.clear();
+            if(!cfg_.bounded_exploration)repaired->obstacle_points.reset();
             history_[i]=std::move(repaired);
         }
     }
@@ -813,7 +863,11 @@ void PaperGuidance::ingestObservation(const DepthObservation& observation) {
     if(!retain)return;
     last_retained_stamp_[observation.view]=observation.stamp;
     auto retained=std::make_shared<DepthObservation>(observation);
-    retained->supporting_views.clear();retained->obstacle_points.reset();
+    retained->supporting_views.clear();
+    // Risk collision checks need the original measured rays. A min-pooled
+    // depth placed on another ray is a free-space bound, not a measured hit.
+    // Keep the immutable native cloud in the bounded 16-view history.
+    if(!cfg_.bounded_exploration)retained->obstacle_points.reset();
     history_.push_back(std::move(retained));
     if(history_.size()>static_cast<std::size_t>(cfg_.history_max_observations)) {
         // Preserve coverage around the current footprint and short recovery
@@ -864,19 +918,28 @@ double PaperGuidance::envelopeRadius() const {
     // Budget the maximum admitted observation age once. A saved static-space
     // certificate must not grow stale merely because the next frame is older.
     return cfg_.motion.body_radius+cfg_.motion.safety_margin+cfg_.depth_uncertainty+
-        cfg_.motion.rollout_margin+cfg_.uncertainty_rate*cfg_.observation_timeout;
+        cfg_.motion.rollout_margin+cfg_.uncertainty_rate*cfg_.observation_timeout+
+        (cfg_.execution_consistent?cfg_.tracking_margin:0.);
 }
 bool PaperGuidance::rememberVerifiedPosition(const DepthObservation& input,
     const Eigen::Vector3d& position,double now) {
     if(!cfg_.retain_verified_travel||!position.allFinite()||!std::isfinite(now))return false;
+    if(!withinWorkingBounds(position,position,envelopeRadius()))return false;
+    if(cfg_.free_space_floor_enabled && position.z()-envelopeRadius()<cfg_.free_space_floor_z)return false;
+    if(cfg_.free_space_ceiling_enabled && position.z()+envelopeRadius()>cfg_.free_space_ceiling_z)return false;
     // The ROS layer already records after ingesting all cameras. step() may
     // request the identical footprint at the same timestamp; avoid doing the
     // same union proof twice. Revoked balls are removed before this check.
-    if(now==last_reached_time_&&!verified_travel_.empty()&&
+    if(!permanentVolumeMode(cfg_) && now==last_reached_time_&&!verified_travel_.empty()&&
         (position-verified_travel_.back().first).norm()<1e-9&&verified_travel_.back().second>=envelopeRadius())return true;
     DepthObservation evidence=input;
     if(cfg_.spherical_memory){auto views=spherical_.evidence(now);evidence.supporting_views.insert(evidence.supporting_views.end(),views.begin(),views.end());}
     evidence.supporting_views.insert(evidence.supporting_views.end(),history_.begin(),history_.end());
+    // An instantaneous proof may use aging evidence, but it must not become
+    // a permanent measured ball/tube or an untagged reached proof.
+    if(permanentVolumeMode(cfg_) && !staticEvidenceTree(evidence))return false;
+    if(permanentVolumeMode(cfg_) && now==last_reached_time_&&!verified_travel_.empty()&&
+        (position-verified_travel_.back().first).norm()<1e-9&&verified_travel_.back().second>=envelopeRadius())return true;
     const double radius=envelopeRadius();
     bool known=envelopeKnown(evidence,position,radius,now);
     if(!known)for(const auto& certificate:pending_motion_)
@@ -922,9 +985,12 @@ bool PaperGuidance::rememberVerifiedPosition(const DepthObservation& input,
     for(const auto& previous:verified_travel_)
         retained_radius=std::max(retained_radius,std::min(radius+.10,
             previous.second-(position-previous.first).norm()));
-    double high=radius+.10;
-    if(envelopeKnown(evidence,position,high,now))retained_radius=high;
-    else for(int k=0;k<4;++k) {
+    // Recovery needs a reliable 4cm interior, not repeated bisections searching
+    // for every last millimetre of optional 10cm memory growth. Failed growth
+    // adds no evidence; retain only the body and independently proved room.
+    double high=radius+(active_.recovering?.04:.10);
+    if(envelopeKnown(evidence,position,high,now))retained_radius=std::max(retained_radius,high);
+    else if(!active_.recovering)for(int k=0;k<4;++k) {
         const double middle=.5*(retained_radius+high);
         if(envelopeKnown(evidence,position,middle,now))retained_radius=middle;
         else high=middle;
@@ -956,30 +1022,33 @@ void PaperGuidance::rememberTube(const DepthObservation& evidence,const Eigen::V
             for(double extra:{.02,.01,.005}) {
                 if(segmentKnown(evidence,last_reached_,position,radius+extra,now,true)) {radius+=extra;break;}
             }
-            CertifiedTube tube{last_reached_,position,radius};
-            if(!verified_tubes_.empty()) {
-                const auto& old=verified_tubes_.back();
-                // The broken-line tube contains this chord tube after charging
-                // its entire triangle height against the radius. Never bridge a gap.
-                const double loss=segmentDistance(old.b,old.a,tube.b);
-                const double merged_radius=std::min(old.radius,tube.radius)-loss-1e-10;
-                if((old.b-tube.a).norm()<1e-9 && (tube.b-old.a).norm()<=.5 &&
-                    merged_radius>=envelopeRadius()+cfg_.certificate_resolution) {
-                    tube.a=old.a;tube.radius=merged_radius;verified_tubes_.pop_back();
-                }
-            }
-            verified_tubes_.push_back(tube);
-            if(verified_tubes_.size()>256) {
-                // Keep local recovery coverage under a fixed memory bound.
-                auto victim=std::max_element(verified_tubes_.begin(),verified_tubes_.end()-1,[&](const auto& a,const auto& b) {
-                    return segmentDistance(position,a.a,a.b)<segmentDistance(position,b.a,b.b);
-                });
-                verified_tubes_.erase(victim);
-            }
+            appendVerifiedTube({last_reached_,position,radius},position);
         }
     }
     // A gap is not retrospectively filled after failed certification.
     last_reached_=position;last_reached_time_=now;
+}
+
+void PaperGuidance::appendVerifiedTube(CertifiedTube tube,const Eigen::Vector3d& position) {
+    if(!verified_tubes_.empty()) {
+        const auto& old=verified_tubes_.back();
+        // The broken-line tube contains this chord tube after charging
+        // its entire triangle height against the radius. Never bridge a gap.
+        const double loss=segmentDistance(old.b,old.a,tube.b);
+        const double merged_radius=std::min(old.radius,tube.radius)-loss-1e-10;
+        if((old.b-tube.a).norm()<1e-9 && (tube.b-old.a).norm()<=.5 &&
+            merged_radius>=envelopeRadius()+cfg_.certificate_resolution) {
+            tube.a=old.a;tube.radius=merged_radius;verified_tubes_.pop_back();
+        }
+    }
+    verified_tubes_.push_back(tube);
+    if(verified_tubes_.size()>256) {
+        // Keep local recovery coverage under a fixed memory bound.
+        auto victim=std::max_element(verified_tubes_.begin(),verified_tubes_.end()-1,[&](const auto& a,const auto& b) {
+            return segmentDistance(position,a.a,a.b)<segmentDistance(position,b.a,b.b);
+        });
+        verified_tubes_.erase(victim);
+    }
 }
 
 bool PaperGuidance::envelopeKnown(const DepthObservation& o,const Eigen::Vector3d& center,
@@ -989,7 +1058,25 @@ bool PaperGuidance::envelopeKnown(const DepthObservation& o,const Eigen::Vector3
 bool PaperGuidance::envelopeKnownImpl(const DepthObservation& o,const Eigen::Vector3d& center,
     double radius,double now,bool pending) const {
     if(!center.allFinite()||!std::isfinite(radius)||radius<0)return false;
+    // Intersect every evidence source, including cached balls and capsules,
+    // with the configured world half-space before any positive shortcut.
+    if(!withinWorkingBounds(center,center,radius))return false;
+    if(cfg_.free_space_floor_enabled && center.z()-radius<cfg_.free_space_floor_z)return false;
+    if(cfg_.free_space_ceiling_enabled && center.z()+radius>cfg_.free_space_ceiling_z)return false;
     pending=pending||(cfg_.retain_certified_volume&&cfg_.retain_verified_travel&&cfg_.history_uncertainty_rate==0.);
+    // The callback has just recorded the reached footprint. Outside the
+    // solver's per-query cache scope this is the same existing positive ball
+    // test, placed before scanning hundreds of older proofs/frusta. Ingestion
+    // revokes conflicts before this point. No cached or unknown space is added.
+    if(!cache_enabled_&&!verified_travel_.empty()) {
+        const auto& footprint=verified_travel_.back();
+        if((center-footprint.first).norm()+radius<=footprint.second)return true;
+    }
+    // Recursive union proofs only need geometry intersecting the query ball.
+    // Whole-ball fast paths retain their original order. This broad phase
+    // removes no evidence capable of covering a box intersecting that ball.
+    std::vector<const std::pair<Eigen::Vector3d,double>*> local_balls;
+    bool local_evidence=false;
     // A verified seed is fixed in world coordinates; it never follows the robot.
     // It is an explicit initialization premise, not an observation fabricated
     // at each control instant. Default ROS configuration does not enable it.
@@ -999,16 +1086,26 @@ bool PaperGuidance::envelopeKnownImpl(const DepthObservation& o,const Eigen::Vec
 #else
     auto covered=[&](const Eigen::Vector3d& p,double r) {
 #endif
+        if(local_evidence) {
+            for(const auto* ball:local_balls)
+                if((p-ball->first).norm()+r<=ball->second)return true;
+        } else {
         if(pending)for(const auto& ball:pending_motion_)
             if((p-ball.first).norm()+r<=ball.second)return true;
         for(auto it=reached_proofs_.rbegin();it!=reached_proofs_.rend();++it)
             if((p-it->first).norm()+r<=it->second)return true;
+        }
 #ifdef PC_GVF_GOAL_TUBE_REUSE
         if(prepared) {
             for(const auto& tube:*prepared)if(preparedTubeContains(tube,p,r))return true;
         } else
 #endif
         for(auto it=verified_tubes_.rbegin();it!=verified_tubes_.rend();++it)
+            if(tubeContains(*it,p,r))return true;
+#ifdef PC_GVF_GOAL_TUBE_REUSE
+        if(!prepared)
+#endif
+        for(auto it=committed_motion_.rbegin();it!=committed_motion_.rend();++it)
             if(tubeContains(*it,p,r))return true;
         for(const auto& seed:seeds_)if((p-seed.first).norm()+r<=seed.second)return true;
         for(const auto& ball:verified_travel_)if((p-ball.first).norm()+r<=ball.second)return true;
@@ -1028,7 +1125,20 @@ bool PaperGuidance::envelopeKnownImpl(const DepthObservation& o,const Eigen::Vec
         }
         return false;
     };
-    if(cache_enabled_&&!pending) {
+    EnvelopeCache* positive_cache=nullptr;
+    std::uint64_t* positive_revision=nullptr;
+    std::tuple<int,int,int> positive_key;
+#ifdef PC_GVF_GOAL_TUBE_REUSE
+    // Static certificates can be replaced/evicted during a control step, but
+    // an already proved world ball stays free until new evidence is ingested.
+    // The step entry and ingestion both clear these caches; nothing crosses
+    // an observation update or a control-step boundary.
+    const bool use_positive_cache=cache_enabled_&&(!pending||
+        (cfg_.retain_certified_volume&&cfg_.retain_verified_travel&&cfg_.history_uncertainty_rate==0.));
+#else
+    const bool use_positive_cache=cache_enabled_&&!pending;
+#endif
+    if(use_positive_cache) {
         int worker=0;
 #ifdef _OPENMP
         worker=omp_get_thread_num();
@@ -1036,14 +1146,31 @@ bool PaperGuidance::envelopeKnownImpl(const DepthObservation& o,const Eigen::Vec
         auto& envelope_cache_=envelope_caches_.at(worker);
         const auto key=std::make_tuple(static_cast<int>(std::floor(center.x()/.2)),
             static_cast<int>(std::floor(center.y()/.2)),static_cast<int>(std::floor(center.z()/.2)));
+        positive_cache=&envelope_cache_;positive_key=key;positive_revision=&envelope_cache_revisions_.at(worker);
         const auto found=envelope_cache_.find(key);
         if(found!=envelope_cache_.end()&&(center-found->second.first).norm()+radius<=found->second.second)return true;
         const double expanded=radius+std::sqrt(3.0)*.2;
-        if(covered(center,expanded)) {envelope_cache_[key]={center,expanded};return true;}
+        if(covered(center,expanded)) {envelope_cache_[key]={center,expanded};++*positive_revision;return true;}
     }
-    if(covered(center,radius))return true;
+    auto remember_positive=[&](bool known) {
+#ifdef PC_GVF_GOAL_TUBE_REUSE
+        // Store only a completely proved ball, including successful union
+        // proofs in narrow corridors where the enlarged cache probe fails.
+        if(known&&positive_cache) {
+            const auto found=positive_cache->find(positive_key);
+            if(found==positive_cache->end()||
+               (center-found->second.first).norm()+radius>found->second.second) {
+                (*positive_cache)[positive_key]={center,radius};++*positive_revision;
+            }
+        }
+#else
+        (void)positive_cache;(void)positive_key;
+#endif
+        return known;
+    };
+    if(covered(center,radius))return remember_positive(true);
     if(!covered(center,0))return false;
-    if(o.supporting_views.empty()&&seeds_.empty()&&verified_travel_.empty()&&verified_tubes_.empty()&&reached_proofs_.empty()&&!pending)return false;
+    if(o.supporting_views.empty()&&seeds_.empty()&&verified_travel_.empty()&&verified_tubes_.empty()&&committed_motion_.empty()&&reached_proofs_.empty()&&!pending)return false;
     // Certify a union without assuming that one camera must see the whole body.
     // Each intersecting octree box is enclosed by a sphere and must be wholly
     // contained in actual evidence. Unresolved leaves remain unknown.
@@ -1051,12 +1178,23 @@ bool PaperGuidance::envelopeKnownImpl(const DepthObservation& o,const Eigen::Vec
     // Root whole-ball/center proofs above use the ordinary direct path.
     // Only a recursive union with many segments amortizes this local setup.
     std::vector<PreparedTubeSegment> prepared_tubes;
-    if(verified_tubes_.size()>8) {
-        prepared_tubes.reserve(verified_tubes_.size());
-        for(auto it=verified_tubes_.rbegin();it!=verified_tubes_.rend();++it)
-            prepared_tubes.push_back(prepareTubeSegment(*it));
+    const bool prepare=verified_tubes_.size()+committed_motion_.size()>8;
+    if(prepare) {
+        prepared_tubes.reserve(verified_tubes_.size()+committed_motion_.size());
+        auto add_tube=[&](const CertifiedTube& tube) {
+            if(segmentDistance(center,tube.a,tube.b)<=radius+tube.radius+1e-9)
+                prepared_tubes.push_back(prepareTubeSegment(tube));
+        };
+        for(auto it=verified_tubes_.rbegin();it!=verified_tubes_.rend();++it)add_tube(*it);
+        for(auto it=committed_motion_.rbegin();it!=committed_motion_.rend();++it)add_tube(*it);
     }
-    const auto* prepared=prepared_tubes.empty()?nullptr:&prepared_tubes;
+    const auto* prepared=prepare?&prepared_tubes:nullptr;
+    auto add_ball=[&](const std::pair<Eigen::Vector3d,double>& ball) {
+        if((center-ball.first).norm()<=radius+ball.second+1e-9)local_balls.push_back(&ball);
+    };
+    if(pending)for(const auto& ball:pending_motion_)add_ball(ball);
+    for(auto it=reached_proofs_.rbegin();it!=reached_proofs_.rend();++it)add_ball(*it);
+    local_evidence=true;
 #endif
     int remaining=1024;
     std::function<bool(const Eigen::Vector3d&,double,int)> certify;
@@ -1076,13 +1214,42 @@ bool PaperGuidance::envelopeKnownImpl(const DepthObservation& o,const Eigen::Vec
             if(!certify(p+h*Eigen::Vector3d(x,y,z),h,level+1))return false;
         return true;
     };
-    return certify(center,radius,0);
+    return remember_positive(certify(center,radius,0));
 }
 bool PaperGuidance::segmentKnown(const DepthObservation& o,const Eigen::Vector3d& a,
     const Eigen::Vector3d& b,double radius,double now,bool pending) const {
+    if(!cache_enabled_)return segmentKnownImpl(o,a,b,radius,now,pending);
+    int worker=0;
+#ifdef _OPENMP
+    worker=omp_get_thread_num();
+#endif
+    const bool include_pending=pending||(cfg_.retain_certified_volume&&cfg_.retain_verified_travel&&cfg_.history_uncertainty_rate==0.);
+    auto versions=[&] {
+        // Each worker owns its proof cache. Reading other workers' revisions
+        // here would race while the parallel angular field is being built.
+        return CapsuleProofMemo::Revision{{envelope_cache_revisions_.at(worker),0,0,0}};
+    };
+    return segment_proof_memos_.at(include_pending).at(worker).evaluate(a,b,radius,versions,
+        [&]{return segmentKnownImpl(o,a,b,radius,now,pending);});
+}
+bool PaperGuidance::segmentKnownImpl(const DepthObservation& o,const Eigen::Vector3d& a,
+    const Eigen::Vector3d& b,double radius,double now,bool pending) const {
+    if(!a.allFinite()||!b.allFinite()||!std::isfinite(radius)||radius<0)return false;
+    if(!withinWorkingBounds(a,b,radius))return false;
+    // The minimum Z of a complete capsule is min(a.z,b.z)-radius. Motion
+    // callers already include their constant-acceleration chord bulge in
+    // radius, so this also covers each modeled curve and its braking tail.
+    if(cfg_.free_space_floor_enabled &&
+       std::min(a.z(),b.z())-radius<cfg_.free_space_floor_z)return false;
+    if(cfg_.free_space_ceiling_enabled && std::max(a.z(),b.z())+radius>cfg_.free_space_ceiling_z)return false;
     pending=pending||(cfg_.retain_certified_volume&&cfg_.retain_verified_travel&&cfg_.history_uncertainty_rate==0.);
+    // A stationary capsule IS its endpoint ball. Avoid rebuilding interval
+    // unions and proving that same ball twice during transport-delay/braking.
+    if((a.array()==b.array()).all())return envelopeKnownImpl(o,a,radius,now,pending);
     // Exact containment in a convex stored capsule/ball needs both end balls.
     for(auto it=verified_tubes_.rbegin();it!=verified_tubes_.rend();++it)
+        if(tubeContains(*it,a,radius)&&tubeContains(*it,b,radius))return true;
+    for(auto it=committed_motion_.rbegin();it!=committed_motion_.rend();++it)
         if(tubeContains(*it,a,radius)&&tubeContains(*it,b,radius))return true;
     auto in_ball=[&](const auto& ball) {
         return std::max((a-ball.first).norm(),(b-ball.first).norm())+radius<=ball.second;
@@ -1091,10 +1258,11 @@ bool PaperGuidance::segmentKnown(const DepthObservation& o,const Eigen::Vector3d
     for(const auto& ball:verified_travel_)if(in_ball(ball))return true;
     for(const auto& ball:reached_proofs_)if(in_ball(ball))return true;
     if(pending)for(const auto& ball:pending_motion_)if(in_ball(ball))return true;
-    if(!verified_tubes_.empty()||!reached_proofs_.empty()) {
+    if(!verified_tubes_.empty()||!committed_motion_.empty()||!reached_proofs_.empty()) {
         std::vector<Interval> intervals;intervals.reserve(3*verified_tubes_.size()+verified_travel_.size());
         const Eigen::Vector3d delta=b-a;
         for(const auto& tube:verified_tubes_)capsuleIntervals(a,delta,tube,radius,&intervals);
+        for(const auto& tube:committed_motion_)capsuleIntervals(a,delta,tube,radius,&intervals);
         for(const auto& ball:seeds_)sphereInterval(a,delta,ball.first,ball.second-radius,&intervals);
         for(const auto& ball:verified_travel_)sphereInterval(a,delta,ball.first,ball.second-radius,&intervals);
         for(const auto& ball:reached_proofs_)sphereInterval(a,delta,ball.first,ball.second-radius,&intervals);
@@ -1152,6 +1320,14 @@ bool PaperGuidance::proposalCorridor(const DepthObservation& input,const Eigen::
     if(!position.allFinite()||!direction.allFinite()||direction.norm()<1e-8||
        !std::isfinite(length)||length<0||!std::isfinite(now)||
        now-input.stamp>cfg_.observation_timeout||now<input.stamp-.02)return false;
+    const Eigen::Vector3d endpoint=position+length*direction.normalized();
+    // A proposal should turn inward before the hard workspace boundary leaves
+    // no reliable restart room. This removes outward nominations only; it is
+    // not a free-space premise and never blocks an inward retreat.
+    const double room=envelopeRadius()+cfg_.restart_clearance+.10;
+    if(activeNavigationEnabled()&&
+       ((cfg_.free_space_ceiling_enabled&&endpoint.z()+room>cfg_.free_space_ceiling_z&&endpoint.z()>=position.z())||
+        (cfg_.free_space_floor_enabled&&endpoint.z()-room<cfg_.free_space_floor_z&&endpoint.z()<=position.z())))return false;
     DepthObservation evidence=input;
     if(cfg_.spherical_memory){auto views=spherical_.evidence(now);evidence.supporting_views.insert(evidence.supporting_views.end(),views.begin(),views.end());}
     evidence.supporting_views.insert(evidence.supporting_views.end(),history_.begin(),history_.end());
@@ -1175,9 +1351,91 @@ bool PaperGuidance::motionSafe(const DepthObservation& o,const Eigen::Vector3d& 
 }
 bool PaperGuidance::certifyMotion(const DepthObservation& o,const Eigen::Vector3d& position,
     const Eigen::Vector3d& velocity,const Eigen::Vector3d& command,double now,
-    std::vector<std::pair<Eigen::Vector3d,double>>* prefix) const {
+    std::vector<std::pair<Eigen::Vector3d,double>>* prefix,std::vector<CertifiedTube>* tubes) const {
+    std::vector<std::pair<Eigen::Vector3d,double>> emergency;
+    std::vector<CertifiedTube> emergency_tubes;
+    if(tubes)tubes->clear();
+    if(cfg_.emergency_braking_certificate&&command.squaredNorm()>1e-12) {
+        // The executor may substitute zero on command age or compute deadline.
+        // A turning command's later braking tail does not cover that branch.
+        // Prove it independently using the same conservative delay and limits.
+        if(!certifyMotionPath(o,position,velocity,Eigen::Vector3d::Zero(),now,
+                             prefix?&emergency:nullptr,tubes?&emergency_tubes:nullptr))return false;
+    }
+    if(!certifyMotionPath(o,position,velocity,command,now,prefix,tubes))return false;
+    if(prefix)prefix->insert(prefix->end(),emergency.begin(),emergency.end());
+    if(tubes)tubes->insert(tubes->end(),emergency_tubes.begin(),emergency_tubes.end());
+    return true;
+}
+bool PaperGuidance::certifyAndRetainMotion(const DepthObservation& o,const Eigen::Vector3d& position,
+    const Eigen::Vector3d& velocity,const Eigen::Vector3d& command,double now,
+    std::vector<std::pair<Eigen::Vector3d,double>>* prefix) {
+    if(activeNavigationEnabled()&&!active_.recovering&&cfg_.execution_consistent&&
+       ((cfg_.free_space_ceiling_enabled&&command.z()>1e-6)||
+        (cfg_.free_space_floor_enabled&&command.z()<-1e-6))) {
+        const double room=envelopeRadius()+cfg_.restart_clearance+.10;
+        for(const auto& s:executionPath(position,velocity,command)) {
+            if((cfg_.free_space_ceiling_enabled&&command.z()>0.&&s.b.z()>position.z()&&s.b.z()+room>cfg_.free_space_ceiling_z)||
+               (cfg_.free_space_floor_enabled&&command.z()<0.&&s.b.z()<position.z()&&s.b.z()-room<cfg_.free_space_floor_z))return false;
+        }
+    }
+    // Persist only static geometry. Time-growing/spherical evidence must not
+    // become an immortal capsule merely because it was free at this instant.
+    const bool static_sources=staticEvidenceTree(o);
+    const bool keep_prefix=prefix && (!permanentVolumeMode(cfg_) || static_sources);
+    const bool retain=prefix && cfg_.retain_certified_volume && cfg_.retain_verified_travel &&
+        cfg_.history_uncertainty_rate==0. && !cfg_.dynamic_obstacles &&
+        !cfg_.spherical_memory && static_sources;
+    std::vector<CertifiedTube> tubes;
+    // Otherwise a temporary proof could enter pending_motion_ as untagged
+    // balls and be promoted to static tubes on the next, apparently static step.
+    if(prefix && !keep_prefix)prefix->clear();
+    if(!certifyMotion(o,position,velocity,command,now,keep_prefix?prefix:nullptr,retain?&tubes:nullptr))return false;
+    // Commit only after BOTH the command and emergency-stop paths passed.
+    // These are the exact segmentKnown capsules, not enclosing spheres or
+    // claims that the vehicle reached a forecast pose. Pure motionSafe queries
+    // never reach this function and failed candidates publish no new evidence.
+    for(const auto& tube:tubes) {
+        const bool redundant=std::any_of(verified_tubes_.begin(),verified_tubes_.end(),[&](const auto& old) {
+            return tubeContains(old,tube.a,tube.radius)&&tubeContains(old,tube.b,tube.radius);
+        });
+        if(!redundant)appendVerifiedTube(tube,position);
+    }
+    if(cfg_.execution_consistent&&retain)committed_motion_=tubes;
+    return true;
+}
+bool PaperGuidance::certifyMotionPath(const DepthObservation& o,const Eigen::Vector3d& position,
+    const Eigen::Vector3d& velocity,const Eigen::Vector3d& command,double now,
+    std::vector<std::pair<Eigen::Vector3d,double>>* prefix,std::vector<CertifiedTube>* tubes) const {
     if(prefix)prefix->clear();
+    if(tubes)tubes->clear();
     if(!position.allFinite()||!velocity.allFinite()||!command.allFinite()) return false;
+    if(cfg_.execution_consistent) {
+        if(now<o.stamp-.02||now-o.stamp>cfg_.observation_timeout)return false;
+        const auto path=executionPath(position,velocity,command);
+        if(path.empty())return false;
+        bool previous_known=false;
+        CertifiedTube previous;
+        double t=0.;
+        for(const auto& tube:path) {
+            if(cfg_.shared_obstacles&&!shared_.segmentSafe(tube.a,tube.b,tube.radius,now,t,t+cfg_.execution_dt))return false;
+            if(cfg_.dynamic_obstacles&&!dynamic_.segmentSafe(tube.a,tube.b,tube.radius,now,t,t+cfg_.execution_dt))return false;
+            // Only an exact repeated static query is reused within this one
+            // immutable path. Dynamic/shared time checks above still run.
+            const bool same=previous_known&&tube.radius==previous.radius&&
+                (tube.a.array()==previous.a.array()).all()&&(tube.b.array()==previous.b.array()).all();
+            if(!same&&!segmentKnown(o,tube.a,tube.b,tube.radius,now))return false;
+            previous=tube;previous_known=true;
+            if(tubes)tubes->push_back(tube);
+            if(prefix) {
+                const Eigen::Vector3d center=.5*(tube.a+tube.b);
+                const double r=tube.radius+.5*(tube.b-tube.a).norm();
+                if(envelopeKnown(o,center,r,now))prefix->emplace_back(center,r);
+            }
+            t+=cfg_.execution_dt;
+        }
+        return true;
+    }
     Eigen::Vector3d p=position,v=velocity;
     const double dt=0.025;
     const double age=std::max(0.0,now-o.stamp);
@@ -1188,6 +1446,30 @@ bool PaperGuidance::certifyMotion(const DepthObservation& o,const Eigen::Vector3
     const double transition=cfg_.motion.delay+cfg_.motion.rollout_horizon;
     int steps=static_cast<int>(std::ceil((transition+
         std::max(velocity.norm(),command.norm())/cfg_.motion.brake_accel+0.5)/dt));
+#ifdef PC_GVF_GOAL_TUBE_REUSE
+    bool has_prefix_probe=false;
+    Eigen::Vector3d last_prefix_center=Eigen::Vector3d::Zero();
+    double last_prefix_radius=0.,last_prefix_result=-1.;
+#endif
+    auto prefix_radius=[&](const Eigen::Vector3d& center,double query_radius) {
+#ifdef PC_GVF_GOAL_TUBE_REUSE
+        // A stationary delay/brake path repeats this exact geometric query.
+        // Only memoize consecutive identical probes in this one path; motion,
+        // dynamic obstacles and shared obstacles are still checked each step.
+        if(has_prefix_probe&&query_radius==last_prefix_radius&&
+           (center.array()==last_prefix_center.array()).all())return last_prefix_result;
+#endif
+        double proved=-1.;
+        if(envelopeKnown(o,center,query_radius,now)) {
+            proved=query_radius;
+            if(envelopeKnown(o,center,query_radius+.02,now))proved+=.02;
+        }
+#ifdef PC_GVF_GOAL_TUBE_REUSE
+        has_prefix_probe=true;last_prefix_center=center;
+        last_prefix_radius=query_radius;last_prefix_result=proved;
+#endif
+        return proved;
+    };
     for(int k=0;k<steps;++k) {
         double t=k*dt;
         Eigen::Vector3d acceleration=Eigen::Vector3d::Zero();
@@ -1195,22 +1477,27 @@ bool PaperGuidance::certifyMotion(const DepthObservation& o,const Eigen::Vector3
         else if(t<transition) acceleration=clampNorm((command-v)/cfg_.motion.velocity_tau,cfg_.motion.max_accel);
         else if(v.norm()>1e-7) acceleration=-std::min(cfg_.motion.brake_accel,v.norm()/dt)*v.normalized();
         Eigen::Vector3d next_v=v+dt*acceleration, next=p+0.5*dt*(v+next_v);
-        // Enclose the entire center segment plus the acceleration bulge.
-        const double swept_radius=radius+
-            std::max(cfg_.motion.max_accel,cfg_.motion.brake_accel)*dt*dt/8.0;
+        // Within this model step acceleration is constant. Relative to the
+        // endpoint chord, p(s)-chord(s)=a*s*(s-dt)/2, so the exact maximum
+        // deviation is |a|*dt^2/8. In particular a stationary or constant-
+        // velocity segment has no acceleration bulge. Charging the global
+        // acceleration limit there can reject a fully known stationary body.
+        // Preserve restart room along the whole path, including an early
+        // executor stop. A margin charged only at the delayed final endpoint
+        // cannot protect a measured footprint stopped earlier on the path.
+        const double swept_radius=radius+cfg_.restart_clearance+
+            acceleration.norm()*dt*dt/8.0;
         if(cfg_.shared_obstacles&&!shared_.segmentSafe(p,next,swept_radius,now,t,t+dt))return false;
         if(cfg_.dynamic_obstacles&&!dynamic_.segmentSafe(p,next,swept_radius,now,t,t+dt))return false;
         if(!segmentKnown(o,p,next,swept_radius,now))return false;
+        if(tubes)tubes->push_back({p,next,swept_radius});
         if(prefix) {
             const int pieces=std::max(1,static_cast<int>(std::ceil((next-p).norm()/.10)));
             const Eigen::Vector3d step=(next-p)/pieces;
             for(int i=0;i<pieces;++i) {
                 const Eigen::Vector3d center=p+(i+.5)*step;
-                double known_radius=swept_radius+.5*step.norm();
-                if(envelopeKnown(o,center,known_radius,now)) {
-                    if(envelopeKnown(o,center,known_radius+.02,now))known_radius+=.02;
-                    prefix->emplace_back(center,known_radius);
-                }
+                const double known_radius=prefix_radius(center,swept_radius+.5*step.norm());
+                if(known_radius>=0.)prefix->emplace_back(center,known_radius);
             }
         }
         p=next;v=next_v;
@@ -1257,7 +1544,7 @@ bool PaperGuidance::build(const DepthObservation& o,const Eigen::Vector3d& posit
     // Each worker has a frame-local positive certificate cache. Geometry and
     // evidence are immutable until this parallel region has joined.
 #ifdef _OPENMP
-#pragma omp parallel for num_threads(2) schedule(static) if(o.supporting_views.size()>=4)
+#pragma omp parallel for num_threads(4) schedule(static) if(o.supporting_views.size()>=4)
 #endif
     for(int y=1;y<h-1;++y)for(int x=1;x<w-1;++x) {
         const Eigen::Vector3d ray=o.rotation*o.camera.ray(x,y);
@@ -1473,10 +1760,16 @@ Eigen::Vector3d PaperGuidance::memoryProposal(const DepthObservation& input,cons
 }
 Eigen::Vector3d PaperGuidance::incrementalGoalProposal(const Eigen::Vector3d& position,
     const Eigen::Vector3d& intent,double now) const {
-    if(cfg_.incremental_field&&
+    // A slow field solve can outlive the ordinary incremental-field window.
+    // Reuse only its world target in the certified response-preview mode;
+    // stepWithProposal still proves the current full motion and emergency stop.
+    // Reuse never refreshes the capture timestamp or authorizes old geometry.
+    const bool deadline_recovery=cfg_.certified_direct&&cfg_.response_preview;
+    const double proposal_lifetime=deadline_recovery?5.:.5;
+    if((cfg_.incremental_field||deadline_recovery)&&
        position.allFinite()&&intent.allFinite()&&intent.norm()>1e-5&&
        observation_&&field_.valid&&std::isfinite(now)&&
-       now>=observation_->stamp-.02&&now-observation_->stamp<=.5&&
+       now>=observation_->stamp-.02&&now-observation_->stamp<=proposal_lifetime&&
        reference_intent_.norm()>.5&&
        reference_intent_.dot(intent.normalized())>=std::cos(cfg_.command_change_angle)) {
         const double range=std::max(cfg_.minimum_lookahead,maximum_clearance_);
@@ -1487,10 +1780,22 @@ Eigen::Vector3d PaperGuidance::incrementalGoalProposal(const Eigen::Vector3d& po
             return std::min(intent.norm(),cfg_.max_speed)*delta.normalized();
         }
     }
+    if(deadline_recovery&&recovery_goal_stamp_>=0.&&
+       position.allFinite()&&intent.allFinite()&&intent.norm()>1e-5&&std::isfinite(now)&&
+       now>=recovery_goal_stamp_-.02&&now-recovery_goal_stamp_<=proposal_lifetime&&
+       recovery_goal_intent_.norm()>.5&&
+       recovery_goal_intent_.dot(intent.normalized())>=std::cos(cfg_.command_change_angle)) {
+        const Eigen::Vector3d delta=recovery_goal_-position;
+        if(delta.allFinite()&&delta.norm()>1e-5&&delta.dot(intent)>1e-6) {
+            const double ceiling=recovery_goal_speed_>0.?recovery_goal_speed_:cfg_.max_speed;
+            return std::min({intent.norm(),cfg_.max_speed,ceiling})*delta.normalized();
+        }
+    }
     return Eigen::Vector3d::Zero();
 }
 PaperResult PaperGuidance::stepWithProposal(const DepthObservation& input,const Eigen::Vector3d& position,
     const Eigen::Vector3d& velocity,const Eigen::Vector3d& intent,const Eigen::Vector3d& supplied_proposal,double now,double dt) {
+    if(activeNavigationRequested(input,position,intent,now))return activeStep(input,position,velocity,intent,now,dt);
     Eigen::Vector3d proposal=supplied_proposal;
     bool reused_goal=false;
     if(proposal.allFinite()&&proposal.norm()<1e-5) {
@@ -1506,11 +1811,19 @@ PaperResult PaperGuidance::stepWithProposal(const DepthObservation& input,const 
     if(cfg_.spherical_memory){auto views=spherical_.evidence(now);evidence.supporting_views.insert(evidence.supporting_views.end(),views.begin(),views.end());}
     evidence.supporting_views.insert(evidence.supporting_views.end(),history_.begin(),history_.end());
     for(auto& cache:envelope_caches_)cache.clear();
+    for(auto& policy:segment_proof_memos_)for(auto& memo:policy)memo.clear();
     cache_enabled_=true;
     rememberVerifiedPosition(evidence,position,now);
     PaperResult out;
     if(envelopeKnown(evidence,position,envelopeRadius(),now)) {
-        const double requested=std::min({intent.norm(),proposal.norm(),cfg_.max_speed});
+        double requested=std::min({intent.norm(),proposal.norm(),cfg_.max_speed});
+        // A watchdog fallback must not retry a distant field's full cruise
+        // speed on every frame while the vehicle remains stopped. Start with
+        // a small CERTIFIED command and grow around the actual published /
+        // measured motion. This is a nomination ceiling, never a motion permit.
+        const double restart_speed=std::max(cfg_.probe_speed,
+            1.25*std::max(previous_command_.norm(),velocity.norm()));
+        if(reused_goal)requested=std::min(requested,restart_speed);
         Eigen::Vector3d desired=requested*proposal.normalized();
         if(std::abs(desired.z())>cfg_.max_vertical_speed)desired*=cfg_.max_vertical_speed/std::abs(desired.z());
         const double interval=std::min(dt,.1);
@@ -1566,34 +1879,67 @@ PaperResult PaperGuidance::stepWithProposal(const DepthObservation& input,const 
         auto accept=[&](double magnitude) {
             if(magnitude<1e-4||ray.dot(intent)<=1e-6)return false;
             std::vector<std::pair<Eigen::Vector3d,double>> prefix;
-            if(!certifyMotion(evidence,position,velocity,magnitude*ray,now,cfg_.retain_verified_travel?&prefix:nullptr))return false;
+            if(!certifyAndRetainMotion(evidence,position,velocity,magnitude*ray,now,cfg_.retain_verified_travel?&prefix:nullptr))return false;
             if(cfg_.retain_verified_travel)pending_motion_=std::move(prefix);
-            out.command=magnitude*ray;out.accepted=true;out.status="DEPTH_PROPOSAL_CERTIFIED";
+            out.command=magnitude*ray;out.accepted=true;out.authorization="CERTIFIED";out.status="DEPTH_PROPOSAL_CERTIFIED";
             out.build_reason="FULL_MOTION_CERTIFICATE";
-            // Safety reductions may exceed the ordinary jerk bound. Do not
-            // carry their emergency acceleration into the next smooth update.
-            const bool unchanged=std::abs(magnitude-speed)<1e-9;
+            // This is a speculative speed-search candidate. Keep the actual
+            // previously published command fixed for every delayed rollout;
+            // only the final selected command may update execution history.
+            return true;
+        };
+        if(!accept(speed)) {
+            double high=speed;
+            const double nearby=std::min(speed,restart_speed);
+            bool found=nearby<high&&accept(nearby);
+            if(!found) {
+                if(nearby<high)high=nearby;
+                for(int i=0;i<10;++i) {
+                    const double low=.5*high;
+                    if(accept(low)){found=true;break;}
+                    high=low;
+                }
+            }
+            // Return the first fully proved speed. Five extra bisections for
+            // a few cm/s used to turn a usable command into watchdog zero.
+            // The next fresh frame can grow it with another complete proof.
+        }
+        if(out.accepted) {
+            // Commit execution/shaping history once, after all trials finish.
+            // A later watchdog override still calls confirmPublishedCommand.
+            const bool unchanged=std::abs(out.command.norm()-speed)<1e-9;
             confirmPublishedCommand(out.command);
             proposal_acceleration_=unchanged?clampNorm(feedforward?acceleration:
                 (cfg_.model_velocity_shaping?((out.command-velocity)/cfg_.motion.velocity_tau).eval():
                     ((out.command-old_command)/interval).eval()),command_accel):Eigen::Vector3d::Zero();
             if(feedforward&&unchanged) {proposal_reference_=next_reference;proposal_reference_valid_=true;}
-            return true;
-        };
-        if(!accept(speed)) {
-            double high=speed,low=std::min(speed,old_command.norm());
-            bool found=low<high&&accept(low);
-            if(!found)for(int i=0;i<10;++i){low=.5*high;if(accept(low)){found=true;break;}high=low;}
-            if(found)for(int i=0;i<5&&high-low>.005;++i) {
-                const double middle=.5*(low+high);if(accept(middle))low=middle;else high=middle;
-            }
         }
     }
     cache_enabled_=false;
     if(out.accepted) {
-        if(reused_goal)out.status="INCREMENTAL_GOAL_CERTIFIED";
+        if(reused_goal) {
+            out.status="INCREMENTAL_GOAL_CERTIFIED";
+            // Revalidation can reduce a recalled target's speed, never raise
+            // its ceiling or renew its original target/capture timestamp.
+            if(recovery_goal_stamp_>=0.)
+                recovery_goal_speed_=recovery_goal_speed_>0.?
+                    std::min(recovery_goal_speed_,out.command.norm()):out.command.norm();
+        }
         else {observation_.reset();field_=AngularField();box_=FlowBox();reference_world_.clear();
-            reference_intent_=intent.normalized();}
+            reference_intent_=intent.normalized();
+            if(cfg_.certified_direct&&cfg_.response_preview) {
+                const double stopping=velocity.norm()*cfg_.motion.delay+
+                    velocity.squaredNorm()/(2*cfg_.motion.brake_accel);
+                const double range=std::max(cfg_.minimum_lookahead,
+                    std::min(intent.norm(),cfg_.max_speed)*cfg_.motion.planning_horizon+stopping+.35);
+                if(std::isfinite(range)) {
+                    recovery_goal_=position+range*proposal.normalized();
+                    recovery_goal_intent_=intent.normalized();
+                    recovery_goal_stamp_=input.stamp;
+                    recovery_goal_speed_=out.command.norm();
+                }
+            }
+        }
         diagnostic_valid_=false;
         confirmPublishedCommand(out.command);return out;
     }
@@ -1601,12 +1947,13 @@ PaperResult PaperGuidance::stepWithProposal(const DepthObservation& input,const 
 }
 PaperResult PaperGuidance::step(const DepthObservation& input,const Eigen::Vector3d& position,
     const Eigen::Vector3d& velocity,const Eigen::Vector3d& intent,double now,double dt) {
+    if(activeNavigationRequested(input,position,intent,now))return activeStep(input,position,velocity,intent,now,dt);
     const Eigen::Vector3d published=previous_command_;
     PaperResult result=stepImpl(input,position,velocity,intent,now,dt);
     // Numerical angular cells/flow-box stencils can reject a physically safe
     // transition. Recover only with a fresh complete-space trajectory proof;
     // this is a bounded execution fallback, not fabricated free angular cells.
-    if(cfg_.certified_direct&&position.allFinite()&&velocity.allFinite()&&intent.allFinite()&&
+    if(result.status!="UNOBSERVED_EMERGENCY_ENVELOPE"&&cfg_.certified_direct&&position.allFinite()&&velocity.allFinite()&&intent.allFinite()&&
        intent.norm()>1e-5&&std::isfinite(dt)&&dt>0&&std::isfinite(now)&&
        now-input.stamp<=cfg_.observation_timeout&&now>=input.stamp-.02&&
        !(cfg_.intent_guard&&velocity.norm()>.03&&velocity.dot(intent)<-1e-6)&&
@@ -1644,7 +1991,7 @@ PaperResult PaperGuidance::step(const DepthObservation& input,const Eigen::Vecto
             if(std::abs(tracking_ray.z())>1e-9)tracking_speed=std::min(tracking_speed,cfg_.max_vertical_speed/std::abs(tracking_ray.z()));
             if(tracking_ray.dot(q)>1e-6&&(!result.accepted||tracking_speed>result.command.norm()+1e-5)) {
                 std::vector<std::pair<Eigen::Vector3d,double>> prefix;
-                if(certifyMotion(evidence,position,velocity,tracking_speed*tracking_ray,now,cfg_.retain_verified_travel?&prefix:nullptr)) {
+                if(certifyAndRetainMotion(evidence,position,velocity,tracking_speed*tracking_ray,now,cfg_.retain_verified_travel?&prefix:nullptr)) {
                     if(cfg_.retain_verified_travel)pending_motion_=std::move(prefix);
                     result.command=tracking_speed*tracking_ray;result.accepted=true;
                     result.status="CERTIFIED_TRACKING";result.tracking=false;result.continued=false;
@@ -1679,7 +2026,7 @@ PaperResult PaperGuidance::step(const DepthObservation& input,const Eigen::Vecto
                         if(std::abs(ray.z())>1e-9)speed=std::min(speed,cfg_.max_vertical_speed/std::abs(ray.z()));
                         if(result.accepted&&speed<=result.command.norm()+1e-5)continue;
                         std::vector<std::pair<Eigen::Vector3d,double>> prefix;
-                        if(!certifyMotion(evidence,position,velocity,speed*ray,now,cfg_.retain_verified_travel?&prefix:nullptr))continue;
+                        if(!certifyAndRetainMotion(evidence,position,velocity,speed*ray,now,cfg_.retain_verified_travel?&prefix:nullptr))continue;
                         reset();reference_intent_=q;
                         if(cfg_.retain_verified_travel)pending_motion_=std::move(prefix);
                         result.command=speed*ray;result.accepted=true;result.status="CERTIFIED_REENTRY";
@@ -1692,12 +2039,16 @@ PaperResult PaperGuidance::step(const DepthObservation& input,const Eigen::Vecto
         }
         cache_enabled_=false;
     }
+    if(activeNavigationEnabled()&&!result.accepted&&intent.norm()>1e-5&&
+       result.status!="INTENT_REVERSAL_BRAKE")return activeStep(input,position,velocity,intent,now,dt);
+    if(result.accepted)result.authorization="CERTIFIED";
     confirmPublishedCommand(result.command);
     return result;
 }
 PaperResult PaperGuidance::stepImpl(const DepthObservation& input,const Eigen::Vector3d& position,
     const Eigen::Vector3d& velocity,const Eigen::Vector3d& intent,double now,double dt) {
     for(auto& cache:envelope_caches_)cache.clear();
+    for(auto& policy:segment_proof_memos_)for(auto& memo:policy)memo.clear();
     cache_enabled_=true;
     struct CacheScope {bool& enabled;~CacheScope(){enabled=false;}} cache_scope{cache_enabled_};
     DepthObservation next=input;
@@ -1736,6 +2087,14 @@ PaperResult PaperGuidance::stepImpl(const DepthObservation& input,const Eigen::V
     if(!envelopeKnown(next,position,envelopeRadius(),now)) {
         reset();out.status="UNOBSERVED_BODY_ENVELOPE";return out;
     }
+    // Every nonzero certified command requires this identical independent
+    // emergency branch. If it is unproved, a complete angular field and all
+    // speed/direction retries cannot produce an admissible command. Proceed
+    // to bounded active recovery instead of rebuilding that impossible field.
+    if(cfg_.execution_consistent&&cfg_.emergency_braking_certificate&&activeNavigationEnabled()&&
+       !certifyMotionPath(next,position,velocity,Eigen::Vector3d::Zero(),now,nullptr,nullptr)) {
+        out.status="UNOBSERVED_EMERGENCY_ENVELOPE";return out;
+    }
     if(cfg_.certified_direct) {
         const double requested_speed=std::min(intent.norm(),cfg_.max_speed);
         const double stopping=velocity.norm()*cfg_.motion.delay+velocity.squaredNorm()/(2*cfg_.motion.brake_accel);
@@ -1757,7 +2116,7 @@ PaperResult PaperGuidance::stepImpl(const DepthObservation& input,const Eigen::V
             double speed=cfg_.smooth_speed?clip(requested_speed,std::max(0.,previous_command_.norm()-increment),previous_command_.norm()+increment):requested_speed;
             if(std::abs(ray.z())>1e-9)speed=std::min(speed,cfg_.max_vertical_speed/std::abs(ray.z()));
             std::vector<std::pair<Eigen::Vector3d,double>> prefix;
-            if(ray.dot(direction)>1e-6&&certifyMotion(next,position,velocity,speed*ray,now,cfg_.retain_verified_travel?&prefix:nullptr)) {
+            if(ray.dot(direction)>1e-6&&certifyAndRetainMotion(next,position,velocity,speed*ray,now,cfg_.retain_verified_travel?&prefix:nullptr)) {
                 reset();reference_intent_=direction;
                 if(cfg_.retain_verified_travel)pending_motion_=std::move(prefix);
                 out.command=speed*ray;out.accepted=true;out.status="CERTIFIED_DIRECT";
@@ -2001,7 +2360,7 @@ PaperResult PaperGuidance::stepImpl(const DepthObservation& input,const Eigen::V
         if(candidate_speed<minimum-1e-9)return false;
         std::vector<std::pair<Eigen::Vector3d,double>> prefix;
         const Eigen::Vector3d command=candidate_speed*ray;
-        if(!certifyMotion(o,position,velocity,command,now,cfg_.retain_verified_travel?&prefix:nullptr))return false;
+        if(!certifyAndRetainMotion(o,position,velocity,command,now,cfg_.retain_verified_travel?&prefix:nullptr))return false;
         if(cfg_.retain_verified_travel)pending_motion_=std::move(prefix);
         out.command=command;out.accepted=true;
         diagnostic_valid_=out.tracking&&velocity.norm()>.03;return true;

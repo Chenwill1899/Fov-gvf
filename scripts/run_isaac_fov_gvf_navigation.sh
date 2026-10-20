@@ -4,10 +4,11 @@ set -eo pipefail
 # Sleeping OpenMP workers leave CPU time available for sensor rendering.
 export OMP_WAIT_POLICY="${OMP_WAIT_POLICY:-PASSIVE}"
 
-PROJECT_ROOT="/home/starry/isaac-data/EGO1P5"
+PROJECT_ROOT="/home/starry/isaac-data/EGO2P6"
 ISAAC_ROOT="/home/starry/isaac-data/isaacsim"
+source "$PROJECT_ROOT/scripts/environment.sh"
 HUMBLE_BRIDGE_LIB="$ISAAC_ROOT/exts/isaacsim.ros2.core/humble/lib"
-ROS_INSTALL="${FOV_GVF_INSTALL:-/tmp/fov_gvf_ego1p5_isaac_install}"
+ROS_INSTALL="${FOV_GVF_INSTALL:-/home/starry/isaac-data/EGO2P6/docs/performance/runtime/install}"
 INPUT_MODE="${ISAAC_MANUAL_INPUT_MODE:-joystick}"
 case "$INPUT_MODE" in
   joystick)
@@ -22,7 +23,7 @@ case "$INPUT_MODE" in
     ;;
   goal)
     test -f "${ISAAC_GOAL_PROTOCOL:?goal mode requires ISAAC_GOAL_PROTOCOL}"
-    : "${FOV_GVF_BENCHMARK_ALGORITHM:?select ego1p5, ego1p3, ego1p2, ego1p1, ego1p0 or user_ego}"
+    : "${FOV_GVF_BENCHMARK_ALGORITHM:?select ego2p6, ego2p5, ego2p4, ego2p3, ego2p2, ego2p1, ego2p0, ego1p5, ego1p3, ego1p2, ego1p1, ego1p0 or user_ego}"
     : "${ISAAC_BENCHMARK_RESULT:?set result JSON path}"
     ;;
   trace)
@@ -47,6 +48,15 @@ case "$SCENE_MODE" in
     exit 1
     ;;
 esac
+# Optional HFOV/mount offset apply only to the runtime SessionLayer. Unset keeps all
+# authored camera attributes untouched; actual values are recorded every run.
+if [[ -v ISAAC_DEPTH_HFOV_DEG ]]; then
+  export ISAAC_DEPTH_HFOV_DEG
+fi
+if [[ -v ISAAC_DEPTH_CAMERA_OFFSET_M ]]; then
+  export ISAAC_DEPTH_CAMERA_OFFSET_M
+fi
+python3 "$PROJECT_ROOT/scripts/isaac/depth_camera_projection.py" --check-env
 SCENE="${FOV_GVF_SCENE:-$DEFAULT_SCENE}"
 export FOV_GVF_ACTUAL_SCENE="$SCENE"
 
@@ -73,13 +83,18 @@ if [[ -z "${FOV_GVF_ESDF_OCCUPANCY+x}" ]]; then
     unset FOV_GVF_ESDF_OCCUPANCY
   fi
 fi
-export ROS_LOG_DIR="${ROS_LOG_DIR:-/tmp/fov_gvf_ego1p5_isaac_ros_log}"
+export ROS_LOG_DIR="${ROS_LOG_DIR:-/home/starry/isaac-data/EGO2P6/docs/performance/runtime/ros_log}"
 export FOV_GVF_RUN_ID="${FOV_GVF_RUN_ID:-$(date +%Y%m%d_%H%M%S)}"
-export FOV_GVF_REPLAY_DIR="${FOV_GVF_REPLAY_DIR-/tmp/fov_gvf_ego1p5_replays/$FOV_GVF_RUN_ID}"
+# Keep full binary snapshots opt-in to prevent multi-GB diagnostic growth.
+if [[ "${EGO2P6_RECORD_REPLAYS:-0}" == 1 ]]; then
+  export FOV_GVF_REPLAY_DIR="${FOV_GVF_REPLAY_DIR-$PROJECT_ROOT/docs/performance/runtime/replays/$FOV_GVF_RUN_ID}"
+else
+  export FOV_GVF_REPLAY_DIR="${FOV_GVF_REPLAY_DIR-}"
+fi
 if [[ -n "$FOV_GVF_REPLAY_DIR" ]]; then
   mkdir -p "$FOV_GVF_REPLAY_DIR"
 fi
-export FOV_GVF_PERFORMANCE_LOG="${FOV_GVF_PERFORMANCE_LOG:-$PROJECT_ROOT/performance/PERFORMANCE_METRICS.md}"
+export FOV_GVF_PERFORMANCE_LOG="${FOV_GVF_PERFORMANCE_LOG:-$PROJECT_ROOT/docs/performance/PERFORMANCE_METRICS.md}"
 mkdir -p "$ROS_LOG_DIR"
 mkdir -p "$(dirname "$FOV_GVF_PERFORMANCE_LOG")"
 printf '\n### Run %s\n\n- Started: %s\n- Scene: `%s`\n- ROS domain: `%s`\n- Manual input: `%s`\n' \

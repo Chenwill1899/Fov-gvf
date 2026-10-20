@@ -4,6 +4,7 @@
 #include <stdexcept>
 #include <type_traits>
 #include <cmath>
+#include <Eigen/Geometry>
 namespace pc_gvf { namespace depth_angular {
 namespace {
 // Versioned local binary format: scalar fields, not compiler struct padding.
@@ -11,6 +12,7 @@ namespace {
 struct Archive {
     std::istream* in=nullptr; std::ostream* out=nullptr;
     bool memory_metadata=true;
+    bool native_hits=true;
     explicit Archive(std::istream& s):in(&s){}
     explicit Archive(std::ostream& s):out(&s){}
     template<class T> void number(T& x) {
@@ -49,8 +51,18 @@ struct Archive {
         camera(o.camera);numbers(o.depth);eigen(o.origin);eigen(o.rotation);
         number(o.stamp);number(o.version);number(o.view);number(o.revoked);
         if(memory_metadata){number(o.memory_uncertainty_rate);if(!std::isfinite(o.memory_uncertainty_rate)||o.memory_uncertainty_rate<0)throw std::runtime_error("invalid memory uncertainty");}
-        // Raw hits have already been ingested at capture time. The replayed
-        // step consumes the resulting revoked state and conservative depths.
+        if(native_hits) {
+            bool has=bool(o.obstacle_points);number(has);
+            if(has) {
+                std::uint32_t count=o.obstacle_points?o.obstacle_points->size():0;number(count);
+                if(count>2000000)throw std::runtime_error("too many native hits");
+                if(in) {
+                    auto points=std::make_shared<std::vector<Eigen::Vector3d>>(count);
+                    for(auto& p:*points)eigen(p);
+                    o.obstacle_points=points;
+                } else for(auto p:*o.obstacle_points)eigen(p);
+            }
+        }
         std::uint32_t n=static_cast<std::uint32_t>(o.supporting_views.size());number(n);
         if(n>256)throw std::runtime_error("too many supporting views");
         if(in)o.supporting_views.clear();
@@ -70,6 +82,59 @@ struct Archive {
 };
 }
 struct PaperReplayCodec {
+    static void committedState(Archive& io,PaperGuidance& p) {
+        std::uint32_t count=p.committed_motion_.size();io.number(count);
+        if(count>20000)throw std::runtime_error("too many committed tubes");
+        if(io.in)p.committed_motion_.resize(count);
+        for(auto& tube:p.committed_motion_) {
+            io.eigen(tube.a);io.eigen(tube.b);io.number(tube.radius);
+            if(!tube.a.allFinite()||!tube.b.allFinite()||!std::isfinite(tube.radius)||tube.radius<0.)
+                throw std::runtime_error("invalid committed tube");
+        }
+    }
+    static void activeConfig(Archive& io,PaperConfig& c) {
+        io.number(c.execution_consistent);io.number(c.assisted_vertical);io.number(c.bounded_exploration);
+        io.number(c.execution_dt);io.number(c.tracking_margin);io.number(c.assist_speed);io.number(c.assist_radius);
+        io.number(c.probe_speed);io.number(c.probe_vertical_speed);io.number(c.probe_distance_budget);
+        io.number(c.probe_time_budget);io.number(c.probe_volume_budget);io.number(c.probe_anchor_range);io.number(c.probe_clearance);
+    }
+    static void activeState(Archive& io,ActiveNavigationState& s,bool exposure=true,bool origin=true,bool retreat=false,bool boundary=false,bool nomination=false,bool nomination_boundary=false) {
+        io.eigen(s.anchor);io.eigen(s.last_position);io.eigen(s.center);io.eigen(s.previous_intent);
+        io.number(s.last_time);io.number(s.anchor_stamp);io.number(s.unknown_distance);io.number(s.unknown_time);
+        io.number(s.unknown_volume);io.number(s.turn_sign);io.number(s.episode);io.number(s.anchor_valid);
+        io.number(s.episode_active);io.number(s.assist_active);io.number(s.recovering);
+        std::uint32_t count=s.critical_targets.size();io.number(count);
+        if(count>64)throw std::runtime_error("too many active observation targets");
+        if(io.in)s.critical_targets.resize(count);
+        for(auto& target:s.critical_targets){io.eigen(target);if(!target.allFinite())throw std::runtime_error("invalid observation target");}
+        io.eigen(s.progress_position);io.number(s.progress_time);
+        io.number(s.observed_targets);
+        if(exposure){io.number(s.paused);io.number(s.unknown_exposure);io.number(s.unknown_volume_started);io.number(s.last_unknown);}
+        if(origin) {io.eigen(s.episode_origin);io.number(s.episode_origin_valid);io.number(s.episode_stamp);}
+        else if(io.in) {s.episode_origin=s.anchor;s.episode_origin_valid=false;s.episode_stamp=-1.;}
+        if(retreat)io.number(s.verified_retreat);
+        else if(io.in)s.verified_retreat=false;
+        if(boundary)io.number(s.boundary_inward);
+        else if(io.in)s.boundary_inward=0;
+        if(s.boundary_inward < -1 || s.boundary_inward > 1)throw std::runtime_error("invalid boundary recovery direction");
+        if(nomination) {
+            io.eigen(s.certified_command);io.eigen(s.certified_position);io.eigen(s.certified_intent);io.eigen(s.certified_anchor);
+            io.number(s.certified_stamp);io.number(s.certified_recovering);
+            if(!s.certified_command.allFinite()||!s.certified_position.allFinite()||!s.certified_intent.allFinite()||
+               !s.certified_anchor.allFinite()||!std::isfinite(s.certified_stamp))throw std::runtime_error("invalid active nomination");
+        }
+        else if(io.in)s.certified_stamp=-1.;
+        if(nomination_boundary)io.number(s.certified_boundary_inward);
+        else if(io.in)s.certified_boundary_inward=0;
+        if(s.certified_boundary_inward < -1 || s.certified_boundary_inward > 1)throw std::runtime_error("invalid nomination boundary mode");
+        if(!s.episode_origin.allFinite()||!std::isfinite(s.episode_stamp))throw std::runtime_error("invalid episode origin");
+        if(!std::isfinite(s.unknown_exposure)||s.unknown_exposure<0.)throw std::runtime_error("invalid unknown exposure");
+        if(!s.progress_position.allFinite()||!std::isfinite(s.progress_time))throw std::runtime_error("invalid progress state");
+        if(!s.anchor.allFinite()||!s.last_position.allFinite()||!s.center.allFinite()||!s.previous_intent.allFinite()||
+           !std::isfinite(s.last_time)||!std::isfinite(s.anchor_stamp)||!std::isfinite(s.turn_sign)||
+           !std::isfinite(s.unknown_distance)||s.unknown_distance<0.||!std::isfinite(s.unknown_time)||s.unknown_time<0.||
+           !std::isfinite(s.unknown_volume)||s.unknown_volume<0.)throw std::runtime_error("invalid active navigation state");
+    }
     static void config(Archive& io,PaperConfig& c,bool modern=true,bool teleop=true,bool preview=true,bool direct=true,bool model=true,bool response=true,bool history_capacity=true,bool certificate_memory=true,bool feedforward=true,bool command_accel=true,bool local_repair=true,bool six_axis=true) {
         io.number(c.motion.body_radius);
         io.number(c.motion.safety_margin);
@@ -168,7 +233,7 @@ struct PaperReplayCodec {
         if(io.in)for(std::uint32_t i=0;i<n;++i){SharedObstaclePacket packet_value;packet(io,packet_value);p.shared_.restore(packet_value);}
         else for(const auto& source:p.shared_.sources()){auto value=source.second;packet(io,value);}
     }
-    static void state(Archive& io,PaperGuidance& p,bool modern=true,bool reference_intent=true,bool recovery=true,bool acceleration=true,bool feedforward=true) {
+    static void state(Archive& io,PaperGuidance& p,bool modern=true,bool reference_intent=true,bool recovery=true,bool acceleration=true,bool feedforward=true,bool recovery_goal=true,bool recovery_speed=true) {
         std::uint32_t n=static_cast<std::uint32_t>(p.history_.size());io.number(n);
         if(n>256)throw std::runtime_error("too many historical views");
         if(io.in)p.history_.clear();
@@ -212,14 +277,45 @@ struct PaperReplayCodec {
         if(recovery){io.number(p.recovery_cursor_);if(p.recovery_cursor_<0||p.recovery_cursor_>147)throw std::runtime_error("invalid recovery cursor");}
         if(acceleration)io.eigen(p.proposal_acceleration_);
         if(feedforward){io.eigen(p.proposal_reference_);io.number(p.proposal_reference_valid_);}
+        if(recovery_goal) {
+            io.eigen(p.recovery_goal_);io.eigen(p.recovery_goal_intent_);io.number(p.recovery_goal_stamp_);
+            if(!p.recovery_goal_.allFinite()||!p.recovery_goal_intent_.allFinite()||!std::isfinite(p.recovery_goal_stamp_))
+                throw std::runtime_error("invalid recovery goal");
+        }
+        if(recovery_speed) {
+            io.number(p.recovery_goal_speed_);
+            if(!std::isfinite(p.recovery_goal_speed_)||p.recovery_goal_speed_<0.)
+                throw std::runtime_error("invalid recovery goal speed");
+        } else if(io.in)p.recovery_goal_speed_=0.;
     }
 };
 void PaperGuidance::saveReplay(std::ostream& out,const DepthObservation& observation,
     const Eigen::Vector3d& position,const Eigen::Vector3d& velocity,const Eigen::Vector3d& intent,double now,double dt,const Eigen::Vector3d* proposal) const {
-    out.write("EGOPAPRM",8);Archive io(out);
+    const bool nomination_format=active_.certified_stamp>=0.;
+    const bool nomination_boundary_format=nomination_format&&active_.certified_boundary_inward!=0;
+    const bool boundary_format=active_.boundary_inward!=0||nomination_format;
+    const bool retreat_format=active_.verified_retreat||boundary_format;
+    const bool bounds_format=cfg_.working_bounds_enabled||retreat_format;
+    const bool active_format=cfg_.execution_consistent||activeNavigationEnabled()||cfg_.free_space_ceiling_enabled||bounds_format;
+    out.write(nomination_boundary_format?"EGOPAPRZ":(nomination_format?"EGOPAPRY":(boundary_format?"EGOPAPRX":(retreat_format?"EGOPAPRW":(bounds_format?"EGOPAPRV":(active_format?"EGOPAPRU":"EGOPAPRQ"))))),8);Archive io(out);io.native_hits=active_format;
     // Output archives never mutate any scalar or collection.
     PaperReplayCodec::config(io,const_cast<PaperConfig&>(cfg_));
+    io.number(const_cast<bool&>(cfg_.emergency_braking_certificate));
+    io.number(const_cast<bool&>(cfg_.free_space_floor_enabled));
+    io.number(const_cast<double&>(cfg_.free_space_floor_z));
+    if(active_format) {
+        PaperReplayCodec::activeConfig(io,const_cast<PaperConfig&>(cfg_));
+    io.number(const_cast<bool&>(cfg_.free_space_ceiling_enabled));
+    io.number(const_cast<double&>(cfg_.free_space_ceiling_z));
+    if(bounds_format) {
+        io.number(const_cast<bool&>(cfg_.working_bounds_enabled));
+        io.number(const_cast<double&>(cfg_.working_min_x));io.number(const_cast<double&>(cfg_.working_max_x));
+        io.number(const_cast<double&>(cfg_.working_min_y));io.number(const_cast<double&>(cfg_.working_max_y));
+    }
+        PaperReplayCodec::activeState(io,const_cast<ActiveNavigationState&>(active_),true,true,retreat_format,boundary_format,nomination_format,nomination_boundary_format);
+    }
     PaperReplayCodec::state(io,const_cast<PaperGuidance&>(*this));
+    if(active_format)PaperReplayCodec::committedState(io,const_cast<PaperGuidance&>(*this));
     PaperReplayCodec::sixState(io,const_cast<PaperGuidance&>(*this));
     io.eigen(const_cast<Eigen::Vector3d&>(field_position_));
     double capacity_until=shared_.capacityBlockedUntil();io.number(capacity_until);
@@ -227,15 +323,28 @@ void PaperGuidance::saveReplay(std::ostream& out,const DepthObservation& observa
     auto p=position,v=velocity,q=intent;io.eigen(p);io.eigen(v);io.eigen(q);io.number(now);io.number(dt);
     bool proposed=proposal!=nullptr;io.number(proposed);if(proposed){auto value=*proposal;io.eigen(value);}
 }
-PaperResult PaperGuidance::replay(std::istream& in,std::ostream* audit,bool enable_incremental_for_ablation) {
+PaperResult PaperGuidance::replay(std::istream& in,std::ostream* audit,bool enable_incremental_for_ablation,bool enable_active_for_ablation) {
     char magic[8]={};in.read(magic,8);
     const std::string version(magic,8);
-    if(version!="EGOPAPR3"&&version!="EGOPAPR4"&&version!="EGOPAPR5"&&version!="EGOPAPR6"&&version!="EGOPAPR7"&&version!="EGOPAPR8"&&version!="EGOPAPR9"&&version!="EGOPAPRA"&&version!="EGOPAPRB"&&version!="EGOPAPRC"&&version!="EGOPAPRD"&&version!="EGOPAPRE"&&version!="EGOPAPRF"&&version!="EGOPAPRG"&&version!="EGOPAPRH"&&version!="EGOPAPRI"&&version!="EGOPAPRJ"&&version!="EGOPAPRK"&&version!="EGOPAPRL"&&version!="EGOPAPRM")throw std::runtime_error("unsupported replay format");
-    Archive io(in);io.memory_metadata=version>="EGOPAPRK";const bool modern=version!="EGOPAPR3";
+    if(version!="EGOPAPR3"&&version!="EGOPAPR4"&&version!="EGOPAPR5"&&version!="EGOPAPR6"&&version!="EGOPAPR7"&&version!="EGOPAPR8"&&version!="EGOPAPR9"&&version!="EGOPAPRA"&&version!="EGOPAPRB"&&version!="EGOPAPRC"&&version!="EGOPAPRD"&&version!="EGOPAPRE"&&version!="EGOPAPRF"&&version!="EGOPAPRG"&&version!="EGOPAPRH"&&version!="EGOPAPRI"&&version!="EGOPAPRJ"&&version!="EGOPAPRK"&&version!="EGOPAPRL"&&version!="EGOPAPRM"&&version!="EGOPAPRN"&&version!="EGOPAPRO"&&version!="EGOPAPRP"&&version!="EGOPAPRQ"&&version!="EGOPAPRR"&&version!="EGOPAPRS"&&version!="EGOPAPRT"&&version!="EGOPAPRU"&&version!="EGOPAPRV"&&version!="EGOPAPRW"&&version!="EGOPAPRX"&&version!="EGOPAPRY"&&version!="EGOPAPRZ")throw std::runtime_error("unsupported replay format");
+    Archive io(in);io.native_hits=version>="EGOPAPRR";io.memory_metadata=version>="EGOPAPRK";const bool modern=version!="EGOPAPR3";
     PaperConfig config;PaperReplayCodec::config(io,config,modern,version>="EGOPAPR6",version>="EGOPAPR7",version>="EGOPAPR8",version>="EGOPAPRC",version>="EGOPAPRD",version>="EGOPAPRE",version>="EGOPAPRF",version>="EGOPAPRG",version>="EGOPAPRH",version>="EGOPAPRI",version>="EGOPAPRJ");
+    if(version>="EGOPAPRN")io.number(config.emergency_braking_certificate);
+    if(version>="EGOPAPRQ") {
+        io.number(config.free_space_floor_enabled);io.number(config.free_space_floor_z);
+    }
+    if(version>="EGOPAPRR")PaperReplayCodec::activeConfig(io,config);
+    if(version>="EGOPAPRU") {io.number(config.free_space_ceiling_enabled);io.number(config.free_space_ceiling_z);}
+    if(version>="EGOPAPRV") {
+        io.number(config.working_bounds_enabled);io.number(config.working_min_x);io.number(config.working_max_x);
+        io.number(config.working_min_y);io.number(config.working_max_y);
+    }
+    if(enable_active_for_ablation){config.execution_consistent=true;config.assisted_vertical=true;config.bounded_exploration=true;}
     if(enable_incremental_for_ablation)config.incremental_field=true;
     PaperGuidance p(config);
-    PaperReplayCodec::state(io,p,modern,version>="EGOPAPR5",version>="EGOPAPR9",version>="EGOPAPRB",version>="EGOPAPRG");
+    if(version>="EGOPAPRR")PaperReplayCodec::activeState(io,p.active_,version>="EGOPAPRS",version>="EGOPAPRT",version>="EGOPAPRW",version>="EGOPAPRX",version>="EGOPAPRY",version>="EGOPAPRZ");
+    PaperReplayCodec::state(io,p,modern,version>="EGOPAPR5",version>="EGOPAPR9",version>="EGOPAPRB",version>="EGOPAPRG",version>="EGOPAPRO",version>="EGOPAPRP");
+    if(version>="EGOPAPRS")PaperReplayCodec::committedState(io,p);
     if(version>="EGOPAPRJ")PaperReplayCodec::sixState(io,p);
     if(version>="EGOPAPRL")io.eigen(p.field_position_);
     else if(p.observation_)p.field_position_=p.observation_->origin;
@@ -255,6 +364,12 @@ PaperResult PaperGuidance::replay(std::istream& in,std::ostream* audit,bool enab
         evidence.supporting_views.insert(evidence.supporting_views.end(),p.history_.begin(),p.history_.end());
         *audit<<"time "<<now<<" position "<<position.transpose()<<" velocity "<<velocity.transpose()
               <<" intent "<<intent.transpose()<<" envelope "<<p.envelopeRadius()<<'\n';
+        *audit<<"probe_episode "<<p.active_.episode<<" active "<<p.active_.episode_active
+              <<" origin_valid "<<p.active_.episode_origin_valid<<" origin "<<p.active_.episode_origin.transpose()
+              <<" origin_stamp "<<p.active_.episode_stamp<<" anchor "<<p.active_.anchor.transpose()<<'\n';
+        *audit<<"free_space_floor "<<p.cfg_.free_space_floor_enabled<<' '<<p.cfg_.free_space_floor_z<<'\n';
+        *audit<<"free_space_ceiling "<<p.cfg_.free_space_ceiling_enabled<<' '<<p.cfg_.free_space_ceiling_z<<'\n';
+        *audit<<"working_bounds "<<p.cfg_.working_bounds_enabled<<' '<<p.cfg_.working_min_x<<' '<<p.cfg_.working_max_x<<' '<<p.cfg_.working_min_y<<' '<<p.cfg_.working_max_y<<'\n';
         for(double margin:{0.,.005,.01,.02,.03})
             *audit<<"known_body_plus "<<margin<<' '<<p.envelopeKnown(evidence,position,p.envelopeRadius()+margin,now)<<'\n';
         *audit<<"evidence history "<<p.history_.size()<<" current "<<o.supporting_views.size()
@@ -270,6 +385,18 @@ PaperResult PaperGuidance::replay(std::istream& in,std::ostream* audit,bool enab
             const bool saved=p.motionSafe(evidence,position,velocity,command,now);
             p.reached_proofs_.resize(size);
             *audit<<"motion_scale "<<scale<<" current "<<current<<" saved_certificate "<<saved<<'\n';
+        }
+        // Nonzero probes avoid mistaking a zero previous-command replay for
+        // proof that a vehicle can restart. Diagnostics never grant motion.
+        if(intent.norm()>1e-9) {
+            const Eigen::Vector3d q=intent.normalized(),side=q.unitOrthogonal();
+            for(double angle:{0.,30.,-30.,60.,-60.,90.,180.}) {
+                const Eigen::Vector3d ray=std::cos(angle*std::acos(-1.)/180.)*q+
+                    std::sin(angle*std::acos(-1.)/180.)*side;
+                for(double speed:{.03125,.0625,.125,.25,.5})
+                    *audit<<"restart_probe "<<angle<<' '<<speed<<' '
+                          <<p.motionSafe(evidence,position,velocity,speed*ray,now)<<'\n';
+            }
         }
         // Diagnostic samples locate missing evidence; they never authorize motion.
         if(intent.norm()>1e-9)for(double advance:{.01,.10,.30}) {

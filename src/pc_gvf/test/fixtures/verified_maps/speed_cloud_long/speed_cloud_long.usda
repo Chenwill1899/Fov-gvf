@@ -1,0 +1,95 @@
+#usda 1.0
+(
+    customLayerData = {
+        string commit = "bfda51284c8c1b476043255a8145ef925a3778a5"
+        string fovNavigationJson = '{"augmentation": "3 original-scale tiles; middle reflected", "benchmarkGoal": [384.0, 11.2, 2.8], "bodyRadiusM": 0.25, "cameraHorizontalFovDeg": 90.0, "cameraMaxDepthM": 40.0, "cameraResolution": [320, 240], "environmentScale": 4.0, "horizontalCameraViews": [{"name": "front", "path": "/World/Robot/CameraMount/DepthCamera", "yawDeg": 0.0}, {"name": "left", "path": "/World/Robot/CameraMountLeft/DepthCamera", "yawDeg": 90.0}, {"name": "back", "path": "/World/Robot/CameraMountBack/DepthCamera", "yawDeg": 180.0}, {"name": "right", "path": "/World/Robot/CameraMountRight/DepthCamera", "yawDeg": -90.0}], "manualControl": true, "occupancyOrigin": [-80.0, -60.0, 0.0], "occupancyResolution": 0.4, "occupancyShape": [1200, 300, 50], "spawn": [-64.0, -11.2, 2.8]}'
+        string reconstruction = "Perlin3D seed 127 fill .12 complexity .05; occupied voxel exterior; added ground."
+        string source = "ZJU-FAST-Lab/ego-planner mockamap"
+    }
+    defaultPrim = "World"
+    metersPerUnit = 1
+    subLayers = [
+        @../ego_swarm_cloud/ego_swarm_cloud_navigation.usd@
+    ]
+    upAxis = "Z"
+)
+
+over "World"
+{
+    def Xform "SpeedTile1"
+    {
+        float3 xformOp:scale = (1, -1, 1)
+        double3 xformOp:translate = (160, -0.4, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+
+        def Mesh "Cloud_Obstacles" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+            prepend references = [
+                @../ego_swarm_cloud/ego_swarm_cloud_navigation.usd@</World/Cloud_Obstacles>,
+                @height_colors.usdc@</HeightColors>
+            ]
+        )
+        {
+            rel material:binding = </World/Looks/HeightRainbow>
+        }
+
+        def Mesh "Ground" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+            prepend references = @../ego_swarm_cloud/ego_swarm_cloud_navigation.usd@</World/Ground>
+        )
+        {
+            rel material:binding = </World/Looks/White>
+        }
+    }
+
+    def Xform "SpeedTile2"
+    {
+        double3 xformOp:translate = (320, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+
+        def Mesh "Cloud_Obstacles" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+            prepend references = [
+                @../ego_swarm_cloud/ego_swarm_cloud_navigation.usd@</World/Cloud_Obstacles>,
+                @height_colors.usdc@</HeightColors>
+            ]
+        )
+        {
+            rel material:binding = </World/Looks/HeightRainbow>
+        }
+
+        def Mesh "Ground" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+            prepend references = @../ego_swarm_cloud/ego_swarm_cloud_navigation.usd@</World/Ground>
+        )
+        {
+            rel material:binding = </World/Looks/White>
+        }
+    }
+
+    over "Looks"
+    {
+        def Material "HeightRainbow"
+        {
+            token outputs:surface.connect = </World/Looks/HeightRainbow/Surface.outputs:surface>
+
+            def Shader "Color"
+            {
+                uniform token info:id = "UsdPrimvarReader_float3"
+                float3 inputs:fallback = (0.025, 0.34, 0.8)
+                string inputs:varname = "displayColor"
+                float3 outputs:result
+            }
+
+            def Shader "Surface"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor = (0.025, 0.34, 0.8)
+                color3f inputs:diffuseColor.connect = </World/Looks/HeightRainbow/Color.outputs:result>
+                float inputs:roughness = 0.65
+                token outputs:surface
+            }
+        }
+    }
+}
+

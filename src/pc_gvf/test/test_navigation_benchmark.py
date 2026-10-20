@@ -13,7 +13,7 @@ from navigation_benchmark import GoalTrial
 
 @pytest.fixture
 def trial():
-    return GoalTrial(json.loads((ROOT / 'performance/navigation_benchmark_20260929/protocol.json').read_text()))
+    return GoalTrial(json.loads((ROOT / 'src/pc_gvf/config/navigation_protocol.json').read_text()))
 
 
 def test_same_direction_and_limits_without_map_access(trial):

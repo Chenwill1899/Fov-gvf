@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Publish live radar points and a persistent world-frame observed map."""
 
-from collections import deque
+from collections import deque, OrderedDict
 import math
 
 import numpy as np
@@ -88,15 +88,24 @@ def stamp_nanoseconds(stamp):
 class ObservedVoxelMap:
     """Persistent hit-confirmed voxel map with bounded publication sampling."""
 
-    def __init__(self, resolution, minimum_hits):
+    def __init__(self, resolution, minimum_hits, maximum_voxels=1000000, maximum_candidates=250000):
         if not math.isfinite(resolution) or resolution <= 0.0:
             raise ValueError("map resolution must be positive")
         if minimum_hits < 1:
             raise ValueError("minimum hits must be at least one")
         self.resolution = float(resolution)
         self.minimum_hits = int(minimum_hits)
-        self.voxel_hits = {}
-        self.occupied_voxels = set()
+        if maximum_voxels < 1 or maximum_candidates < 1:
+            raise ValueError("stored voxel limits must be positive")
+        self.maximum_voxels = int(maximum_voxels)
+        self.maximum_candidates = int(maximum_candidates)
+        self.voxel_hits = OrderedDict()
+        self.occupied_voxels = OrderedDict()
+        self.evicted_voxels = 0
+        self.evicted_candidates = 0
+        self._publication_resolution = None
+        self._publication_request = None
+        self._coarse_counts = {}
         self.changed = True
 
     def integrate(self, world_points):
@@ -111,36 +120,57 @@ class ObservedVoxelMap:
         for index in frame_voxels:
             key = (int(index[0]), int(index[1]), int(index[2]))
             if key in self.occupied_voxels:
+                self.occupied_voxels.move_to_end(key)
                 continue
             hits = self.voxel_hits.get(key, 0) + 1
             if hits >= self.minimum_hits:
                 self.voxel_hits.pop(key, None)
-                self.occupied_voxels.add(key)
+                self.occupied_voxels[key] = None
+                self._coarse_add(key, 1)
+                if len(self.occupied_voxels) > self.maximum_voxels:
+                    evicted, _ = self.occupied_voxels.popitem(last=False)
+                    self._coarse_add(evicted, -1)
+                    self.evicted_voxels += 1
                 newly_occupied += 1
             else:
                 self.voxel_hits[key] = hits
+                self.voxel_hits.move_to_end(key)
+                if len(self.voxel_hits) > self.maximum_candidates:
+                    self.voxel_hits.popitem(last=False)
+                    self.evicted_candidates += 1
         if newly_occupied:
             self.changed = True
         return newly_occupied
 
+    def _coarse_add(self, key, delta):
+        if self._publication_resolution is None:
+            return
+        coarse = tuple(math.floor(((axis + 0.5) * self.resolution) / self._publication_resolution) for axis in key)
+        count = self._coarse_counts.get(coarse, 0) + delta
+        if count > 0:
+            self._coarse_counts[coarse] = count
+        else:
+            self._coarse_counts.pop(coarse, None)
+
+    def _rebuild_publication(self):
+        self._coarse_counts.clear()
+        for key in self.occupied_voxels:
+            self._coarse_add(key, 1)
+
     def points(self, publication_resolution, maximum_points):
-        """Return globally coarsened centers without changing the internal map."""
-        if not self.occupied_voxels:
+        """Incremental global coarsening; no full-map unique on each publish."""
+        request = (max(self.resolution, float(publication_resolution)), int(maximum_points))
+        if request != self._publication_request:
+            self._publication_request = request
+            self._publication_resolution = request[0]
+            self._rebuild_publication()
+        while maximum_points > 0 and len(self._coarse_counts) > maximum_points:
+            self._publication_resolution *= max(2, math.ceil((len(self._coarse_counts) / maximum_points) ** (1.0 / 3.0)))
+            self._rebuild_publication()
+        if not self._coarse_counts:
             return np.empty((0, 3), dtype=np.float32)
-        indices = np.asarray(tuple(self.occupied_voxels), dtype=np.int64)
-        centers = (indices.astype(np.float64) + 0.5) * self.resolution
-        output_resolution = max(self.resolution, float(publication_resolution))
-        while True:
-            output_indices = np.unique(
-                np.floor(centers / output_resolution).astype(np.int64), axis=0)
-            if maximum_points <= 0 or output_indices.shape[0] <= maximum_points:
-                break
-            scale = max(
-                2, int(math.ceil(
-                    (output_indices.shape[0] / maximum_points) ** (1.0 / 3.0))))
-            output_resolution *= scale
-        return ((output_indices.astype(np.float64) + 0.5) * output_resolution).astype(
-            np.float32)
+        indices = np.asarray(tuple(self._coarse_counts), dtype=np.int64)
+        return ((indices.astype(np.float64) + 0.5) * self._publication_resolution).astype(np.float32)
 
 
 class ObservedMapVisualizer(Node):
@@ -177,7 +207,9 @@ class ObservedMapVisualizer(Node):
         self.camera_info = None
         self.pose_history = deque(maxlen=120)
         self.observed_map = ObservedVoxelMap(
-            self.map_resolution, self.minimum_hits)
+            self.map_resolution, self.minimum_hits,
+            maximum_voxels=int(p("maximum_stored_voxels", 1000000)),
+            maximum_candidates=int(p("maximum_candidate_voxels", 250000)))
         self.cached_map_points = np.empty((0, 3), dtype=np.float32)
         self.integrated_frames = 0
         self.last_log_time_ns = None
@@ -300,7 +332,9 @@ class ObservedMapVisualizer(Node):
                 f"observed map: occupied={len(self.observed_map.occupied_voxels)}, "
                 f"candidates={len(self.observed_map.voxel_hits)}, "
                 f"published={self.cached_map_points.shape[0]}, "
-                f"integrated_frames={self.integrated_frames}")
+                f"integrated_frames={self.integrated_frames}, "
+                f"evicted_map={self.observed_map.evicted_voxels}, "
+                f"evicted_candidates={self.observed_map.evicted_candidates}")
             self.last_log_time_ns = now_ns
 
 

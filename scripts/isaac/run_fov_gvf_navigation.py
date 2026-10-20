@@ -3,7 +3,7 @@
 
 The FOV-GVF controller remains an external ROS 2 node.  Isaac Sim supplies the
 depth image, camera calibration and odometry through OmniGraph, receives the
-holonomic velocity adapter command, and integrates the kinematic quadrotor at
+world-frame velocity adapter command, and integrates the kinematic quadrotor at
 fixed simulation time.  This keeps the vehicle interface deterministic while
 the imported USD remains a normal editable environment.
 """
@@ -23,7 +23,10 @@ from manual_control_math import (
     velocity_response,
     desired_velocity_from_direction,
     TimedVelocitySample,
+    BoundedTimingSamples,
 )
+
+from depth_camera_projection import configure_depth_projection, save_projection_evidence
 
 from isaacsim import SimulationApp
 
@@ -78,10 +81,15 @@ if manual_input_mode not in {"keyboard", "joystick", "trace", "goal"}:
 twist_sample_source = os.environ.get("ISAAC_TWIST_SAMPLE_SOURCE", "callback").strip().lower()
 if twist_sample_source not in {"omnigraph", "callback"}:
     raise SystemExit("ISAAC_TWIST_SAMPLE_SOURCE must be omnigraph or callback")
+command_frame = os.environ.get("ISAAC_COMMAND_FRAME", "world").strip().lower()
+if command_frame not in {"world", "body"}:
+    raise SystemExit("ISAAC_COMMAND_FRAME must be world or body")
 goal_trial = None
 if manual_input_mode == "goal":
-    from navigation_benchmark import GoalTrial
-    goal_trial = GoalTrial(json.loads(Path(os.environ["ISAAC_GOAL_PROTOCOL"]).read_text()),
+    from navigation_benchmark import GoalTrial, SequenceGoalTrial
+    goal_protocol = json.loads(Path(os.environ["ISAAC_GOAL_PROTOCOL"]).read_text())
+    trial_class = SequenceGoalTrial if "waypoints" in goal_protocol else GoalTrial
+    goal_trial = trial_class(goal_protocol,
         float(os.environ.get("ISAAC_EXPLORATION_STALL_S", "0")))
 intent_trace = None
 trace_manual_yaw = False
@@ -94,10 +102,14 @@ if manual_input_mode == "trace":
         raise ValueError("trace events require finite at and three-dimensional velocity")
     if any(events[i]["at"] >= events[i+1]["at"] for i in range(len(events)-1)):
         raise ValueError("trace times must increase")
+    trace_start = intent_trace.get("start")
+    if trace_start is not None and (not isinstance(trace_start, list) or len(trace_start) != 3 or
+            not all(type(v) in (int, float) and math.isfinite(v) for v in trace_start)):
+        raise ValueError("trace start must contain three finite numbers")
     trace_manual_yaw = any("yaw_rate" in event for event in events)
     trace_disturbances = list(intent_trace.get("disturbances", []))
-plant_tau = scalar_from_env("ISAAC_PLANT_TAU", 0.22)
-plant_accel = scalar_from_env("ISAAC_PLANT_ACCEL", 1.2)
+plant_tau = scalar_from_env("ISAAC_PLANT_TAU", 0.10)
+plant_accel = scalar_from_env("ISAAC_PLANT_ACCEL", 16.0)
 
 if goal_trial is not None:
     plant_tau = goal_trial.protocol["plant_tau_s"]
@@ -109,10 +121,10 @@ if manual_input_mode == "joystick":
 
     joystick_input = BeitongMode2()
 viewport_capture_path = Path(
-    os.environ.get("ISAAC_VIEW_CAPTURE", "/tmp/fov_gvf_isaac_viewport.png")
+    os.environ.get("ISAAC_VIEW_CAPTURE", os.environ["EGO2P6_RUNTIME"] + "/viewport.png")
 ).expanduser()
 performance_log_path = Path(os.environ.get(
-    "FOV_GVF_PERFORMANCE_LOG", "performance/PERFORMANCE_METRICS.md"
+    "FOV_GVF_PERFORMANCE_LOG", "docs/performance/PERFORMANCE_METRICS.md"
 )).expanduser()
 performance_run_id = os.environ.get("FOV_GVF_RUN_ID", "unspecified")
 viewport_antialiasing = os.environ.get("ISAAC_VIEW_ANTIALIASING", "TAA").upper()
@@ -139,6 +151,9 @@ sys.argv = [sys.argv[0]]
 headless = os.environ.get("ISAAC_HEADLESS", "0") == "1"
 simulation_app = SimulationApp({
     "headless": headless,
+    "extra_args": ["--portable-root", os.environ["EGO2P6_RUNTIME"] + "/kit",
+        "--/app/settings/persistent=false",
+        "--/log/file=" + os.environ["EGO2P6_RUNTIME"] + "/kit.log"],
     "renderer": viewport_renderer,
     "minimal_shading_mode": minimal_shading_mode,
     "active_gpu": 0,
@@ -231,6 +246,8 @@ render_settings.set("/rtx/reflections/sampledLighting/enabled", False)
 render_settings.set("/rtx/ambientOcclusion/enabled", False)
 render_settings.set("/rtx/indirectDiffuse/enabled", False)
 stage = context.get_stage()
+if UsdGeom.GetStageUpAxis(stage) != 'Z' or not math.isclose(UsdGeom.GetStageMetersPerUnit(stage),1.):
+    raise RuntimeError('navigation requires a Z-up scene with meter units')
 sun_count = 0
 dome_count = 0
 for prim in stage.Traverse():
@@ -302,6 +319,8 @@ if goal_trial is not None:
         for label, point in (("Start", spawn), ("Goal", goal_trial.goal)):
             marker = UsdGeom.Xform.Define(stage, f"/World/UAV_{label}")
             UsdGeom.XformCommonAPI(marker).SetTranslate(Gf.Vec3d(*point))
+if intent_trace is not None and intent_trace.get("start") is not None:
+    spawn = intent_trace["start"]
 position = Gf.Vec3d(*(float(value) for value in spawn))
 velocity = Gf.Vec3d(0.0, 0.0, 0.0)
 yaw = 0.0
@@ -325,6 +344,15 @@ if (
 ):
     raise RuntimeError("fovNavigationJson.cameraResolution must contain two positive integers")
 camera_width, camera_height = camera_resolution
+# Optional SessionLayer-only camera projection. This is set before the render
+# products/CameraInfo helpers initialize; saved scene assets are never exported.
+sensor_projection = configure_depth_projection(
+    stage, Usd, UsdGeom, depth_camera_views, camera_width, camera_height,
+    run_id=performance_run_id, scene_path=str(scene_path))
+if os.environ.get("ISAAC_BENCHMARK_RESULT"):
+    sensor_path = save_projection_evidence(sensor_projection, os.environ["ISAAC_BENCHMARK_RESULT"])
+    print(f"[DEPTH PROJECTION EVIDENCE] {sensor_path}", flush=True)
+print("[DEPTH PROJECTION] " + json.dumps(sensor_projection, sort_keys=True), flush=True)
 print(
     f"[RENDER] mode={viewport_renderer} minimal_shading_mode={minimal_shading_mode} "
     f"anti_aliasing={viewport_antialiasing}",
@@ -335,13 +363,18 @@ print(
     f"resolution_each={camera_width}x{camera_height} horizontal_coverage=360deg",
     flush=True,
 )
-esdf_resolution = 0.1 * environment_scale
-esdf_origin = environment_scale * np.array((-20.0, -15.0, 0.0), dtype=np.float64)
+esdf_resolution = float(navigation_metadata.get('occupancyResolution', 0.1 * environment_scale))
+esdf_origin = np.asarray(navigation_metadata.get('occupancyOrigin',
+    environment_scale * np.array((-20.0, -15.0, 0.0), dtype=np.float64)), dtype=np.float64)
+expected_shape = tuple(navigation_metadata.get('occupancyShape', (400, 300, 50)))
+if (not math.isfinite(esdf_resolution) or esdf_resolution <= 0 or
+        esdf_origin.shape != (3,) or not np.isfinite(esdf_origin).all() or
+        len(expected_shape) != 3 or any(not isinstance(n, int) or n <= 1 for n in expected_shape)):
+    raise RuntimeError('invalid scene occupancy geometry')
 occupancy_path = Path(os.environ.get(
     "FOV_GVF_ESDF_OCCUPANCY", scene_path.with_name("occupancy.bin")))
 if occupancy_path.is_file():
     occupancy = np.fromfile(occupancy_path, dtype=np.uint8)
-    expected_shape = (400, 300, 50)
     if occupancy.size != math.prod(expected_shape):
         raise RuntimeError(
             f"ESDF occupancy has {occupancy.size} cells, expected {math.prod(expected_shape)}")
@@ -357,27 +390,30 @@ if occupancy_path.is_file():
         flush=True,
     )
 
-# Other scenes retain a conservative three-dimensional AABB guard.
+# The added USD ground is not necessarily present in occupancy.bin. Always
+# collect its top surface; only fallback scenes need other mesh AABBs.
 obstacle_bounds = []
 ground_top_z = None
+for prim in stage.Traverse():
+    path = str(prim.GetPath())
+    if not prim.IsA(UsdGeom.Mesh) or path.startswith("/World/Robot"):
+        continue
+    is_ground = path.lower().endswith("/ground") or "static_ground" == str(
+        prim.GetAttribute("fov:collisionRole").Get() or "")
+    if esdf is not None and not is_ground:
+        continue
+    box = UsdGeom.Boundable(prim).ComputeWorldBound(
+        Usd.TimeCode.Default(), UsdGeom.Tokens.default_).ComputeAlignedBox()
+    minimum, maximum = box.GetMin(), box.GetMax()
+    if is_ground:
+        ground_top_z = (
+            float(maximum[2]) if ground_top_z is None
+            else max(ground_top_z, float(maximum[2])))
+        continue
+    obstacle_bounds.append(tuple(float(value) for value in (
+        minimum[0], minimum[1], minimum[2],
+        maximum[0], maximum[1], maximum[2])))
 if esdf is None:
-    for prim in stage.Traverse():
-        path = str(prim.GetPath())
-        if not prim.IsA(UsdGeom.Mesh) or path.startswith("/World/Robot"):
-            continue
-        box = UsdGeom.Boundable(prim).ComputeWorldBound(
-            Usd.TimeCode.Default(), UsdGeom.Tokens.default_).ComputeAlignedBox()
-        minimum, maximum = box.GetMin(), box.GetMax()
-        is_ground = path.lower().endswith("/ground") or "static_ground" == str(
-            prim.GetAttribute("fov:collisionRole").Get() or "")
-        if is_ground:
-            ground_top_z = (
-                float(maximum[2]) if ground_top_z is None
-                else max(ground_top_z, float(maximum[2])))
-            continue
-        obstacle_bounds.append(tuple(float(value) for value in (
-            minimum[0], minimum[1], minimum[2],
-            maximum[0], maximum[1], maximum[2])))
     print(
         f"[SCENE] AABB guard obstacles={len(obstacle_bounds)} "
         f"ground_top_z={ground_top_z}",
@@ -423,10 +459,10 @@ def sample_esdf(candidate: Gf.Vec3d) -> float:
 
 
 def collides(candidate: Gf.Vec3d) -> bool:
-    if esdf is not None:
-        return sample_esdf(candidate) <= body_radius
     if ground_top_z is not None and float(candidate[2]) <= ground_top_z + body_radius:
         return True
+    if esdf is not None:
+        return sample_esdf(candidate) <= body_radius
     for xmin, ymin, zmin, xmax, ymax, zmax in obstacle_bounds:
         dx = max(xmin - float(candidate[0]), 0.0, float(candidate[0]) - xmax)
         dy = max(ymin - float(candidate[1]), 0.0, float(candidate[1]) - ymax)
@@ -637,6 +673,23 @@ odom_inputs = {
     "angularVelocity": og.Controller.attribute("/World/FovGVFGraph/PublishOdometry.inputs:angularVelocity"),
 }
 
+# Optional recorder handshake occurs before simulation time / human intent start.
+# No camera adjustment or controller parameter changes are made here.
+recording_handshake = os.environ.get("ISAAC_RECORDING_HANDSHAKE_DIR", "")
+if recording_handshake:
+    recording_gate = Path(recording_handshake)
+    recording_gate.mkdir(parents=True, exist_ok=True)
+    (recording_gate / "preflight_ready.json").write_text(json.dumps({
+        "wall_epoch": time.time(), "run_id": performance_run_id,
+        "position": list(position), "camera_adjustments": 0}))
+    recording_wait_start = time.monotonic()
+    while not (recording_gate / "recording_ready").is_file():
+        if time.monotonic() - recording_wait_start > 120.0:
+            raise RuntimeError("Screen recorder did not become ready before flight")
+        simulation_app.update()
+        time.sleep(0.02)
+    print("[RECORDING] live screen recorder ready; starting simulation", flush=True)
+
 SimulationManager.setup_simulation(dt=1.0 / 60.0, device="cpu")
 app_utils.play()
 simulation_app.update()
@@ -649,8 +702,8 @@ performance_wall_start = time.perf_counter()
 last_frame_wall = None
 last_command_change_wall = None
 last_applied_command = None
-frame_interval_ms = []
-command_change_interval_ms = []
+frame_interval_ms = BoundedTimingSamples()
+command_change_interval_ms = BoundedTimingSamples()
 command_change_count = 0
 navigation_result = "RUNNING"
 collision_block_count = 0
@@ -662,7 +715,7 @@ if os.environ.get("ISAAC_ACCEPTANCE_TRACE"):
     acceptance_stream = acceptance_path.open("w", newline="")
     acceptance_writer = csv.writer(acceptance_stream)
     acceptance_writer.writerow(["t", "x", "y", "z", "vx", "vy", "vz", "qx", "qy", "qz", "status",
-        "esdf_clearance_r048", "collision_blocks", "recorded_balls", "revoked_balls", "expired_views", "evicted_views", "build_reason", "required_prefix", "best_prefix", "free_directions", "recorded_tubes", "grid_refined", "command_changed", "intent_change_angle", "refreshed", "continued", "reset_reason", "diagnostic_stamp", "input_x", "input_y", "input_z", "target_x", "target_y", "target_z", "reference_intent_x", "reference_intent_y", "reference_intent_z", "command_x", "command_y", "command_z", "applied_target_x", "applied_target_y", "applied_target_z", "twist_source", "received_twist_sequence", "applied_twist_sequence", "twist_age_s", "received_body_x", "received_body_y", "received_body_z", "applied_body_x", "applied_body_y", "applied_body_z"])
+        "esdf_clearance_r048", "collision_blocks", "recorded_balls", "revoked_balls", "expired_views", "evicted_views", "build_reason", "required_prefix", "best_prefix", "free_directions", "recorded_tubes", "grid_refined", "command_changed", "intent_change_angle", "refreshed", "continued", "reset_reason", "diagnostic_stamp", "input_x", "input_y", "input_z", "target_x", "target_y", "target_z", "reference_intent_x", "reference_intent_y", "reference_intent_z", "command_x", "command_y", "command_z", "applied_target_x", "applied_target_y", "applied_target_z", "twist_source", "received_twist_sequence", "applied_twist_sequence", "twist_age_s", "received_body_x", "received_body_y", "received_body_z", "applied_body_x", "applied_body_y", "applied_body_z", "command_frame", "authorization", "navigation_mode", "probe_episode", "unknown_distance", "unknown_time", "unknown_volume", "expected_visibility", "anchor_x", "anchor_y", "anchor_z", "unknown_exposure", "probe_episode_active", "probe_origin_valid", "probe_origin_stamp", "probe_origin_x", "probe_origin_y", "probe_origin_z"])
 while simulation_app.is_running() and app_utils.is_playing():
     simulation_app.update()
     frame_wall = time.perf_counter()
@@ -691,34 +744,38 @@ while simulation_app.is_running() and app_utils.is_playing():
     # Keep the legacy source selectable for controlled before/after experiments.
     sample_wall = time.monotonic()
     received_snapshot = twist_sample.snapshot
-    callback_body, callback_sequence, twist_age = twist_sample.select(sample_wall, translation_active)
+    callback_vector, callback_sequence, twist_age = twist_sample.select(sample_wall, translation_active)
     if twist_sample_source == "callback":
-        command_body = callback_body
+        command_vector = callback_vector
         applied_twist_sequence = callback_sequence
     elif (not translation_active or raw is None or len(raw) < 3 or
             last_twist_wall is None or sample_wall-last_twist_wall > .10):
-        command_body = (0.0, 0.0, 0.0)
+        command_vector = (0.0, 0.0, 0.0)
         applied_twist_sequence = 0
     else:
-        command_body = tuple(float(v) for v in raw[:3])
+        command_vector = tuple(float(v) for v in raw[:3])
         # OmniGraph has no matching receive sequence; never label it with the
         # independent Python subscriber's sequence.
         applied_twist_sequence = -1
     if last_applied_command is None or any(
-            abs(command_body[index] - last_applied_command[index]) > 1.0e-9
+            abs(command_vector[index] - last_applied_command[index]) > 1.0e-9
             for index in range(3)):
         command_change_count += 1
         if last_command_change_wall is not None:
             command_change_interval_ms.append(
                 (frame_wall - last_command_change_wall) * 1000.0)
         last_command_change_wall = frame_wall
-        last_applied_command = command_body
-    c, s = math.cos(yaw), math.sin(yaw)
-    command = (
-        c * command_body[0] - s * command_body[1],
-        s * command_body[0] + c * command_body[1],
-        command_body[2],
-    )
+        last_applied_command = command_vector
+    # A held certified world vector must not rotate when the vehicle yaws.
+    # Body-frame interpretation is retained only for explicit legacy runs.
+    command = command_vector
+    if command_frame == "body":
+        c, s = math.cos(yaw), math.sin(yaw)
+        command = (
+            c * command_vector[0] - s * command_vector[1],
+            s * command_vector[0] + c * command_vector[1],
+            command_vector[2],
+        )
     applied_target = command
     if plant_tau > 0.0:
         command = velocity_response(velocity, command, dt, plant_tau, plant_accel)
@@ -781,7 +838,10 @@ while simulation_app.is_running() and app_utils.is_playing():
             *[controller_diagnostics.get(k, "") for k in ["recorded_balls", "revoked_balls", "expired_views", "evicted_views", "build_reason", "required_prefix", "best_prefix", "free_directions", "recorded_tubes", "grid_refined", "command_changed", "intent_change_angle", "refreshed", "continued", "reset_reason", "diagnostic_stamp", "input_x", "input_y", "input_z", "target_x", "target_y", "target_z", "reference_intent_x", "reference_intent_y", "reference_intent_z", "command_x", "command_y", "command_z"]], *applied_target,
             twist_sample_source, received_snapshot[2] if received_snapshot else 0,
             applied_twist_sequence, twist_age,
-            *(received_snapshot[0] if received_snapshot else (0.0, 0.0, 0.0)), *command_body])
+            # Retain the historical *_body_* transport column names for old
+            # analyzers; command_frame explicitly identifies their coordinates.
+            *(received_snapshot[0] if received_snapshot else (0.0, 0.0, 0.0)), *command_vector,
+            command_frame, *[controller_diagnostics.get(k, "") for k in ['authorization', 'navigation_mode', 'probe_episode', 'unknown_distance', 'unknown_time', 'unknown_volume', 'expected_visibility', 'anchor_x', 'anchor_y', 'anchor_z', 'unknown_exposure', 'probe_episode_active', 'probe_origin_valid', 'probe_origin_stamp', 'probe_origin_x', 'probe_origin_y', 'probe_origin_z']]])
     if frame % 300 == 0:
         print(
             f"[NAV] t={now:.1f}s position=({position[0]:.2f},{position[1]:.2f},{position[2]:.2f}) "
@@ -834,13 +894,7 @@ applied_control_frames = frame + 1
 
 
 def timing_summary(values):
-    if not values:
-        return 0.0, 0.0, 0.0, 0.0
-    ordered = sorted(values)
-    percentile = lambda fraction: ordered[round(fraction * (len(ordered) - 1))]
-    return (
-        sum(values) / len(values), percentile(0.50),
-        percentile(0.95), ordered[-1])
+    return values.summary()
 
 
 frame_mean, frame_p50, frame_p95, frame_max = timing_summary(frame_interval_ms)
@@ -861,6 +915,7 @@ print(
 performance_record = (
     f"\n#### Isaac command application — {performance_run_id}\n\n"
     f"- Result: {navigation_result}\n"
+    f"- Timing mean/max: lifetime; P50/P95: latest up to 8192 intervals.\n"
     f"- Wall duration / simulation duration: {performance_wall_elapsed:.3f} / "
     f"{now:.3f} s\n"
     f"- Applied simulation control frames: {applied_control_frames}\n"

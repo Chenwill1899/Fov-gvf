@@ -126,6 +126,108 @@ int main() {
         "legacy fixture failed");
     check(!legacy.motionSafe(hidden,location,travel,Eigen::Vector3d::Zero(),hidden.stamp),
         "legacy mode unexpectedly enabled future volume memory");
+    // A 25 mm tangential segment fits beside this wall, although its single
+    // midpoint ball (radius + 12.5 mm) does not. Store the already-proved
+    // capsule itself; do not require the larger, unproved bounding sphere.
+    auto tube_cfg=cfg;tube_cfg.history_uncertainty_rate=0.;tube_cfg.retain_certified_volume=true;
+    tube_cfg.smooth_speed=false;tube_cfg.emergency_braking_certificate=true;
+    const Eigen::Vector3d sideways=Eigen::Vector3d::UnitY();
+    auto tight_wall=seen;tight_wall.stamp=1.;
+    const Eigen::Vector3d early=location+.15*sideways;
+    PaperGuidance exact_tubes(tube_cfg);
+    check(exact_tubes.motionSafe(tight_wall,location,sideways,sideways,1.),
+        "tight-wall complete capsule fixture did not certify");
+    check(!exact_tubes.envelopeKnown(tight_wall,location+.0125*sideways,radius+.0125,1.),
+        "tight-wall fixture accidentally permits its oversized bounding sphere");
+    check(exact_tubes.recordedTubes()==0,"read-only motionSafe query retained a capsule");
+    check(exact_tubes.stepWithProposal(tight_wall,location,sideways,sideways,sideways,1.,.02).accepted,
+        "tight-wall accepted motion failed");
+    check(exact_tubes.recordedTubes()>0,"accepted exact capsules were not retained");
+    auto blind_wall=tight_wall;blind_wall.depth.assign(48*36,0);blind_wall.stamp=1.02;++blind_wall.version;
+    check(exact_tubes.envelopeKnown(blind_wall,early,radius,1.02),
+        "proved early capsule lost when its oversized sphere could not be recorded");
+    check(!exact_tubes.envelopeKnown(blind_wall,early+.02*Eigen::Vector3d::UnitX(),radius,1.02),
+        "capsule retention expanded through the unknown wall");
+    check(!exact_tubes.envelopeKnown(blind_wall,location+2.*sideways,radius,1.02),
+        "capsule retention extended beyond the proved braking tail");
+    replayMatches(exact_tubes,blind_wall,early,sideways,sideways,1.02);
+    auto tube_hit=blind_wall;tube_hit.stamp=1.1;++tube_hit.version;
+    tube_hit.obstacle_points=std::make_shared<std::vector<Eigen::Vector3d>>(1,
+        tube_hit.rotation.transpose()*(early-tube_hit.origin));
+    exact_tubes.ingestObservation(tube_hit);
+    check(exact_tubes.revokedTubes()>0&&!exact_tubes.envelopeKnown(tube_hit,early,radius,1.1),
+        "new native obstacle failed to revoke retained exact motion capsules");
+    PaperGuidance rejected_tubes(tube_cfg);
+    const auto rejected_motion=rejected_tubes.stepWithProposal(tight_wall,location,Eigen::Vector3d::UnitX(),
+        Eigen::Vector3d::UnitX(),Eigen::Vector3d::UnitX(),1.,.02);
+    check(!rejected_motion.accepted&&rejected_tubes.recordedTubes()==0,
+        "failed complete motion leaked partial capsules into persistent memory");
+    for(int excluded=0;excluded<4;++excluded) {
+        auto gated_cfg=tube_cfg;auto gated_view=tight_wall;
+        if(excluded==0)gated_cfg.retain_certified_volume=false;
+        if(excluded==1)gated_cfg.history_uncertainty_rate=.1;
+        if(excluded==2)gated_cfg.dynamic_obstacles=true;
+        if(excluded==3)gated_view.memory_uncertainty_rate=.1;
+        PaperGuidance gated(gated_cfg);
+        gated.stepWithProposal(gated_view,location,sideways,sideways,sideways,1.,.02);
+        check(gated.recordedTubes()==0,"nonstatic or disabled mode retained future capsules");
+    }
+    // Temporary evidence must not be laundered through the legacy pending or
+    // measured balls and promoted to permanent tubes on a later static step.
+    auto temporary=source;temporary.memory_uncertainty_rate=.1;
+    PaperGuidance temporary_volume(tube_cfg);
+    check(temporary_volume.stepWithProposal(temporary,location,travel,travel,travel,1.,.02).accepted,
+        "temporary evidence lost its existing instantaneous motion capability");
+    check(temporary_volume.recordedBalls()==0&&temporary_volume.recordedTubes()==0&&
+        temporary_volume.reachedProofs()==0,"temporary evidence entered untagged permanent geometry");
+    auto later_static=hidden;later_static.stamp=1.02;++later_static.version;
+    check(!temporary_volume.envelopeKnown(later_static,location+.3*travel,radius,1.02),
+        "temporary motion retained an untagged pending ball");
+    const auto promoted=temporary_volume.stepWithProposal(later_static,location,travel,travel,travel,1.02,.02);
+    check(!promoted.accepted&&temporary_volume.recordedTubes()==0,
+        "later static input promoted earlier temporary geometry to a permanent capsule");
+    // Preserve explicitly tagged, aging history rather than clearing it. It
+    // may support another instantaneous proof, but never an immortal record.
+    PaperGuidance tagged_history(tube_cfg);tagged_history.ingestObservation(temporary);
+    check(tagged_history.retainedObservations()==1,"tagged temporary history was indiscriminately discarded");
+    check(tagged_history.stepWithProposal(source,location,travel,travel,travel,1.,.02).accepted,
+        "tagged history prevented valid current motion");
+    check(tagged_history.recordedBalls()==0&&tagged_history.recordedTubes()==0,
+        "tagged history bypassed permanent retention gating");
+    // Inspect nested supports even though geometric leaf tests do not recurse.
+    // In particular, dropping the child list must not make its untagged parent
+    // look like a newly admitted static-history source on the next step.
+    auto middle=std::make_shared<DepthObservation>(source);
+    middle->supporting_views.push_back(std::make_shared<DepthObservation>(temporary));
+    auto nested=source;nested.supporting_views.push_back(middle);
+    PaperGuidance nested_volume(tube_cfg);nested_volume.ingestObservation(nested);
+    check(nested_volume.retainedObservations()==0,"nested temporary source lost its provenance in static history");
+    check(nested_volume.stepWithProposal(nested,location,travel,travel,travel,1.,.02).accepted,
+        "nested fixture lost valid instantaneous native depth");
+    check(nested_volume.recordedBalls()==0&&nested_volume.recordedTubes()==0,
+        "nested temporary support created permanent geometry");
+    check(!nested_volume.stepWithProposal(later_static,location,travel,travel,travel,1.02,.02).accepted,
+        "nested temporary history became future static motion permission");
+    auto cyclic=std::make_shared<DepthObservation>(source);cyclic->supporting_views.push_back(cyclic);
+    PaperGuidance cyclic_volume(tube_cfg);
+    cyclic_volume.stepWithProposal(*cyclic,location,travel,travel,travel,1.,.02);
+    check(cyclic_volume.recordedBalls()==0&&cyclic_volume.recordedTubes()==0,
+        "cyclic evidence graph bypassed bounded permanent-retention gate");
+    cyclic->supporting_views.clear();
+    // The legacy aging/temporary mode is outside this new permanent-mode
+    // restriction; do not clear all existing memory behavior unconditionally.
+    auto legacy_temporary_cfg=tube_cfg;legacy_temporary_cfg.retain_certified_volume=false;
+    PaperGuidance legacy_temporary(legacy_temporary_cfg);
+    check(legacy_temporary.stepWithProposal(temporary,location,travel,travel,travel,1.,.02).accepted&&
+        legacy_temporary.recordedBalls()>0,"permanent-mode gate changed legacy temporary behavior");
+    PaperGuidance pure_static(tube_cfg);
+    check(pure_static.stepWithProposal(source,location,travel,travel,travel,1.,.02).accepted&&
+        pure_static.recordedTubes()>0,"bounded gate disabled valid pure-static capsule retention");
+    PaperGuidance bounded_tubes(tube_cfg);
+    for(int k=0;k<32;++k) {
+        bounded_tubes.stepWithProposal(tight_wall,location+.01*k*sideways,sideways,sideways,sideways,1.,.02);
+        check(bounded_tubes.recordedTubes()<=256,"accepted-capsule memory exceeded replay bound");
+    }
     auto cadence_cfg=memory_cfg;cadence_cfg.retain_verified_travel=true;
     cadence_cfg.history_sample_interval=1.;cadence_cfg.history_max_observations=4;
     PaperGuidance cadence(cadence_cfg);

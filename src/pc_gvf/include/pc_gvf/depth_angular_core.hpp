@@ -2,6 +2,7 @@
 #define PC_GVF_DEPTH_ANGULAR_CORE_HPP_
 
 #include <cstdint>
+#include <array>
 #include <functional>
 #include <vector>
 
@@ -116,6 +117,10 @@ public:
     double fy() const { return fy_; }
     double cx() const { return cx_; }
     double cy() const { return cy_; }
+    const std::array<double,4>& frustumBounds() const { return frustum_bounds_; }
+    const std::array<double,4>& frustumNormals() const { return frustum_normals_; }
+    double pixelXEdge(int edge) const { return pixel_x_edges_[edge]; }
+    double pixelYEdge(int edge) const { return pixel_y_edges_[edge]; }
 
 private:
     void rebuildRays();
@@ -130,6 +135,8 @@ private:
     double cx_;
     double cy_;
     std::vector<Eigen::Vector3d> rays_camera_;
+    std::array<double,4> frustum_bounds_,frustum_normals_;
+    std::vector<double> pixel_x_edges_,pixel_y_edges_;
 };
 
 std::vector<Eigen::Vector3d> backprojectObstaclePoints(

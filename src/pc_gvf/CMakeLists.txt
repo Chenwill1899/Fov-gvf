@@ -18,6 +18,19 @@ find_package(sensor_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(visualization_msgs REQUIRED)
 
+# Keep IEEE floating-point rules; optimize across static-core boundaries.
+option(PC_GVF_ENABLE_IPO "Enable compiler-supported interprocedural optimization" ON)
+if(PC_GVF_ENABLE_IPO AND POLICY CMP0069)
+  cmake_policy(SET CMP0069 NEW)
+  include(CheckIPOSupported)
+  check_ipo_supported(RESULT PC_GVF_IPO_SUPPORTED OUTPUT PC_GVF_IPO_DIAGNOSTIC LANGUAGES CXX)
+  if(PC_GVF_IPO_SUPPORTED)
+    set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
+  else()
+    message(WARNING "IPO unavailable: ${PC_GVF_IPO_DIAGNOSTIC}")
+  endif()
+endif()
+
 add_library(pc_gvf_depth_angular_core
   src/depth_angular_core.cpp
   src/dynamic_obstacles.cpp
@@ -25,12 +38,16 @@ add_library(pc_gvf_depth_angular_core
   src/shared_obstacles.cpp
   src/depth_uncertainty.cpp
   src/paper_guidance.cpp
+  src/active_navigation.cpp
   src/paper_replay.cpp
   src/verified_start.cpp
   src/omni_depth.cpp
   src/local_depth_path.cpp
 )
 target_compile_features(pc_gvf_depth_angular_core PUBLIC cxx_std_14)
+# RTX 5090 manual-policy performance candidate: reuse only completely proved
+# static geometry within the current observation/step, as in the goal kernel.
+target_compile_definitions(pc_gvf_depth_angular_core PRIVATE PC_GVF_GOAL_TUBE_REUSE=1)
 target_compile_options(pc_gvf_depth_angular_core PRIVATE -Wall -Wextra -Wpedantic)
 target_include_directories(pc_gvf_depth_angular_core PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
@@ -59,9 +76,10 @@ ament_target_dependencies(depth_angular_controller
   visualization_msgs
 )
 
-# The goal kernel is isolated at compile time: teleoperation retains the
-# original core with no per-query cache branch or allocation. Both kernels use
-# the same observations, certificates, budgets and serialized replay format.
+# Retain separate historical binary names. The RTX 5090 candidate enables the
+# same conservative frame-local geometric reuse for both kernels; nomination
+# policy remains controlled by use_fixed_goal, independently of binary name.
+# Observations, motion certificates, budgets and replay format are unchanged.
 get_target_property(PC_GVF_CORE_SOURCES pc_gvf_depth_angular_core SOURCES)
 add_library(pc_gvf_depth_angular_core_goal ${PC_GVF_CORE_SOURCES})
 target_compile_features(pc_gvf_depth_angular_core_goal PUBLIC cxx_std_14)
@@ -104,9 +122,62 @@ install(TARGETS
   RUNTIME DESTINATION lib/${PROJECT_NAME}
 )
 install(DIRECTORY include/ DESTINATION include)
-install(DIRECTORY launch DESTINATION share/${PROJECT_NAME})
+install(DIRECTORY launch config DESTINATION share/${PROJECT_NAME})
 
 if(BUILD_TESTING)
+  add_executable(timing_series_check test/cpp/timing_series_check.cpp)
+  target_link_libraries(timing_series_check PRIVATE pc_gvf_depth_angular_core)
+  add_test(NAME timing_series_check COMMAND timing_series_check)
+
+  foreach(CAMERA_SUFFIX IN ITEMS "" "_goal")
+    add_executable(camera_evidence_cache_check${CAMERA_SUFFIX} test/cpp/camera_evidence_cache_check.cpp)
+    target_link_libraries(camera_evidence_cache_check${CAMERA_SUFFIX} PRIVATE pc_gvf_depth_angular_core${CAMERA_SUFFIX})
+    add_test(NAME camera_evidence_cache_check${CAMERA_SUFFIX} COMMAND camera_evidence_cache_check${CAMERA_SUFFIX})
+  endforeach()
+
+  foreach(MEMO_SUFFIX IN ITEMS "" "_goal")
+    add_executable(proof_query_memo_check${MEMO_SUFFIX} test/cpp/proof_query_memo_check.cpp)
+    target_link_libraries(proof_query_memo_check${MEMO_SUFFIX} PRIVATE pc_gvf_depth_angular_core${MEMO_SUFFIX})
+    add_test(NAME proof_query_memo_check${MEMO_SUFFIX} COMMAND proof_query_memo_check${MEMO_SUFFIX})
+  endforeach()
+  foreach(TRANSACTION_SUFFIX IN ITEMS "" "_goal")
+    foreach(TRANSACTION_CHECK published_command_search_check exhausted_budget_check)
+      add_executable(${TRANSACTION_CHECK}${TRANSACTION_SUFFIX} test/cpp/${TRANSACTION_CHECK}.cpp)
+      target_link_libraries(${TRANSACTION_CHECK}${TRANSACTION_SUFFIX} PRIVATE pc_gvf_depth_angular_core${TRANSACTION_SUFFIX})
+      add_test(NAME ${TRANSACTION_CHECK}${TRANSACTION_SUFFIX} COMMAND ${TRANSACTION_CHECK}${TRANSACTION_SUFFIX})
+    endforeach()
+  endforeach()
+  foreach(BOUNDS_SUFFIX IN ITEMS "" "_goal")
+    add_executable(working_bounds_check${BOUNDS_SUFFIX} test/cpp/working_bounds_check.cpp)
+    target_link_libraries(working_bounds_check${BOUNDS_SUFFIX} PRIVATE pc_gvf_depth_angular_core${BOUNDS_SUFFIX})
+    add_test(NAME working_bounds_check${BOUNDS_SUFFIX} COMMAND working_bounds_check${BOUNDS_SUFFIX})
+  endforeach()
+  foreach(COMFORT_SUFFIX IN ITEMS "" "_goal")
+    add_executable(recovery_comfort_check${COMFORT_SUFFIX} test/cpp/recovery_comfort_check.cpp)
+    target_link_libraries(recovery_comfort_check${COMFORT_SUFFIX} PRIVATE pc_gvf_depth_angular_core${COMFORT_SUFFIX})
+    add_test(NAME recovery_comfort_check${COMFORT_SUFFIX} COMMAND recovery_comfort_check${COMFORT_SUFFIX})
+  endforeach()
+  foreach(RECOVERY_SUFFIX IN ITEMS "" "_goal")
+    add_executable(certified_recovery_check${RECOVERY_SUFFIX} test/cpp/certified_recovery_check.cpp)
+    target_link_libraries(certified_recovery_check${RECOVERY_SUFFIX} PRIVATE pc_gvf_depth_angular_core${RECOVERY_SUFFIX})
+    add_test(NAME certified_recovery_check${RECOVERY_SUFFIX} COMMAND certified_recovery_check${RECOVERY_SUFFIX})
+  endforeach()
+
+  add_executable(navigation_progress_check test/cpp/navigation_progress_check.cpp)
+  target_link_libraries(navigation_progress_check PRIVATE pc_gvf_depth_angular_core)
+  add_test(NAME navigation_progress_check COMMAND navigation_progress_check)
+  foreach(CEILING_SUFFIX IN ITEMS "" "_goal")
+    add_executable(free_space_ceiling_check${CEILING_SUFFIX} test/cpp/free_space_ceiling_check.cpp)
+    target_link_libraries(free_space_ceiling_check${CEILING_SUFFIX} PRIVATE pc_gvf_depth_angular_core${CEILING_SUFFIX})
+    add_test(NAME free_space_ceiling_check${CEILING_SUFFIX} COMMAND free_space_ceiling_check${CEILING_SUFFIX})
+  endforeach()
+
+  add_executable(native_history_recovery_check test/cpp/native_history_recovery_check.cpp)
+  target_link_libraries(native_history_recovery_check PRIVATE pc_gvf_depth_angular_core)
+  add_test(NAME native_history_recovery_check COMMAND native_history_recovery_check)
+  add_executable(native_history_recovery_check_goal test/cpp/native_history_recovery_check.cpp)
+  target_link_libraries(native_history_recovery_check_goal PRIVATE pc_gvf_depth_angular_core_goal)
+  add_test(NAME native_history_recovery_check_goal COMMAND native_history_recovery_check_goal)
   find_package(ament_cmake_pytest REQUIRED)
   add_executable(six_axis_replay_check test/cpp/six_axis_replay_check.cpp)
   target_link_libraries(six_axis_replay_check PRIVATE pc_gvf_depth_angular_core)
@@ -218,6 +289,10 @@ if(BUILD_TESTING)
   target_link_libraries(continuous_recovery_check PRIVATE pc_gvf_depth_angular_core)
   add_test(NAME continuous_recovery_check COMMAND continuous_recovery_check)
 
+  add_executable(free_space_floor_check test/cpp/free_space_floor_check.cpp)
+  target_link_libraries(free_space_floor_check PRIVATE pc_gvf_depth_angular_core)
+  add_test(NAME free_space_floor_check COMMAND free_space_floor_check)
+
   add_executable(motion_consistency_check test/cpp/motion_consistency_check.cpp)
   target_link_libraries(motion_consistency_check PRIVATE pc_gvf_depth_angular_core)
   add_test(NAME motion_consistency_check COMMAND motion_consistency_check)
@@ -231,8 +306,12 @@ if(BUILD_TESTING)
   add_test(NAME paper_closed_loop_check COMMAND paper_closed_loop_check)
 
   # Run the unchanged safety/negative-case fixtures against the goal kernel too.
+  add_executable(active_navigation_check test/cpp/active_navigation_check.cpp)
+  target_link_libraries(active_navigation_check PRIVATE pc_gvf_depth_angular_core)
+  add_test(NAME active_navigation_check COMMAND active_navigation_check)
+
   foreach(goal_check paper_guidance_check observed_space_check union_refinement_check
-      history_repair_check six_axis_replay_check)
+      history_repair_check six_axis_replay_check continuous_recovery_check free_space_floor_check active_navigation_check)
     add_executable(${goal_check}_goal test/cpp/${goal_check}.cpp)
     target_link_libraries(${goal_check}_goal PRIVATE pc_gvf_depth_angular_core_goal)
     target_compile_definitions(${goal_check}_goal PRIVATE
@@ -245,6 +324,8 @@ if(BUILD_TESTING)
       test_python_behavior_baseline
       test_manual_control_math
       test_navigation_benchmark
+      test_long_runtime
+      test_navigation_ground_guard
       test_beitong_joystick)
     ament_add_pytest_test(${test_name} test/${test_name}.py
       APPEND_ENV PYTHONPATH=${CMAKE_CURRENT_SOURCE_DIR})

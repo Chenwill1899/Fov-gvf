@@ -42,6 +42,27 @@ def test_holonomic_limits_scale_entire_vector():
     assert (twist.linear.x, twist.linear.y, twist.linear.z) == (1.5, 0.75, 1.0)
 
 
+def test_world_command_is_independent_of_vehicle_yaw():
+    for yaw in (None, 0.0, math.pi / 2.0, -math.pi, 7.5):
+        twist = convert(3.0, 1.5, yaw, "world", 4.0, 4.0, 0.0, 1.0, 0.01,
+                        vz=0.5, max_vz=1.0)
+        assert (twist.linear.x, twist.linear.y, twist.linear.z) == (3.0, 1.5, 0.5)
+
+
+def test_world_horizontal_limit_scales_entire_vector():
+    twist = convert(6.0, -3.0, math.pi / 2.0, "world", 4.0, 4.0, 0.0, 1.0, 0.01,
+                    vz=0.6, max_vz=1.0)
+    assert math.isclose(twist.linear.x, 4.0)
+    assert math.isclose(twist.linear.y, -2.0)
+    assert math.isclose(twist.linear.z, 0.4)
+
+
+def test_world_vertical_limit_scales_entire_vector():
+    twist = convert(3.0, -1.5, math.pi / 2.0, "world", 4.0, 4.0, 0.0, 1.0, 0.01,
+                    vz=-2.0, max_vz=1.0)
+    assert (twist.linear.x, twist.linear.y, twist.linear.z) == (1.5, -0.75, -1.0)
+
+
 def test_bridge_rejects_delayed_and_future_commands():
     assert command_stamp_is_fresh(1_050_000_000, 1_000_000_000, .1)
     assert not command_stamp_is_fresh(1_110_000_000, 1_000_000_000, .1)

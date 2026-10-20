@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Direction-preserving manual intent and final simulator collision guard."""
 from __future__ import annotations
+from collections import deque
 import math
 from collections.abc import Callable, Sequence
 
@@ -89,3 +90,27 @@ def velocity_response(velocity: Sequence[float], desired: Sequence[float],
     if length > 1e-12:
         scale = min(scale, acceleration_limit * dt / length)
     return tuple(float(velocity[i]) + scale * error[i] for i in range(3))
+
+
+class BoundedTimingSamples:
+    """8192 recent intervals; all-run mean/max/count, bounded resident storage."""
+    def __init__(self):
+        self.values = deque(maxlen=8192)
+        self.count = 0
+        self.total = 0.0
+        self.maximum = 0.0
+
+    def append(self, value):
+        if math.isfinite(value) and value >= 0.0:
+            self.values.append(value)
+            self.count += 1
+            self.total += value
+            self.maximum = max(self.maximum, value)
+
+    def summary(self):
+        if not self.count:
+            return 0.0, 0.0, 0.0, 0.0
+        ordered = sorted(self.values)
+        return (self.total / self.count,
+                ordered[round(.5 * (len(ordered) - 1))],
+                ordered[round(.95 * (len(ordered) - 1))], self.maximum)

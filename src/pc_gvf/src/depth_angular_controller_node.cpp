@@ -1,3 +1,5 @@
+#include "pc_gvf/timing_series.hpp"
+#include "pc_gvf/navigation_progress.hpp"
 #include "pc_gvf/depth_angular_core.hpp"
 #include "pc_gvf/paper_guidance.hpp"
 #include "pc_gvf/depth_uncertainty.hpp"
@@ -5,6 +7,7 @@
 #include "pc_gvf/local_depth_path.hpp"
 #include "pc_gvf/omni_depth.hpp"
 #include "pc_gvf/verified_start.hpp"
+#include "pc_gvf/goal_proposal_cache.hpp"
 #include <deque>
 
 #include <algorithm>
@@ -46,38 +49,6 @@ namespace depth_angular {
 namespace {
 constexpr double kPi = 3.141592653589793238462643383279502884;
 
-struct TimingSeries
-{
-    void add(double value)
-    {
-        if (std::isfinite(value) && value >= 0.0) {
-            values.push_back(value);
-            sum += value;
-            maximum = std::max(maximum, value);
-        }
-    }
-
-    double mean() const
-    {
-        return values.empty() ? 0.0 : sum / values.size();
-    }
-
-    double percentile(double fraction) const
-    {
-        if (values.empty()) {
-            return 0.0;
-        }
-        std::vector<double> ordered = values;
-        std::sort(ordered.begin(), ordered.end());
-        const std::size_t index = static_cast<std::size_t>(std::nearbyint(
-            fraction * static_cast<double>(ordered.size() - 1)));
-        return ordered[std::min(index, ordered.size() - 1)];
-    }
-
-    std::vector<double> values;
-    double sum = 0.0;
-    double maximum = 0.0;
-};
 }
 
 class DepthAngularControllerNode : public rclcpp::Node
@@ -147,8 +118,13 @@ public:
         stop_at_goal_ = declare_parameter<bool>("stop_at_goal", false);
         goal_tolerance_ = std::max(
             0.05, declare_parameter<double>("goal_tolerance", 0.3));
-        command_accel_limit_ = std::max(
-            0.1, declare_parameter<double>("command_accel_limit", 4.0));
+        command_accel_limit_ = declare_parameter<double>("command_accel_limit", 4.0);
+        const double brake_accel_limit = declare_parameter<double>("brake_accel_limit", 2.5);
+        const double velocity_response_time = declare_parameter<double>("velocity_response_time", .22);
+        if (!std::isfinite(command_accel_limit_) || command_accel_limit_ <= 0.0 ||
+            !std::isfinite(brake_accel_limit) || brake_accel_limit <= 0.0 ||
+            !std::isfinite(velocity_response_time) || velocity_response_time < .025)
+            throw std::invalid_argument("positive acceleration/braking limits and velocity_response_time >= .025 required");
         goal_hold_time_ = std::max(
             0.0, declare_parameter<double>("safe_goal_hold_time", 0.35));
         max_vertical_speed_ = std::max(
@@ -166,12 +142,19 @@ public:
             "performance_log_path", "");
         performance_run_id_ = declare_parameter<std::string>(
             "performance_run_id", "unspecified");
+        if(!performance_log_path_.empty()) {
+            solve_samples_file_.open(performance_log_path_+"."+performance_run_id_+".samples.csv",std::ios::out|std::ios::trunc);
+            if(!solve_samples_file_)throw std::runtime_error("cannot open solver samples CSV");
+            solve_samples_file_<<"time,speed,frontend_ms,snapshot_ms,core_ms,avoid_ms,command_speed,accepted,status,solver_status,solver_build_reason,ingest_ms,record_ms,callback_to_publish_ms\n"<<std::setprecision(12);
+        }
         const double direction_reanchor_degrees = declare_parameter<double>(
             "direction_reanchor_deg", 15.0);
         reanchor_cosine_ = std::cos(direction_reanchor_degrees * kPi / 180.0);
 
         config_.reference_speed = declare_parameter<double>("speed", 1.0);
         config_.max_accel = command_accel_limit_;
+        config_.brake_accel = brake_accel_limit;
+        config_.velocity_tau = velocity_response_time;
         config_.max_direction_rate = std::max(
             0.05, declare_parameter<double>("max_direction_rate", 1.60));
         config_.continuous_harmonic_guidance = declare_parameter<bool>(
@@ -234,7 +217,7 @@ public:
             operator_assistance_=declare_parameter<bool>("operator_assistance",false);
             incremental_frontend_=declare_parameter<bool>("paper_incremental_frontend",true);
             shared_enabled_=declare_parameter<bool>("paper_shared_obstacles",false);
-            shared_robot_id_=declare_parameter<std::string>("shared_robot_id","ego1p5");
+            shared_robot_id_=declare_parameter<std::string>("shared_robot_id","ego2p6");
             shared_frame_=declare_parameter<std::string>("shared_map_frame","world");
             shared_session_=std::to_string(std::chrono::steady_clock::now().time_since_epoch().count());
             PaperConfig paper_config;
@@ -274,6 +257,33 @@ public:
             paper_config.proposal_feedforward=declare_parameter<bool>("paper_proposal_feedforward",false);
             paper_config.response_preview=declare_parameter<bool>("paper_response_preview",false);
             paper_config.certified_direct=declare_parameter<bool>("paper_certified_direct",false);
+            paper_config.emergency_braking_certificate=declare_parameter<bool>("paper_emergency_braking_certificate",false);
+            paper_config.execution_consistent=declare_parameter<bool>("paper_execution_consistent",false);
+            paper_config.assisted_vertical=declare_parameter<bool>("paper_assisted_vertical",false);
+            paper_config.bounded_exploration=declare_parameter<bool>("paper_bounded_exploration",false);
+            paper_config.execution_dt=declare_parameter<double>("paper_execution_dt",1./60.);
+            paper_config.tracking_margin=declare_parameter<double>("paper_tracking_margin",.015);
+            paper_config.assist_speed=declare_parameter<double>("paper_assist_speed",.4);
+            paper_config.assist_radius=declare_parameter<double>("paper_assist_radius",.8);
+            paper_config.probe_speed=declare_parameter<double>("paper_probe_speed",.3);
+            paper_config.probe_vertical_speed=declare_parameter<double>("paper_probe_vertical_speed",.2);
+            paper_config.probe_distance_budget=declare_parameter<double>("paper_probe_distance_budget",3.5);
+            paper_config.probe_time_budget=declare_parameter<double>("paper_probe_time_budget",12.);
+            paper_config.probe_volume_budget=declare_parameter<double>("paper_probe_volume_budget",5.);
+            paper_config.probe_anchor_range=declare_parameter<double>("paper_probe_anchor_range",3.);
+            paper_config.probe_clearance=declare_parameter<double>("paper_probe_clearance",.08);
+            // Explicit opt-in also supports human intent. The cache itself rejects
+            // release, changed direction, age and displacement; every returned
+            // proposal still passes the full nominal and emergency certificate.
+            goal_proposal_cache_enabled_=declare_parameter<bool>("paper_goal_proposal_cache",false);
+            goal_speed_governor_enabled_=declare_parameter<bool>("paper_goal_speed_governor",false)&&use_fixed_goal_;
+            goal_proposal_cache_ttl_=declare_parameter<double>("paper_goal_proposal_cache_ttl",.15);
+            goal_proposal_cache_max_displacement_=declare_parameter<double>("paper_goal_proposal_cache_max_displacement",.75);
+            if(!std::isfinite(goal_proposal_cache_max_displacement_)||goal_proposal_cache_max_displacement_<=0.)throw std::invalid_argument("invalid goal cache displacement");
+            if(!std::isfinite(goal_proposal_cache_ttl_)||goal_proposal_cache_ttl_<=0||goal_proposal_cache_ttl_>10.)
+                throw std::invalid_argument("invalid goal proposal cache lifetime");
+            RCLCPP_INFO(get_logger(),"PROPOSAL_CACHE enabled=%d fixed_goal=%d ttl=%.3fs displacement=%.3fm",
+                goal_proposal_cache_enabled_,use_fixed_goal_,goal_proposal_cache_ttl_,goal_proposal_cache_max_displacement_);
             paper_config.local_history_repair=declare_parameter<bool>("paper_local_history_repair",false);
             paper_config.transverse_gain = declare_parameter<double>("paper_transverse_gain", 1.0);
             paper_config.minimum_lookahead=declare_parameter<double>("paper_minimum_lookahead", .50);
@@ -286,6 +296,15 @@ public:
             paper_config.adaptive_grid=declare_parameter<bool>("paper_adaptive_grid",false);
             paper_config.certificate_resolution=declare_parameter<double>("paper_certificate_resolution",.005);
             paper_config.restart_clearance=declare_parameter<double>("paper_restart_clearance",0.);
+            paper_config.free_space_floor_enabled=declare_parameter<bool>("paper_free_space_floor_enabled",false);
+            paper_config.free_space_floor_z=declare_parameter<double>("paper_free_space_floor_z",0.);
+            paper_config.free_space_ceiling_enabled=declare_parameter<bool>("paper_free_space_ceiling_enabled",false);
+            paper_config.free_space_ceiling_z=declare_parameter<double>("paper_free_space_ceiling_z",20.);
+            paper_config.working_bounds_enabled=declare_parameter<bool>("paper_working_bounds_enabled",false);
+            paper_config.working_min_x=declare_parameter<double>("paper_working_min_x",-80.);
+            paper_config.working_max_x=declare_parameter<double>("paper_working_max_x",399.8);
+            paper_config.working_min_y=declare_parameter<double>("paper_working_min_y",-60.);
+            paper_config.working_max_y=declare_parameter<double>("paper_working_max_y",59.8);
             replay_directory_=declare_parameter<std::string>("paper_replay_directory", "");
             uncertainty_config_.reserved_radial_bound=paper_config.depth_uncertainty;
             paper_ = std::make_unique<PaperGuidance>(paper_config);
@@ -675,8 +694,8 @@ private:
         const auto publish_end = std::chrono::steady_clock::now();
         publish_call_ms_.add(std::chrono::duration<double, std::milli>(
             publish_end - publish_start).count());
-        callback_to_publish_ms_.add(std::chrono::duration<double, std::milli>(
-            publish_end - current_control_wall_start_).count());
+        last_callback_to_publish_ms_=std::chrono::duration<double, std::milli>(publish_end-current_control_wall_start_).count();
+        callback_to_publish_ms_.add(last_callback_to_publish_ms_);
         if (has_last_command_publish_wall_) {
             command_interval_ms_.add(std::chrono::duration<double, std::milli>(
                 publish_end - last_command_publish_wall_).count());
@@ -754,10 +773,12 @@ private:
         if (!final || performance_log_path_.empty()) {
             return;
         }
+        if(solve_samples_file_)solve_samples_file_.flush();
         std::ostringstream record;
         record << std::fixed << std::setprecision(3)
                << "\n#### Controller — " << performance_run_id_ << "\n\n"
                << "- Wall duration: " << elapsed << " s\n"
+               << "- Timing mean/max: lifetime; P50/P95: latest up to 8192 samples. Full solver CSV retains all samples.\n"
                << "- Timer callbacks / command frames / guidance frames: "
                << control_callback_count_ << " / " << command_frame_count_
                << " / " << guidance_frame_count_ << "\n"
@@ -821,10 +842,19 @@ private:
         const std::string& status)
     {
         command_.setZero();
+        progress_monitor_=NavigationProgress();
         incremental_recovery_pending_=false;
-        if (paper_) paper_->reset();
+        if (paper_) {paper_->cancelActiveNavigation();paper_->reset();}
         has_last_guidance_time_ = false;
         publishCommand(stamp, position, command_);
+        if(paper_&&paper_->activeNavigationEnabled()&&field_publisher_->get_subscription_count()>0) {
+            visualization_msgs::msg::MarkerArray clear;
+            for(const auto& name:{"active_path","active_targets","active_state"}) {
+                auto m=marker(stamp,name,0,visualization_msgs::msg::Marker::POINTS);
+                m.action=visualization_msgs::msg::Marker::DELETE;clear.markers.push_back(m);
+            }
+            field_publisher_->publish(clear);
+        }
         setStatus(status);
     }
 
@@ -1268,20 +1298,67 @@ private:
             chart,depth_time.seconds(),version,0);
         observation.supporting_views=current_views;
         auto start = std::chrono::steady_clock::now();
+        bool active_frontend=paper_->activeNavigationRequested(observation,position,intent,stamp.seconds());
+        const auto progress_mode=paper_->activeNavigationState().verified_retreat?
+            NavigationProgress::Mode::VERIFIED_RETURN:(active_frontend?
+            NavigationProgress::Mode::LOCAL_RECOVERY:NavigationProgress::Mode::NORMAL);
+        const bool stalled=progress_monitor_.update(position,intent,stamp.seconds(),progress_mode);
+        const bool search_due=stalled&&progress_monitor_.takeSearch(stamp.seconds());
+        if(search_due&&paper_->requestVerifiedRetreat(observation,position,stamp.seconds())) {
+            active_frontend=true;
+            progress_monitor_=NavigationProgress();
+            goal_proposal_cache_.stamp=-1.;
+            has_previous_goal_direction_world_=false;has_active_goal_time_=false;
+        }
+        // A valid but centimetres/second cached goal is not measured progress.
+        // Do not let pending-candidate reuse veto the existing 1Hz recovery.
+        const bool pending_candidate=incremental_frontend_&&incremental_recovery_pending_&&
+            paper_->incrementalGoalProposal(position,intent,stamp.seconds()).norm()>1e-5;
+        const bool progress_search=search_due&&!active_frontend;
+        if(progress_search) {
+            // No verified return destination was available. A full search
+            // must also discard the held angular target, not only the node's
+            // short nomination cache. Preserve the actual delayed command.
+            const Eigen::Vector3d published=paper_->publishedCommand();
+            paper_->reset();paper_->confirmPublishedCommand(published);
+            goal_proposal_cache_.stamp=-1.;
+            has_previous_goal_direction_world_=false;has_active_goal_time_=false;
+        }
         Eigen::Vector3d proposal=Eigen::Vector3d::Zero();
         std::shared_ptr<const DepthObservation> proposal_observation;
         AngularSolution proposal_solution;bool proposal_goal_valid=false;
         OmniDepthResult omni_result;
         double omni_corridor=0.;
+        double governed_speed=std::min(intent.norm(),max_reference_speed_);
+        if(goal_speed_governor_enabled_&&governed_speed>2.&&intent.norm()>1e-5) {
+            // Cruise faster only when the goal corridor includes stopping
+            // distance and two meters of steering room. Tight bypasses retain
+            // the tested 2 m/s direction policy; actual measured motion still
+            // passes the full nominal/emergency certificates below.
+            const double corridor=governed_speed*.20+governed_speed*governed_speed/
+                (2.*std::min(config_.brake_accel,config_.max_accel))+2.;
+            if(!paper_->proposalCorridor(observation,position,intent.normalized(),
+                std::min(corridor,(fixed_goal_-position).norm()),stamp.seconds()))governed_speed=2.;
+        }
+        const Eigen::Vector3d execution_intent=goal_speed_governor_enabled_&&intent.norm()>1e-5?
+            (intent*(governed_speed/intent.norm())).eval():intent;
+        const Eigen::Vector3d cached_proposal=goal_proposal_cache_enabled_&&!progress_search?
+            goal_proposal_cache_.proposal(position,execution_intent,stamp.seconds(),goal_proposal_cache_ttl_,goal_proposal_cache_max_displacement_):Eigen::Vector3d::Zero();
+        const bool cached_frontend=cached_proposal.norm()>1e-5;
+        if(cached_frontend)proposal=cached_proposal;
         // After a compute watchdog, the last completed field already supplies
         // a short-lived world target. Skip repeated expensive candidate search,
         // then require the same current full-motion/braking proof below.
-        const bool incremental_frontend=incremental_frontend_&&incremental_recovery_pending_&&
-            paper_->incrementalGoalProposal(position,intent,stamp.seconds()).norm()>1e-5;
+        const bool incremental_frontend=pending_candidate;
+        // A watchdog recovery must use the core's completed candidate (and
+        // its last accepted speed), even while the short nomination cache is alive.
+        // Zero requests that internal candidate without renewing its lifetime.
+        if(incremental_frontend)proposal.setZero();
 
         if(incremental_frontend)RCLCPP_INFO_THROTTLE(get_logger(),*get_clock(),1000,"INCREMENTAL_FRONTEND active=1");
-        if(!incremental_frontend&&omni_depth_enabled_&&intent.norm()>1e-5) {
+        if(!progress_search&&!active_frontend&&!cached_frontend&&!incremental_frontend&&omni_depth_enabled_&&intent.norm()>1e-5) {
             double speed=std::min(intent.norm(),max_reference_speed_);
+            speed=std::min(speed,governed_speed);
             omni_corridor=std::max(.25,velocity.norm()*.2+
                 velocity.squaredNorm()/(2.*std::min(config_.brake_accel,config_.max_accel))+.25);
             if(use_fixed_goal_) {
@@ -1363,7 +1440,7 @@ private:
                 omni_result.fresh_views,cfg.azimuth_bins,cfg.elevation_bins,omni_result.valid,
                 omni_result.certificates,omni_result.used_short_horizon,omni_result.retained_previous,local_candidates,std::atan2(proposal.y(),proposal.x())*180./kPi);
         }
-        if(!incremental_frontend&&paper_depth_proposal_&&!omni_depth_enabled_&&intent.norm()>1e-5) {
+        if(!progress_search&&!active_frontend&&!cached_frontend&&!incremental_frontend&&paper_depth_proposal_&&!omni_depth_enabled_&&intent.norm()>1e-5) {
             const Eigen::Vector3d direction=intent.normalized();
             if(!has_reference_direction_||(!use_fixed_goal_&&direction.dot(reference_direction_)<std::cos(.05))) {
                 resetPlanningHistory();reference_direction_=direction;has_reference_direction_=true;
@@ -1497,36 +1574,93 @@ private:
         // Preserve the fresh unified proposal. Consult recalled directions only
         // when current views cannot propose a certified corridor.
         Eigen::Vector3d memory_proposal=Eigen::Vector3d::Zero();
-        if(!incremental_frontend&&proposal.norm()<1e-5)
+        if(!cached_frontend&&!incremental_frontend&&proposal.norm()<1e-5)
             memory_proposal=paper_->memoryProposal(observation,position,intent,stamp.seconds());
         if(memory_proposal.norm()>1e-5)proposal=memory_proposal;
-        const bool use_proposal=paper_depth_proposal_||incremental_frontend||memory_proposal.norm()>1e-5;
+        if(goal_speed_governor_enabled_&&proposal.norm()>governed_speed)
+            proposal*=governed_speed/proposal.norm();
+        if(goal_proposal_cache_enabled_&&!cached_frontend&&proposal.norm()>1e-5)
+            goal_proposal_cache_.save(position,intent,proposal,
+                std::max(.5,use_fixed_goal_?std::min(max_depth_-.6,(fixed_goal_-position).norm()):max_depth_-.6),stamp.seconds());
+        const bool use_proposal=!progress_search&&!active_frontend&&(paper_depth_proposal_||incremental_frontend||memory_proposal.norm()>1e-5);
         std::ostringstream replay_data(std::ios::out|std::ios::binary);
-        bool capture=!replay_directory_.empty() && consecutive_rejections_>=3 && stamp.seconds()-last_replay_time_>=5.;
+        const auto frontend_finish=std::chrono::steady_clock::now();
+        const bool replay_changed=!has_replay_state_||(position-last_replay_position_).norm()>.1||last_status_!=last_replay_status_;
+        bool capture=!replay_directory_.empty()&&consecutive_rejections_>=3&&stamp.seconds()-last_replay_time_>=5.&&
+            (replay_changed||stamp.seconds()-last_replay_time_>=30.);
         if(capture) {
-            try {paper_->saveReplay(replay_data,observation,position,velocity,intent,stamp.seconds(),dt,use_proposal?&proposal:nullptr);}
+            try {paper_->saveReplay(replay_data,observation,position,velocity,execution_intent,stamp.seconds(),dt,use_proposal?&proposal:nullptr);}
             catch(const std::exception& e){capture=false;RCLCPP_WARN(get_logger(),"Replay capture failed: %s",e.what());}
         }
+        const auto solver_start=std::chrono::steady_clock::now();
+        const Eigen::Vector3d published_before_solve=paper_->publishedCommand();
         PaperResult result = use_proposal?
-            paper_->stepWithProposal(observation,position,velocity,intent,proposal,stamp.seconds(),dt):
-            paper_->step(observation,position,velocity,intent,stamp.seconds(),dt);
+            paper_->stepWithProposal(observation,position,velocity,execution_intent,proposal,stamp.seconds(),dt):
+            paper_->step(observation,position,velocity,execution_intent,stamp.seconds(),dt);
+        const auto solver_finish=std::chrono::steady_clock::now();
+        if(progress_search)RCLCPP_INFO_THROTTLE(get_logger(),*get_clock(),1000,"PROGRESS_SEARCH measured_stall=1 accepted=%d",result.accepted);
+        // A normal certified command may coexist with an unclosed probe
+        // episode. Report the persistent accounting instead of default zeros.
+        const auto& active_state=paper_->activeNavigationState();
+        result.probe_episode=active_state.episode;
+        result.unknown_distance=active_state.unknown_distance;
+        result.unknown_time=active_state.unknown_time;
+        result.unknown_volume=active_state.unknown_volume;
+        result.unknown_exposure=active_state.unknown_exposure;
+        result.recovery_anchor=active_state.anchor;
+        if(result.status=="ACTIVE_CERTIFIED_INWARD") {
+            goal_proposal_cache_.stamp=-1.;
+            has_previous_goal_direction_world_=false;
+            has_active_goal_time_=false;
+        }
         const PaperResult replay_result=result;
         incremental_recovery_pending_=incremental_frontend&&result.status=="INCREMENTAL_GOAL_CERTIFIED";
         auto finish = std::chrono::steady_clock::now();
         if(std::chrono::duration<double>(finish-current_control_wall_start_).count()>.08) {
-            incremental_recovery_pending_=paper_->field().valid;
-            result.command.setZero();result.accepted=false;result.status="COMPUTE_DEADLINE";
+            // Both a solved field and a completed depth proposal can provide
+            // an untrusted world target after a slow callback. The next frame
+            // still has to certify its motion against current observations.
+            incremental_recovery_pending_=
+                paper_->incrementalGoalProposal(position,intent,stamp.seconds()).norm()>1e-5;
+            result.command.setZero();result.accepted=false;result.authorization="NONE";result.navigation_mode="BRAKE";result.status="COMPUTE_DEADLINE";
         }
-        paper_->confirmPublishedCommand(result.command);
+        if(progress_search&&result.accepted&&result.command.norm()>1e-5) {
+            // Retain only the newly selected direction. Each reuse still runs
+            // the full current motion/brake certificate and original cache TTL.
+            goal_proposal_cache_.save(position,intent,result.command,
+                std::max(.5,2.*result.command.norm()),stamp.seconds());
+            previous_goal_direction_world_=result.command.normalized();has_previous_goal_direction_world_=true;
+            active_goal_time_=stamp;has_active_goal_time_=true;
+        }
+        if(result.status=="COMPUTE_DEADLINE")
+            paper_->confirmExecutionOverride(observation,position,velocity,published_before_solve,result.command,stamp.seconds());
+        else paper_->confirmPublishedCommand(result.command);
+        finish=std::chrono::steady_clock::now();
         consecutive_rejections_=result.accepted?0:std::min(100,consecutive_rejections_+1);
         avoidance_compute_ms_.add(std::chrono::duration<double,std::milli>(finish-start).count());
+
         depth_to_command_ms_.add(std::max(0.0, (stamp-depth_time).seconds()*1000.0));
         ++guidance_frame_count_;
         if (!has_guidance_wall_span_) { first_guidance_wall_=start; has_guidance_wall_span_=true; }
         last_guidance_wall_=finish;
         publishCommand(stamp,position,result.command);
+        if(solve_samples_file_) {
+            solve_samples_file_<<stamp.seconds()<<','<<velocity.norm()<<','
+                <<std::chrono::duration<double,std::milli>(frontend_finish-start).count()<<','
+                <<std::chrono::duration<double,std::milli>(solver_start-frontend_finish).count()<<','
+                <<std::chrono::duration<double,std::milli>(solver_finish-solver_start).count()<<','
+                <<std::chrono::duration<double,std::milli>(finish-start).count()<<','
+                <<result.command.norm()<<','<<result.accepted<<','<<result.status<<','
+                <<replay_result.status<<','<<replay_result.build_reason<<','
+                <<last_evidence_ingest_ms_<<','<<last_evidence_record_ms_<<','<<last_callback_to_publish_ms_<<'\n';
+            if(guidance_frame_count_%256==0)solve_samples_file_.flush();
+            if(!solve_samples_file_&&!solve_samples_failed_) {
+                solve_samples_failed_=true;RCLCPP_ERROR(get_logger(),"Solver sample CSV write failed; run evidence is incomplete");
+            }
+        }
         if(capture) {
             last_replay_time_=stamp.seconds();
+            last_replay_position_=position;last_replay_status_=result.status;has_replay_state_=true;
             const auto base=replay_directory_+"/frame_"+std::to_string(replay_sequence_++%16);
             std::ofstream binary(base+".bin",std::ios::binary|std::ios::trunc);
             binary<<replay_data.str();binary.close();
@@ -1592,6 +1726,18 @@ private:
             << ",\"reference_intent_y\":" << reference_intent.y()
             << ",\"reference_intent_z\":" << reference_intent.z()
             << ",\"command_x\":" << result.command.x() << ",\"command_y\":" << result.command.y() << ",\"command_z\":" << result.command.z()
+            << ",\"authorization\":\"" << result.authorization << "\",\"navigation_mode\":\"" << result.navigation_mode << "\""
+            << ",\"probe_episode\":" << result.probe_episode << ",\"unknown_distance\":" << result.unknown_distance
+            << ",\"unknown_time\":" << result.unknown_time << ",\"unknown_volume\":" << result.unknown_volume
+            << ",\"unknown_exposure\":" << result.unknown_exposure
+            << ",\"probe_episode_active\":" << active_state.episode_active
+            << ",\"probe_origin_valid\":" << active_state.episode_origin_valid
+            << ",\"probe_origin_stamp\":" << active_state.episode_stamp
+            << ",\"probe_origin_x\":" << active_state.episode_origin.x()
+            << ",\"probe_origin_y\":" << active_state.episode_origin.y()
+            << ",\"probe_origin_z\":" << active_state.episode_origin.z()
+            << ",\"expected_visibility\":" << result.expected_visibility
+            << ",\"anchor_x\":" << result.recovery_anchor.x() << ",\"anchor_y\":" << result.recovery_anchor.y() << ",\"anchor_z\":" << result.recovery_anchor.z()
             << ",\"reset_reason\":\"" << result.reset_reason << "\"}";
         std_msgs::msg::String message; message.data=diagnostic.str(); paper_diagnostics_->publish(message);
         if(omni_depth_enabled_&&field_publisher_->get_subscription_count()>0&&
@@ -1616,6 +1762,22 @@ private:
            (!has_last_field_publish_time_||(stamp-last_field_publish_time_).seconds()>=1./field_publish_rate_)) {
             publishField(stamp,position,proposal_observation->rotation,proposal_observation->camera,proposal_solution);
             last_field_publish_time_=stamp;has_last_field_publish_time_=true;
+        }
+        if(paper_->activeNavigationEnabled()&&field_publisher_->get_subscription_count()>0) {
+            visualization_msgs::msg::MarkerArray markers;
+            auto path=marker(stamp,"active_path",0,visualization_msgs::msg::Marker::LINE_STRIP);
+            path.scale.x=.045;path.color=result.authorization=="EXPLORATORY"?color(1.,.45,.05):color(.1,.9,.5);
+            path.points.push_back(point(position));for(const auto& p:result.preview_path)path.points.push_back(point(p));
+            markers.markers.push_back(std::move(path));
+            auto targets=marker(stamp,"active_targets",0,visualization_msgs::msg::Marker::SPHERE_LIST);
+            targets.scale.x=targets.scale.y=targets.scale.z=.07;targets.color=color(1.,.65,.1,.7);
+            for(const auto& p:result.observation_targets)targets.points.push_back(point(p));
+            markers.markers.push_back(std::move(targets));
+            auto text=marker(stamp,"active_state",0,visualization_msgs::msg::Marker::TEXT_VIEW_FACING);
+            text.pose.position=point(position+Eigen::Vector3d(0,0,.9));text.scale.z=.16;text.color=color(1.,1.,1.);
+            std::ostringstream label;label<<result.navigation_mode<<" / "<<result.authorization<<"\n"<<result.status
+                <<"\nU: "<<std::fixed<<std::setprecision(2)<<result.unknown_distance<<"m / "<<result.unknown_time<<"s / "<<result.unknown_volume<<"m3";
+            text.text=label.str();markers.markers.push_back(std::move(text));field_publisher_->publish(markers);
         }
         if (!omni_depth_enabled_ && retained && paper_->field().valid && result.accepted) {
             const auto& field=paper_->field();
@@ -1735,7 +1897,8 @@ private:
             for(const auto& view:current_paper_views)shared_stamp=std::max(shared_stamp,view->stamp);
             publishShared(shared_stamp);
         }
-        evidence_ingest_ms_.add(std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-evidence_start).count());
+        last_evidence_ingest_ms_=std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-evidence_start).count();
+        evidence_ingest_ms_.add(last_evidence_ingest_ms_);
         evidence_start=std::chrono::steady_clock::now();
         // Preserve the actually reached footprint also on ZERO_INTENT frames:
         // the plant is still decelerating after operator release.
@@ -1744,7 +1907,8 @@ private:
             evidence.supporting_views=current_paper_views;
             paper_->rememberVerifiedPosition(evidence,position,stamp.seconds());
         }
-        evidence_record_ms_.add(std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-evidence_start).count());
+        last_evidence_record_ms_=std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-evidence_start).count();
+        evidence_record_ms_.add(last_evidence_record_ms_);
         if (use_fixed_goal_ && stop_at_goal_ &&
             (goal_reached_ || (position - fixed_goal_).norm() <= goal_tolerance_)) {
             goal_reached_ = true;
@@ -1999,6 +2163,12 @@ private:
     std::array<std::uint64_t,4> omni_view_versions_{{0,0,0,0}};
     std::array<double,4> omni_view_update_times_{{-1.,-1.,-1.,-1.}};
     bool paper_depth_proposal_=false,sampled_proposal_=false,paper_intent_corridor_=false,paper_angular_goal_cost_=false;
+    bool goal_proposal_cache_enabled_=false;
+    bool goal_speed_governor_enabled_=false;
+    double goal_proposal_cache_max_displacement_=.75;
+    double goal_proposal_cache_ttl_=.15;
+    GoalProposalCache goal_proposal_cache_;
+    NavigationProgress progress_monitor_;
     int native_proposal_stride_=0;
     bool shared_enabled_=false;
     std::string shared_robot_id_,shared_frame_,shared_session_;
@@ -2078,6 +2248,9 @@ private:
     int obstacle_clear_frames_;
     std::string replay_directory_;
     int consecutive_rejections_=0;
+    Eigen::Vector3d last_replay_position_=Eigen::Vector3d::Zero();
+    std::string last_replay_status_;
+    bool has_replay_state_=false;
     std::size_t replay_sequence_=0;
     double last_replay_time_=-1e10;
     bool isaac_depth_contract_=false;
@@ -2114,6 +2287,9 @@ private:
     std::uint64_t control_callback_count_ = 0;
     std::uint64_t command_frame_count_ = 0;
     std::uint64_t guidance_frame_count_ = 0;
+    std::ofstream solve_samples_file_;
+    bool solve_samples_failed_=false;
+    double last_evidence_ingest_ms_=0.,last_evidence_record_ms_=0.,last_callback_to_publish_ms_=0.;
     TimingSeries avoidance_compute_ms_;
     TimingSeries command_interval_ms_;
     TimingSeries command_ros_interval_ms_;

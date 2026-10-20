@@ -3,17 +3,18 @@
 #include <iomanip>
 #include <iostream>
 int main(int argc,char** argv) {
-    if(argc<2||argc>4){std::cerr<<"usage: paper_replay SNAPSHOT.bin [--audit] [--incremental-field]\n";return 2;}
-    bool audit=false,incremental=false;
+    if(argc<2||argc>5){std::cerr<<"usage: paper_replay SNAPSHOT.bin [--audit] [--incremental-field] [--active-assist]\n";return 2;}
+    bool audit=false,incremental=false,active=false;
     for(int i=2;i<argc;++i) {
         const std::string option(argv[i]);
         if(option=="--audit")audit=true;
         else if(option=="--incremental-field")incremental=true;
+        else if(option=="--active-assist")active=true;
         else {std::cerr<<"unknown option: "<<option<<'\n';return 2;}
     }
     try {
         std::ifstream in(argv[1],std::ios::binary);
-        const auto r=pc_gvf::depth_angular::PaperGuidance::replay(in,audit?&std::cerr:nullptr,incremental);
+        const auto r=pc_gvf::depth_angular::PaperGuidance::replay(in,audit?&std::cerr:nullptr,incremental,active);
         std::cout<<std::setprecision(17)<<"{\"status\":\""<<r.status<<"\",\"reason\":\""<<r.build_reason
             <<"\",\"accepted\":"<<(r.accepted?"true":"false")<<",\"command\":["<<r.command.x()<<','<<r.command.y()<<','<<r.command.z()
             <<"],\"required_prefix\":"<<r.required_prefix<<",\"best_prefix\":"<<r.best_prefix

@@ -1,0 +1,15 @@
+#include "pc_gvf/paper_guidance.hpp"
+#include <Eigen/Geometry>
+#include <cstdlib>
+#include <iostream>
+#include <sstream>
+using namespace pc_gvf::depth_angular;using V=Eigen::Vector3d;
+void check(bool ok,const char* m){if(!ok){std::cerr<<m<<'\n';std::exit(1);}}
+PaperConfig config(){PaperConfig c;c.execution_consistent=c.assisted_vertical=c.bounded_exploration=true;c.retain_verified_travel=c.retain_certified_volume=true;c.emergency_braking_certificate=c.certified_direct=true;c.history_duration=60;c.history_uncertainty_rate=c.uncertainty_rate=0.;c.motion.max_accel=c.motion.brake_accel=16;c.motion.velocity_tau=.1;c.motion.delay=0;c.motion.rollout_horizon=.2;c.restart_clearance=.02;c.motion.body_radius=.48;c.motion.safety_margin=.02;c.motion.rollout_margin=.02;c.tracking_margin=.015;return c;}
+DepthObservation view(double side){Camera cam(24,18,90,74,20);DepthObservation o(cam,std::vector<double>(24*18,0.),V::Zero(),Eigen::Matrix3d::Identity(),1.1);
+for(int i=0;i<4;++i){auto yaw=Eigen::AngleAxisd(i*std::acos(-1.)/2,V::UnitZ()).toRotationMatrix();auto v=std::make_shared<DepthObservation>(cam,std::vector<double>(24*18,20.),yaw*V(.22,0,.02),yaw*fixedCameraRotation(),1.1,11,i);auto hits=std::make_shared<std::vector<V>>();if(i==0)for(double sign:{-1.,1.})hits->push_back(v->rotation.transpose()*(V(-.2,sign*side,0)-v->origin));v->obstacle_points=hits;o.supporting_views.push_back(v);}return o;}
+void prepare(PaperGuidance& p){check(p.setVerifiedSeed(V(-1,0,0),.9),"anchor seed");auto& s=const_cast<ActiveNavigationState&>(p.activeNavigationState());s.anchor=V(-1,0,0);s.anchor_valid=s.recovering=s.episode_active=s.episode_origin_valid=true;s.episode_origin=V::Zero();s.episode_stamp=1;s.episode=7;s.unknown_distance=.2;s.unknown_time=.3;s.unknown_volume=.4;}
+int main(){auto c=config();PaperGuidance p(c);prepare(p);const double hard=p.envelopeRadius()+c.restart_clearance;auto o=view(hard+.025);check(!p.envelopeKnown(o,V::Zero(),hard,1.1),"return fixture must require risk permit");std::stringstream replay(std::ios::in|std::ios::out|std::ios::binary);p.saveReplay(replay,o,V::Zero(),V::Zero(),V::UnitX(),1.1,1./60.);
+auto r=p.step(o,V::Zero(),V::Zero(),V::UnitX(),1.1,1./60.);check(r.accepted&&r.command.x()<0&&r.authorization=="EXPLORATORY"&&r.navigation_mode=="RECOVER","full-hard-clear return blocked solely by optional comfort band");const auto& s=p.activeNavigationState();check(s.episode==7&&s.episode_active&&s.unknown_distance>=.2&&s.unknown_time>=.3&&s.unknown_volume>=.4,"recovery renewed cumulative budget");check(!p.envelopeKnown(o,V(-.05,0,0),hard,1.1),"risk return promoted unknown into free proof");replay.seekg(0);auto rr=PaperGuidance::replay(replay);check(rr.status==r.status&&(rr.command-r.command).norm()<1e-12,"calibrated return replay mismatch");
+PaperGuidance blocked(c);prepare(blocked);auto conflict=view(hard-.005);auto b=blocked.step(conflict,V::Zero(),V::Zero(),V::UnitX(),1.1,1./60.);check(!b.accepted,"full swept hard radius relaxed by comfort calibration");
+std::cout<<"tight return, unchanged full hard radius, cumulative budget, unknown status and replay: PASS\n";}
