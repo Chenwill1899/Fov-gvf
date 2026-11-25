@@ -22,6 +22,27 @@ def test_released_input_stops():
     assert desired_velocity_from_direction(0,0,0,2,1) == (0,0,0)
 
 
+def test_step1_norm_cap_includes_vertical_without_axis_limit():
+    assert desired_velocity_from_direction(0,0,1,12) == (0,0,12)
+    velocity = desired_velocity_from_direction(1,1,1,12)
+    assert math.sqrt(sum(v*v for v in velocity)) == pytest.approx(12)
+    assert velocity[0] == velocity[1] == velocity[2]
+
+
+def test_step1_plant_capability_is_separate_from_reference_limiter():
+    from manual_control_math import velocity_response
+    # Reversal would request 1.2m/s at tau=.1; the 150m/s² plant clips to .75.
+    assert velocity_response((12,0,0),(-12,0,0),.005,.1,150) == pytest.approx((11.25,0,0))
+
+
+def test_step1_integration_uses_actual_time_without_upscaling():
+    from manual_control_math import actual_simulation_dt
+    assert actual_simulation_dt(1.,1.005,.005) == pytest.approx(.005)
+    assert actual_simulation_dt(1.,1.,.005) == 0
+    with pytest.raises(ValueError, match="actual physics interval"):
+        actual_simulation_dt(1.,1.002,.005)
+
+
 @pytest.mark.parametrize("collides", [lambda p: p[0] > 0.05, lambda p: p[2] > 1.02])
 def test_guard_stops_whole_vector_instead_of_sliding(collides):
     assert vector_safe_command((0,0,1),(1,0,0.5),0.1,collides) == ((0,0,0), True)

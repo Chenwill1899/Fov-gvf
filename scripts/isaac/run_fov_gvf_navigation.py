@@ -21,12 +21,19 @@ from pathlib import Path
 from manual_control_math import (
     vector_safe_command,
     velocity_response,
+    actual_simulation_dt,
     desired_velocity_from_direction,
     TimedVelocitySample,
     BoundedTimingSamples,
 )
 
 from depth_camera_projection import configure_depth_projection, save_projection_evidence
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from base_config import load_config
+BASE, BASE_SHA = load_config()
+if not BASE["motion_output_enabled"]:
+    raise SystemExit("EGO4P2 step-1: motion output disabled; use the read-only input check")
 
 from isaacsim import SimulationApp
 
@@ -73,8 +80,8 @@ if not all(0.0 <= channel <= 1.0 for channel in minimal_constant_color):
     raise SystemExit("ISAAC_MINIMAL_CONSTANT_COLOR channels must be between 0 and 1")
 ambient_light_intensity = scalar_from_env("ISAAC_AMBIENT_LIGHT_INTENSITY", 0.05)
 manual_timeout = scalar_from_env("ISAAC_MANUAL_TIMEOUT", 0.0)
-keyboard_speed = scalar_from_env("ISAAC_KEYBOARD_SPEED", 2.0)
-keyboard_vertical_speed = scalar_from_env("ISAAC_KEYBOARD_VERTICAL_SPEED", 1.0)
+keyboard_speed = BASE["max_speed_mps"]
+keyboard_vertical_speed = None
 manual_input_mode = os.environ.get("ISAAC_MANUAL_INPUT_MODE", "joystick").strip().lower()
 if manual_input_mode not in {"keyboard", "joystick", "trace", "goal"}:
     raise SystemExit("ISAAC_MANUAL_INPUT_MODE must be keyboard, joystick, trace or goal")
@@ -108,8 +115,8 @@ if manual_input_mode == "trace":
         raise ValueError("trace start must contain three finite numbers")
     trace_manual_yaw = any("yaw_rate" in event for event in events)
     trace_disturbances = list(intent_trace.get("disturbances", []))
-plant_tau = scalar_from_env("ISAAC_PLANT_TAU", 0.10)
-plant_accel = scalar_from_env("ISAAC_PLANT_ACCEL", 16.0)
+plant_tau = BASE["plant_tau_s"]
+plant_accel = BASE["plant_acceleration_mps2"]
 
 if goal_trial is not None:
     plant_tau = goal_trial.protocol["plant_tau_s"]
@@ -121,7 +128,7 @@ if manual_input_mode == "joystick":
 
     joystick_input = BeitongMode2()
 viewport_capture_path = Path(
-    os.environ.get("ISAAC_VIEW_CAPTURE", os.environ["EGO2P6_RUNTIME"] + "/viewport.png")
+    os.environ.get("ISAAC_VIEW_CAPTURE", os.environ["EGO4P0_RUNTIME"] + "/viewport.png")
 ).expanduser()
 performance_log_path = Path(os.environ.get(
     "FOV_GVF_PERFORMANCE_LOG", "docs/performance/PERFORMANCE_METRICS.md"
@@ -151,9 +158,9 @@ sys.argv = [sys.argv[0]]
 headless = os.environ.get("ISAAC_HEADLESS", "0") == "1"
 simulation_app = SimulationApp({
     "headless": headless,
-    "extra_args": ["--portable-root", os.environ["EGO2P6_RUNTIME"] + "/kit",
+    "extra_args": ["--portable-root", os.environ["EGO4P0_RUNTIME"] + "/kit",
         "--/app/settings/persistent=false",
-        "--/log/file=" + os.environ["EGO2P6_RUNTIME"] + "/kit.log"],
+        "--/log/file=" + os.environ["EGO4P0_RUNTIME"] + "/kit.log"],
     "renderer": viewport_renderer,
     "minimal_shading_mode": minimal_shading_mode,
     "active_gpu": 0,
@@ -211,8 +218,8 @@ def record_controller_diagnostics(message):
         controller_diagnostics = {}
 # Validation-only subscriptions avoid adding callback load during normal flight.
 if os.environ.get("ISAAC_ACCEPTANCE_TRACE"):
-    manual_ros_node.create_subscription(String, "/depth_angular_controller/status", record_controller_status, 1)
-    manual_ros_node.create_subscription(String, "/depth_angular_controller/paper_diagnostics", record_controller_diagnostics, 1)
+    manual_ros_node.create_subscription(String, "/controller/status", record_controller_status, 1)
+    manual_ros_node.create_subscription(String, "/controller/diagnostics", record_controller_diagnostics, 1)
 context = omni.usd.get_context()
 if not context.open_stage(scene_path.as_posix()):
     raise RuntimeError(f"failed to open {scene_path}")
@@ -326,7 +333,7 @@ velocity = Gf.Vec3d(0.0, 0.0, 0.0)
 yaw = 0.0
 yaw_rate = 0.0
 body_radius = (goal_trial.protocol["body_radius_m"] if goal_trial is not None
-               else scalar_from_env("FOV_GVF_BODY_RADIUS", 0.48))
+               else BASE["body_radius_m"])
 max_yaw_rate = math.radians(75.0)
 
 robot_api = UsdGeom.XformCommonAPI(robot)
@@ -344,11 +351,15 @@ if (
 ):
     raise RuntimeError("fovNavigationJson.cameraResolution must contain two positive integers")
 camera_width, camera_height = camera_resolution
+with Usd.EditContext(stage, stage.GetSessionLayer()):
+    for view in depth_camera_views:
+        stage.GetPrimAtPath(view[1]).GetAttribute("omni:sensor:tickRate").Set(float(BASE["camera_hz"]))
 # Optional SessionLayer-only camera projection. This is set before the render
 # products/CameraInfo helpers initialize; saved scene assets are never exported.
 sensor_projection = configure_depth_projection(
     stage, Usd, UsdGeom, depth_camera_views, camera_width, camera_height,
     run_id=performance_run_id, scene_path=str(scene_path))
+sensor_projection.update(base_config=BASE, base_config_sha256=BASE_SHA)
 if os.environ.get("ISAAC_BENCHMARK_RESULT"):
     sensor_path = save_projection_evidence(sensor_projection, os.environ["ISAAC_BENCHMARK_RESULT"])
     print(f"[DEPTH PROJECTION EVIDENCE] {sensor_path}", flush=True)
@@ -690,11 +701,18 @@ if recording_handshake:
         time.sleep(0.02)
     print("[RECORDING] live screen recorder ready; starting simulation", flush=True)
 
-SimulationManager.setup_simulation(dt=1.0 / 60.0, device="cpu")
+SimulationManager.setup_simulation(dt=BASE["physics_dt_s"], device="cpu")
+from isaacsim.core.rendering_manager import RenderingManager
+import omni.timeline
+RenderingManager.set_dt(BASE["physics_dt_s"])
+step_timeline = omni.timeline.get_timeline_interface()
+step_timeline.set_time_codes_per_second(BASE["camera_hz"])
+step_timeline.set_target_framerate(BASE["camera_hz"])
+step_timeline.set_ticks_per_frame(1)
 app_utils.play()
 simulation_app.update()
-start_time = simulation_app.get_time() if hasattr(simulation_app, "get_time") else 0.0
-last_time = 0.0
+start_time = step_timeline.get_current_time()
+last_time = start_time
 now = 0.0
 frame = 0
 viewport_captured = False
@@ -717,14 +735,18 @@ if os.environ.get("ISAAC_ACCEPTANCE_TRACE"):
     acceptance_writer.writerow(["t", "x", "y", "z", "vx", "vy", "vz", "qx", "qy", "qz", "status",
         "esdf_clearance_r048", "collision_blocks", "recorded_balls", "revoked_balls", "expired_views", "evicted_views", "build_reason", "required_prefix", "best_prefix", "free_directions", "recorded_tubes", "grid_refined", "command_changed", "intent_change_angle", "refreshed", "continued", "reset_reason", "diagnostic_stamp", "input_x", "input_y", "input_z", "target_x", "target_y", "target_z", "reference_intent_x", "reference_intent_y", "reference_intent_z", "command_x", "command_y", "command_z", "applied_target_x", "applied_target_y", "applied_target_z", "twist_source", "received_twist_sequence", "applied_twist_sequence", "twist_age_s", "received_body_x", "received_body_y", "received_body_z", "applied_body_x", "applied_body_y", "applied_body_z", "command_frame", "authorization", "navigation_mode", "probe_episode", "unknown_distance", "unknown_time", "unknown_volume", "expected_visibility", "anchor_x", "anchor_y", "anchor_z", "unknown_exposure", "probe_episode_active", "probe_origin_valid", "probe_origin_stamp", "probe_origin_x", "probe_origin_y", "probe_origin_z"])
 while simulation_app.is_running() and app_utils.is_playing():
+    frame_start_wall = time.monotonic()
     simulation_app.update()
     frame_wall = time.perf_counter()
     if last_frame_wall is not None:
         frame_interval_ms.append((frame_wall - last_frame_wall) * 1000.0)
     last_frame_wall = frame_wall
-    now = float(frame) / 60.0
-    dt = max(1.0 / 240.0, min(0.1, now - last_time if frame else 1.0 / 60.0))
-    last_time = now
+    current_time = step_timeline.get_current_time()
+    dt = actual_simulation_dt(last_time, current_time, BASE["physics_dt_s"])
+    if dt <= 0:
+        continue
+    now = current_time - start_time
+    last_time = current_time
     manual_direction, manual_yaw_rate, manual_active = sample_manual_intent(yaw, now)
     translation_active = any(abs(value) > 1.0e-6 for value in manual_direction)
     manual_message = TwistStamped()
@@ -866,6 +888,7 @@ while simulation_app.is_running() and app_utils.is_playing():
                 f"mean_rgb={viewport_mean:.2f}",
                 flush=True,
             )
+    time.sleep(max(0., frame_start_wall+BASE["physics_dt_s"]/BASE["time_scale"]-time.monotonic()))
     frame += 1
     if goal_trial is not None:
         navigation_result = goal_trial.update(position, velocity, now, time.perf_counter(), collision_blocked)
@@ -927,7 +950,7 @@ performance_record = (
     f"- ESDF-blocked simulation frames: {collision_block_count}\n"
     f"- Applied-command change interval mean / P50 / P95 / max: "
     f"{change_mean:.3f} / {change_p50:.3f} / {change_p95:.3f} / "
-    f"{change_max:.3f} ms (sampled on the 60 Hz OmniGraph tick)\n"
+    f"{change_max:.3f} ms (sampled on the configured 200 Hz simulation tick)\n"
 )
 try:
     performance_log_path.parent.mkdir(parents=True, exist_ok=True)

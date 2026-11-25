@@ -125,8 +125,11 @@ class BeitongMode2:
             self.path = self.XINPUT_DEVICE
         else:
             self.path = self.BFM_DEVICE
-        self.horizontal_speed = _nonnegative_env("JOYSTICK_HORIZONTAL_SPEED", 6.0)
-        self.vertical_speed = _nonnegative_env("JOYSTICK_VERTICAL_SPEED", 1.5)
+        import sys
+        sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+        from base_config import load_config
+        self.horizontal_speed = load_config()[0]["max_speed_mps"]
+        self.vertical_speed = None  # One 3-D norm cap; no separate vertical limiter.
         self.max_yaw_rate = math.radians(
             _nonnegative_env("JOYSTICK_YAW_RATE_DEG", 75.0))
         self.deadzone = _nonnegative_env("JOYSTICK_DEADZONE", 0.08)

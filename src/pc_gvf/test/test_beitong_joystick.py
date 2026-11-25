@@ -103,6 +103,18 @@ class BeitongProfileTests(unittest.TestCase):
                 beitong_joystick.BeitongMode2()
         self.assertTrue(fake.closed)
 
+    def test_step1_vertical_and_diagonal_share_12mps_norm_cap(self):
+        import math
+        controller, fake = self.make_controller(8, 11, "xinput")
+        self.addCleanup(controller.close)
+        controller.enabled = True
+        fake.axis_values[1] = -1.0
+        self.assertEqual(controller.sample(yaw=0.)[0], (0., 0., 12.))
+        fake.axis_values[4] = -1.0
+        fake.axis_values[3] = 1.0
+        velocity = controller.sample(yaw=0.)[0]
+        self.assertAlmostEqual(math.sqrt(sum(v*v for v in velocity)), 12.)
+
 
 if __name__ == "__main__":
     unittest.main()

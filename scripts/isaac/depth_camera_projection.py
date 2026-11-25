@@ -134,6 +134,11 @@ def configure_depth_projection(stage, Usd, UsdGeom, views, width, height,
         record = camera_projection_record(camera, name, prim_path, depth_topic,
                                           info_topic, frame_id, width, height)
         record.update(camera_extrinsic_record(stage, Usd, UsdGeom, camera.GetPrim()))
+        clip = camera.GetClippingRangeAttr().Get()
+        unit_m = float(UsdGeom.GetStageMetersPerUnit(stage))
+        record.update(near_clip_z_m=float(clip[0])*unit_m,
+                      far_clip_z_m=float(clip[1])*unit_m,
+                      clip_evidence='actual USD clipping range * stage metersPerUnit')
         if hfov is not None and not math.isclose(record['fx'], record['fy'], rel_tol=1e-6, abs_tol=1e-6):
             raise ValueError('actual camera apertures do not match square-pixel render aspect')
         cameras.append(record)

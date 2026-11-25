@@ -1,0 +1,847 @@
+% !TeX program = xelatex
+% 编译：xelatex EGO4P2_DEPTH_TO_TRAJECTORY_GUIDE.tex（两次）
+% 来源：同目录下的 Markdown 讲解稿。样稿仅用作版式参考。
+\documentclass[11pt,a4paper]{article}
+\usepackage[UTF8,scheme=chinese,fontset=fandol]{ctex}
+\usepackage[margin=24mm]{geometry}
+\usepackage{amsmath,amssymb,bm}
+\usepackage{array,booktabs,longtable}
+\usepackage{enumitem}
+\usepackage{xcolor,tikz}
+\usetikzlibrary{positioning,arrows.meta}
+\usepackage{xurl}
+\usepackage[hidelinks]{hyperref}
+
+\definecolor{reviewOrange}{RGB}{255,105,0}
+\definecolor{reviewRed}{RGB}{170,0,0}
+\definecolor{reviewPurple}{RGB}{128,0,128}
+\definecolor{reviewGreen}{RGB}{0,180,0}
+\colorlet{replycolor}{black}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.45em plus 0.12em minus 0.1em}
+\setlength{\emergencystretch}{2em}
+\setlength{\LTleft}{0pt}
+\setlength{\LTright}{0pt}
+\renewcommand{\arraystretch}{1.25}
+\setlist{leftmargin=*,itemsep=0.3em,topsep=0.4em}
+\setcounter{tocdepth}{2}
+
+\newcounter{topic}
+\numberwithin{equation}{topic}
+\newcommand{\topicgroup}[2]{%
+  \bigskip\par\noindent{\color{#2}\rule{\linewidth}{0.6pt}}\par
+  \section*{\textcolor{#2!70!black}{#1}}%
+  \addcontentsline{toc}{section}{#1}%
+  \colorlet{replycolor}{#2!70!black}%
+}
+\newenvironment{point}[1]{%
+  \refstepcounter{topic}%
+  \subsection*{问题 \thetopic\quad #1}%
+  \addcontentsline{toc}{subsection}{问题 \thetopic\quad #1}%
+}{\par}
+\newenvironment{reply}{%
+  \par\noindent\textcolor{replycolor}{\sffamily\bfseries 答复}\par\nobreak\ignorespaces
+}{\par\medskip}
+\newcommand{\sourceref}[2]{\hyperlink{source-#1}{#2\textsuperscript{[#1]}}}
+\newcommand{\sourceentry}[2]{\item[\hypertarget{source-#1}{[#1]}] #2}
+
+\begin{document}
+\section*{EGO讲解}
+
+\tableofcontents
+\clearpage
+\topicgroup{一、问题背景与深度观测}{reviewOrange}
+\begin{point}{无人机局部导航}
+\end{point}
+\begin{enumerate}
+\item \textbf{深度图观测方法：}四张深度图分别告诉系统视野里首先看到了什么。把信息投到一个以机体为中心的单位球面上，得到可以用于规划的方向区域。
+\item \textbf{连续改变运动方向方法：} 在这个区域里给每个方向格分配一个势值，让势值从低处过渡到出口。沿势值上升的方向逐小步前进，得到从当前航向出发的方向曲线 \(Q\)。
+\item \textbf{实际飞行下一步速度：} 给 \(Q\) 安排每米可以转多少角度，把方向当成曲线的切向，再累加成三维位置。用原始深度图检查这条曲线附近的连续空间，最后依据实际运动状态计算速度命令候选。
+\end{enumerate}
+
+图~\ref{fig:chain} 展示四路观测怎样进入求场、参考生成和控制。
+\begin{figure}[!htbp]
+\centering
+\begin{tikzpicture}[
+  box/.style={draw=reviewOrange!48!black,rounded corners=2pt,
+              fill=reviewOrange!6,align=center,text width=55mm,
+              minimum height=8mm,inner sep=4pt},
+  flow/.style={-{Stealth[length=2.2mm]},semithick},
+  node distance=5mm
+]
+\node[box] (depth) {四张深度图、标定和观测位姿};
+\node[box,below=of depth] (prep) {图像补值、摘要、虚拟环视};
+\node[box,below=of prep] (domain) {球面可用方向域 \(\Omega\)};
+\node[box,right=9mm of depth] (state) {实际状态与期望方向};
+\node[box,right=9mm of domain] (field) {粗场、细场、方向曲线 \(Q\)};
+\node[box,below=of field] (spatial) {曲率安排与空间积分};
+\node[box,below=of spatial] (check) {三维参考 \(\gamma\) 与原图净空检查};
+\node[box,below=of check] (cmd) {跟踪、滚动续证、命令候选};
+\draw[flow] (depth) -- (prep);
+\draw[flow] (prep) -- (domain);
+\draw[flow] (domain) -- (field);
+\draw[flow] (state) -- (field);
+\draw[flow] (field) -- (spatial);
+\draw[flow] (spatial) -- (check);
+\draw[flow] (check) -- (cmd);
+\end{tikzpicture}
+\caption{EGO4P2 的局部导航流程}
+\label{fig:chain}
+\end{figure}
+
+这里有三个容易混淆的对象。\textbf{势} \(\phi\) 是每个方向上的一个数，类似等高线图上的高度。\textbf{方向场} \(g\) 是每个方向上的一支箭头，由势的梯度算出。\textbf{空间参考} \(\gamma\) 是一串以米为单位、可连续查询的位置。后面会依次说明这三次转换。
+
+\subsubsection*{阅读公式所需的约定}
+
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{0.21\linewidth}>{\raggedright\arraybackslash}p{0.75\linewidth}@{}}
+\caption{符号与单位约定}\label{tab:symbols}\\
+\toprule
+\textbf{符号} & \textbf{含义} \\
+\midrule
+\endfirsthead
+\multicolumn{2}{l}{\small 符号与单位约定（续）}\\
+\toprule
+\textbf{符号} & \textbf{含义} \\
+\midrule
+\endhead
+\midrule
+\multicolumn{2}{r}{\small 接下页}\\
+\endfoot
+\bottomrule
+\endlastfoot
+\(C,B,W\) & 相机坐标系、机体坐标系、世界坐标系。\(B_o\) 专指拍摄这组深度图时的机体坐标系。 \\
+\(R_{BC},R_o\) & 分别把相机方向转到机体系、把观测时的机体方向转到世界系。方向只旋转，点的位置还要加平移。 \\
+\(\lVert a\rVert,\ a^\top b,\ a\times b\) & 向量的长度、点积、叉积。两个单位向量的点积等于夹角的余弦，叉积给出垂直于二者的旋转轴方向。 \\
+\(S^2,\Omega\) & \(S^2\) 是三维空间中的单位球面。 \(\Omega\) 是其中有足够观测证据、允许参与本次规划的方向格集合。 \\
+\(\zeta,\ s,\ t\) & 累计转角、沿空间参考走过的距离、时间。单位分别为弧度、米、秒。 \\
+\(V,L,r_{\rm env}\) & 正常跟踪目标速度 \(12\,\mathrm{m/s}\)，局部观测范围 \(4\,\mathrm m\)，占用包络半径 \(0.30\,\mathrm m\)。 \\
+\end{longtable}
+
+公式用弧度进行三角计算。网格参数和讲解示例也用度表示角度，以便直观理解。 \sourceref{S03}{基础参数} · \sourceref{S04}{导航参数}
+
+\begin{point}{四路深度图处理方法}
+\end{point}
+\subsubsection*{2.1 深度图、时间戳和相机标定}
+
+\textbf{深度图}给像素记录距离。本项目输入的 \(Z\) 是沿相机光轴的深度，单位是米。相机光轴深度是物体点沿相机正前方方向的距离，通常记作 \(Z\)。可以把光轴想成从相机镜头中心向画面正中间伸出去的一条直线。假设相机正对一面墙，墙距离相机正前方 2 米，那么墙上各点的光轴深度都是 \(Z=2\) 米。同一个 \(Z\) 下，画面边缘的物体沿视线量过去会比画面中心更远。
+
+四路图像按相同的仿真时间戳组成一组，并等待该时刻的里程计位姿。\textbf{位姿}包含位置和朝向。程序还单独读取当前实际运动状态，避免用拍照时的速度代替现在的速度。图像身份包含组号、相机时间戳和标定版本。配置版本、当前仿真时间、参考版本及失效原因也通过统一接口传递。缺相机、时间戳不一致、缺位姿、标定或配置不匹配、数据来自未来或过期时，输入会被拒绝。当前观测和实际状态的超时时间上限为 10 ms 仿真时间。 
+
+\subsubsection*{2.2 把像素变成射线}
+
+\textbf{内参}矩阵 \(K_c\) 描述第 \(c\) 台相机的焦距、图像中心等成像参数。\textbf{外参}描述相机装在机体哪里、朝向哪里。对像素 \((u,v)\)，令
+
+\begin{equation}
+\label{eq:ray}
+b_c=K_c^{-1}[u,v,1]^\top,\qquad
+P_C=Zb_c,\qquad
+\rho=Z\|b_c\|,\qquad
+d_B=\frac{R_{BC}b_c}{\|b_c\|}.
+\end{equation}
+
+\(P_C\) 是相机系中的三维点，\(\rho\) 是沿该射线的距离，\(d_B\) 是长度为 1 的机体系方向。举例来说，如果 \(b_c=(0.5,0,1)\) 且 \(Z=2\,\mathrm m\)，则 \(P_C=(1,0,2)\,\mathrm m\)，而射线距离为 \(\sqrt5\,\mathrm m\)。
+
+求场使用\textbf{虚拟共心环视}。相机朝向保留，方向查表把四台相机的光心近似放在机体中心，忽略安装平移。用方位角 \(\alpha\) 表示水平绕转，用仰角 \(\beta\) 表示上下抬俯，则球面方向为
+
+\begin{equation}
+\label{eq:sphere}
+d_B(\alpha,\beta)=
+(\cos\beta\cos\alpha,\ \cos\beta\sin\alpha,\ \sin\beta).
+\end{equation}
+
+代码预计算射线系数，并从球面格中心反查它落进哪些相机的哪些像素块。后面检查空间管道（无人机沿规划路线飞行时，机身周围有没有足够空间）时会改用真实相机位置和朝向。
+
+\subsubsection*{2.3 原始图、补值图和两级摘要}
+
+对异常像素，包括 NaN、无穷、零和负值，取\textbf{原始图} \(3\times3\) 邻域内有限正值的均值。令 \(\mathcal V_p\) 是像素 \(p\) 的该邻域中有效的原始像素集合，仅当 \(p\) 异常且 \(\mathcal V_p\) 非空时计算 \(Z_{\rm filled}(p)=\sum_{j\in\mathcal V_p} Z_{\rm raw}(j)/|\mathcal V_p|\)。如果周围没有有效深度，就没有依据计算平均值，\(p\) 保持异常。有效像素不改动，补出的数不会继续传给下一处异常像素。
+
+每台相机有一个常驻工作线程，分别完成补值、块摘要、全分辨率查询摘要和本相机的方向数据。一级把图像分成 \(4\times4\) 像素块，二级再合并相邻 \(3\times3\) 个一级块。边缘可以出现不足整块的区域。每级保留近障碍判定需要的最小射线距离和原始有效像素数。二级的补值深度均值按一级有效像素数加权，空块不参加均值或最小值：
+
+\begin{equation}
+\label{eq:pool}
+\bar Z_2=\frac{\sum_{j:\,n_j>0} n_j\bar Z_j}{\sum_j n_j},
+\qquad
+\rho_{\min,2}=\min_{j:\,n_j>0}\rho_{\min,j}.
+\end{equation}
+
+这里的 \(n_j\) 是补值后仍为有限正值的像素数。原始有效数、原始最小距离和总像素数另行保存。原始图与补值图也各自有区域最小值索引，后面的管道检查仍能在全分辨率图像上问“这个矩形里的原始像素是否全部有效，最浅的点在哪里”。四路工作结束后，协调线程合并方向域，并运行后续求场与曲线阶段。 
+
+\begin{point}{从深度观测得到球面可用方向域}
+\end{point}
+\subsubsection*{3.1 障碍膨胀和三种状态}
+把无人机近似成半径 \(r_{\rm body}=0.10\,\mathrm m\) 的球，再预留 \(0.20\,\mathrm m\) 的跟踪误差预算，得到统一包络 \(r_{\rm env}=0.30\,\mathrm m\)。\textbf{障碍膨胀}可以理解为给障碍画一圈安全边。这样即便机体中心没有撞到物体，机体和预留余量可能触及的方向也会被排除。
+
+从观察中心看，距离 \(\rho>r_{\rm env}\) 的障碍物对应的点周围画一个半径为 \(r_{\rm env}\) 的球，球的视角半径为 \(\arcsin(r_{\rm env}/\rho)\)。代码以 5 cm 为单位分档，在对应档的下界 \(\rho_{\rm lo}\) 上计算：
+
+\begin{equation}
+\label{eq:inflation}
+\delta_{\rm base}=
+\begin{cases}
+\pi,&\rho_{\rm lo}\le r_{\rm env},\\
+\arcsin(r_{\rm env}/\rho_{\rm lo}),&\rho_{\rm lo}>r_{\rm env}.
+\end{cases}
+\end{equation}
+
+取更近的档下界会扩大排除范围。查表还加入网格量化余量，近障碍排除另加像素块最大角半径，用保守角窗口标记。参与此排除的近块满足补值后的最小射线距离 \(\rho_{\min}\le L=4\,\mathrm m\)。 
+四路合并时，每格保留所有覆盖相机的块中最小的有效 \(\rho_{\min}\)。一格有\textbf{原始完整覆盖}，表示至少一路相机在该格对应的块内原始像素全部有效。随后逐格判定：
+
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{0.21\linewidth}>{\raggedright\arraybackslash}p{0.75\linewidth}@{}}
+\caption{球面方向格的三种状态}\label{tab:states}\\
+\toprule
+\textbf{状态} & \textbf{程序含义} \\
+\midrule
+\endfirsthead
+\multicolumn{2}{l}{\small 球面方向格的三种状态（续）}\\
+\toprule
+\textbf{状态} & \textbf{程序含义} \\
+\midrule
+\endhead
+\midrule
+\multicolumn{2}{r}{\small 接下页}\\
+\endfoot
+\bottomrule
+\endlastfoot
+\texttt{Unavailable} & 有深度观测，且该方向被近障碍的膨胀区域排除。 \\
+\texttt{Available} & 中心有观测且未被排除。查询窗口内每一格都有原始完整覆盖，融合最小射线距离严格大于 \(L+r_{\rm env}=4.30\,\mathrm m\)。 \\
+\texttt{Unknown} & 剩余情况。包括看不到、原始覆盖不完整、深度证据不足等。 \\
+\end{longtable}
+
+\(\Omega\) 只收录 \texttt{Available}。虚拟环视适合快速筛方向，米制参考还要单独接受真实相机的原图验证。方向筛选和空间检查分别使用同一个 \(0.30\,\mathrm m\) 包络定义，后者直接查原图，未在已经膨胀的 \(\Omega\) 上再膨胀一次。 \sourceref{S13}{四路合并和三态判定}
+
+\subsubsection*{3.2 为什么叫二维方向域}
+
+球面上的点虽然有三个坐标，但它满足 \(x^2+y^2+z^2=1\)，两个角就能定位，因此球面是\textbf{二维曲面}。所谓二维调和场，是在这个曲面上分配势值，仍然能表达向上爬升、向下俯冲等三维方向。
+
+细网格是 \(1^\circ\times1^\circ\)，粗网格以 \(3^\circ\times3^\circ\) 格为基础。它们的单位是角度。上节的 \(4\times4\) 和再 \(3\times3\) 是图像像素块尺度。这两种网格在代码中分别配置。 
+
+\clearpage
+\topicgroup{二、球面求场与空间参考}{reviewRed}
+\begin{point}{球面调和势的粗细两层求解}
+\end{point}
+\subsubsection*{4.1 调和势和边界条件}
+
+上一章已经得到可以参与规划的方向区域。接下来，程序要在这些方向之间建立连续的转向指引。它先给每个方向格分配一个数，这个数称为\textbf{势值}。出口附近固定为高势 1，另一侧固定为低势 0，其余格的势值由相邻格共同决定。
+
+可以把它想成一张边缘高度已固定的薄膜：中间部分需要平滑地衔接各处的高度。在本项目中，满足局部平衡条件的势称为\textbf{调和势}。在连续模型中，内部势值满足下面的方程：
+
+\begin{equation}
+\label{eq:laplace}
+\Delta_{S^2}\phi
+=\frac{1}{\cos^2\beta}\frac{\partial^2\phi}{\partial\alpha^2}
++\frac{1}{\cos\beta}\frac{\partial}{\partial\beta}
+\left(\cos\beta\,\frac{\partial\phi}{\partial\beta}\right)=0.
+\end{equation}
+
+式中的 \(\Delta_{S^2}\) 称为\textbf{Laplace–Beltrami 算子}。算子就是对一个函数按规定执行的数学运算；这里用它描述球面上每一小块与周围小块之间的平衡。式子等于零，表示内部没有额外的源或汇。
+
+公式中的 \(\cos\beta\) 用来考虑球面的几何差异。越接近南北极，同样的方位角变化对应的实际球面距离越短，因此各方向的影响不能简单按平面网格处理。
+
+\textbf{边界条件}规定求解区域边缘如何处理。本项目主要使用两种规则。\textbf{Dirichlet 边界}直接指定势值，例如把出口设为 1，把低势区域设为 0。\textbf{零 Neumann 边界}要求垂直穿过边界的通量为零，可以理解为求场时不允许影响从这条边界流出去。
+
+程序通过不连接障碍、未知区域和当前求解域之外的格，落实零通量规则。它约束的是势场的计算；后面的方向积分和空间管道检查仍需分别确认曲线没有越界。 \sourceref{S16}{球面权重} · \sourceref{S17}{域外面处理}
+
+\subsubsection*{4.2 起点、连通分量、出口}
+
+方向曲线应从无人机当前正在运动的方向开始，这样才有可能与已有运动接上。常规起点记为 \(q_0\)，由当前实际速度计算。若 \(v_W\) 表示世界坐标系中的实际速度，则
+
+\begin{equation}
+\label{eq:start}
+q_0=\frac{R_o^\top v_W}{\|v_W\|}.
+\end{equation}
+
+当当前速度无法提供有效方向时，程序先尝试上一次有效的世界系速度，再尝试初始期望方向。滚动切换参考时，则优先使用旧参考在连接处的切向，使新参考从连接处的前进方向开始。
+
+公式中使用 \(R_o^\top\)，是为了把世界系方向转回拍摄深度图时的机体坐标系。方向域保存在这个观测坐标系中，起点也必须用同一坐标系表达。
+
+程序先检查 \(q_0\) 所在的格是否可用，再沿方位和仰角的四个相邻格向外搜索。所有能够通过可用格连续走到的格，合起来就是起点所在的\textbf{连通分量}。即使另一个方向看起来没有障碍，如果中间被不可用格隔断，也不能直接把它当作可达出口。
+
+如果期望方向所在格属于这个连通分量，就选它作为出口中心。否则，程序在该分量中选择最接近期望方向的格，并记录这次调整。实现中通过比较单位方向的点积来选择；点积越大，两个方向的夹角越小。
+
+粗场的低势中心选在该分量中离出口方向最远的一侧。高、低势边界各占据一小片球面区域，称为\textbf{边界帽}。它们的角半径取 \(3^\circ\) 与两中心角距的 \(0.24\) 倍中的较小值，标签重叠时高势优先。低势中心与积分起点 \(q_0\) 分别选择，两者并不要求重合。 \sourceref{S18}{起点来源} · \sourceref{S19}{连通域与出口} · \sourceref{S20}{边界帽}
+
+\subsubsection*{4.3 粗层与细层的计算范围}
+
+\begin{itemize}
+\item \textbf{粗层求解。} 粗层覆盖起点所在的整个连通分量。一个 \(3^\circ\) 粗格只有在二级图像摘要支持粗格可用、九个 \(1^\circ\) 子格都在同一连通分量且边界标签一致时才合并。这里的标签用来区分普通格、高势出口和低势边界。其他粗格保留其中属于该分量的细节点。合并后的格之间，其连接权重由穿过边界的细网格面权重相加。
+\item \textbf{细层求解。} 细层只计算起点到出口附近的局部通道。搜索过程中会记录每个格是从哪个格到达的，这个来源称为父节点。程序从出口沿这些记录回到起点，形成一条格路径，默认向可用邻格扩三层。默认分支继承粗图的高势出口标签，再单独选择一个远侧低势格，通道侧边采用零通量边界。如果通道内全是出口标签，特殊处理分支会从非起点格中选择低势格。如果积分被人为截取的通道边界阻挡，并满足重试条件，程序可以扩大通道后再求解，总共最多尝试三次。
+\item \textbf{可选的粗细耦合。} 耦合是把粗场的数值结果传给细场的一种方式。这个可选分支在人工截取的通道边界使用对应粗节点的势值。当前默认采用局部零通量分支，粗场通过可达域和出口标签影响细场，并未默认采用这项边界值传递。
+\end{itemize}
+
+粗层覆盖较大的方向范围，细层把计算集中在起点通往出口的局部通道。这样可以保留大范围的连通信息，同时减少细网格上需要求解的节点数。这里的\textbf{节点}就是参与计算的格；合并后的粗格也作为一个节点处理。 \sourceref{S21}{粗格聚合} · \sourceref{S22}{局部通道与重试} · \sourceref{S23}{细场边界分支}
+
+\subsubsection*{4.4 离散平衡方程与矩阵求解}
+
+计算机不能直接存储球面上无限多个位置的势值，因此要先把连续问题转换成有限个格上的方程。这里采用\textbf{有限体积法}：把每个格看成一个小区域，要求它经过各条边界流出的总通量为零。
+
+相邻格之间的势值差决定通量方向，\textbf{权重}决定这条连接对平衡的影响有多大。方位方向的权重使用格中心仰角 \(\beta_i\)，仰角方向的权重使用两格公共边的仰角 \(\beta_{\rm face}\)。离散平衡方程为
+
+\begin{equation}
+\label{eq:flux}
+w_\alpha=\frac{\Delta\beta}{\cos\beta_i\,\Delta\alpha},
+\qquad
+w_\beta=\frac{\cos\beta_{\rm face}\,\Delta\alpha}{\Delta\beta},
+\qquad
+\sum_{j\in N(i)}w_{ij}(\phi_i-\phi_j)=0.
+\end{equation}
+
+\(N(i)\) 表示与格 \(i\) 相连的域内邻格集合。球面绕一圈会回到原处，因此方位角的 \(-180^\circ/180^\circ\) 两端周期相连；上下极点则不添加跨越极面的邻格。
+
+每个未知格都有这样一条平衡方程。把所有方程放在一起，并把固定边界的已知势值移到等号右边，就得到矩阵形式：
+
+\begin{equation}
+\label{eq:matrix}
+\begin{gathered}
+A\phi=b,\qquad
+A_{ii}=\sum_{j\in N(i)}w_{ij},\\
+A_{ij}=-w_{ij}\ \text{（相连的未知格）},\qquad
+b_i=\sum_{j\in N(i)\cap D}w_{ij}\phi_j,
+\end{gathered}
+\end{equation}
+
+其中 \(D\) 是已经固定势值的格集合。若同一对节点之间存在多条连接，程序会先把它们的权重相加。大部分节点彼此没有直接连接，对应矩阵元素为零，因此这个矩阵称为\textbf{稀疏矩阵}。
+
+粗层和细层都使用 Eigen 数值库中的稀疏 LDLT 方法求解。\textbf{LDLT 分解}把适用的对称矩阵拆成三角矩阵和对角矩阵，再分步求出未知势值。求解后，程序还检查结果是否为有限数、势值是否落在允许范围内，并核对以下残差条件：
+
+\begin{equation}
+\label{eq:residual}
+\max_{i\ \text{为未知格}}\frac{|b_i-(A\phi)_i|}{A_{ii}}\le 10^{-7}.
+\end{equation}
+
+\textbf{残差}就是把算出的势值代回离散方程后，等号两侧还相差多少。上式先用对应的对角项归一化，再检查所有未知格中的最大差值。
+
+如果本次问题与上次完全相同，就没有必要重新求解。粗、细两层的\textbf{严格缓存}都会核对边界标签、边界值、求解容差，以及相关节点的连接和权重；这些条件一致时，才复用已经通过检查的结果。 \sourceref{S16}{离散权重} · \sourceref{S24}{稀疏装配} · \sourceref{S25}{LDLT 后端} · \sourceref{S26}{严格缓存与残差}
+
+\begin{point}{由调和势生成方向曲线}
+\end{point}
+\subsubsection*{5.1 由势值构造连续方向场}
+
+求场后，每个网格上有了一个势值。接下来需要知道：落在两个网格点之间时，应当朝哪边转。程序先用周围有效格估计角点的势值和导数，再通过二维 \textbf{Hermite 插值}构造连续函数。插值就是根据已有离散数据估计中间位置；Hermite 方法同时利用数值和斜率，使连接更平滑。
+
+在普通区域，程序对插值得到的势函数 \(\tilde\phi\) 求\textbf{球面梯度}。梯度指向势值增长最快的方向，其公式为
+
+\begin{equation}
+\label{eq:gradient}
+g(d)=\nabla_{S^2}\tilde\phi(d)
+=\frac{\partial_\alpha\tilde\phi}{\cos\beta}e_\alpha
++\partial_\beta\tilde\phi\,e_\beta,\qquad
+\hat g(d)=\frac{g(d)}{\|g(d)\|}.
+\end{equation}
+
+\(e_\alpha,e_\beta\) 分别是沿方位角和仰角变化的单位切向，可以看作贴在球面上的两个局部方向。梯度 \(g(d)\) 垂直于球面半径 \(d\)，因此它指示的是沿球面往哪里转。出口势值较高，所以积分沿势值上升的一侧进行。只有梯度模长大于 \(10^{-7}\) 时，程序才把它归一化为单位方向。
+
+“调和”与“谐波”都是英文 \texttt{harmonic} 的译法。这里先求标量势，再对势求导得到方向场；粗场和细场则是两种计算层级。前面的残差检查负责核对离散方程，插值负责为后面的积分提供连续查询。
+
+靠近南北极时，\(\cos\beta\) 很小，直接使用方位角公式会变得不稳定。程序在 \(|\beta|>84^\circ\) 时，利用完整的\textbf{极冠}，也就是极点附近的一片球面区域，拟合仿射势 \(\phi_{\rm cap}=a_0+a^\top(d-d_{\rm pole})\)。仿射函数可理解为“常数项加上线性变化项”；这里从它得到的梯度还要投影到球面切平面上，结果为 \(g_{\rm cap}=(I-dd^\top)a\)。
+
+为了让普通区域与极区平滑衔接，程序在 \(84^\circ\) 到 \(86^\circ\) 之间用权重 \(w=3u^2-2u^3\) 混合两种势。\(u\) 表示仰角绝对值在这两度过渡范围内的相对位置，从 0 变化到 1。由于权重也随位置变化，对混合势求导时必须包括 \(w\) 的导数：
+
+\begin{equation}
+\label{eq:polar}
+g=(1-w)g_{\rm H}+w\,g_{\rm cap}
+  +\partial_\beta w\,(\phi_{\rm cap}-\phi_{\rm H})e_\beta.
+\end{equation}
+
+如果极冠数据不完整，或者拟合没有成功，程序就无法在该方向给出可信的梯度，查询会返回失败。 \sourceref{S27}{Hermite 插值和极区分支}
+
+\subsubsection*{5.2 球面中点积分}
+
+得到方向场后，从起点 \(q_0\) 沿箭头走一小步，再查询新位置的箭头，继续向前。这样逐步连成的线叫作\textbf{积分曲线}。这里走的是单位球面，曲线上的每一个点都代表一个运动方向。累计转角作为进度参数，积分方程为
+
+\begin{equation}
+\label{eq:ode}
+\frac{\mathrm dQ}{\mathrm d\zeta}=\hat g(Q),
+\qquad Q(0)=q_0.
+\end{equation}
+
+程序使用\textbf{球面中点法}近似求解。对单位方向 \(q\) 和该处的单位切向 \(v\)，\(\operatorname{Exp}_q(hv)=q\cos h+v\sin h\) 表示沿球面大圆前进角度 \(h\)。\textbf{大圆}是过球心的平面与球面相交得到的圆。
+
+一次计算先沿起点梯度走半步，估计中点位置；再查询中点梯度，把它投回起点的切平面并归一化，用这个方向完成整步。这样既利用了中途的方向变化，也让新点留在球面上：
+
+\begin{equation}
+\label{eq:midpoint}
+\begin{aligned}
+q_m&=\operatorname{Exp}_{q_k}\bigl(\tfrac h2\hat g(q_k)\bigr),\\
+v_m&=\frac{(I-q_kq_k^\top)\hat g(q_m)}
+           {\|(I-q_kq_k^\top)\hat g(q_m)\|},\\
+q_{k+1}&=\operatorname{Exp}_{q_k}(h v_m).
+\end{aligned}
+\end{equation}
+
+每次初始尝试的角步长最多为 \(0.8^\circ\)。程序不仅检查步长两端，还检查起点到中点、中点到终点、起点到终点这三条球面短弧经过的格。它还要求势值满足 \(\tilde\phi(q_{k+1})>\tilde\phi(q_k)-10^{-12}\)，并具有足够的角进度。检查失败时，程序会尝试把步长减半后重算。
+
+每个成功短弧的角长度用 \(\operatorname{atan2}(\|q_k\times q_{k+1}\|,q_k^\top q_{k+1})\) 计算，再逐段累加为总转角。只有到达出口标记格，整条曲线才被接收。弱梯度、未知区域、障碍和其他失败都可能使积分提前停止。如果起点已经位于出口格，也可能得到转角为零的有效结果。
+
+例如，无人机正在向东飞，期望改向北方。此时 \(Q\) 可以表示“向东、略偏东北、再逐渐向北”这样一列方向。它描述了方向怎样变化；实际在什么位置开始转、转弯占据多少空间，还要由下一步的空间参考构造确定。 \sourceref{S28}{球面积分与接受条件} · \sourceref{S29}{角长度计算}
+
+\begin{point}{由方向曲线生成三维空间参考}
+\end{point}
+\subsubsection*{6.1 离散方向的平滑连接}
+
+方向积分得到的 \(Q\) 是离散点列。为了在任意转向进度查询方向，程序用三次 Hermite 曲线段连接相邻点，并根据相邻方向估计公共节点处的单位切向 \(t_i\)。
+
+对于端点方向为 \(q_i,q_{i+1}\)、球面角距为 \(h_i\) 的一段，同一条三次曲线可以写成 Bézier 形式，其四个控制点为
+
+\begin{equation}
+\label{eq:control-points}
+(b_0,b_1,b_2,b_3)=
+\bigl(q_i,\ q_i+\tfrac{h_i}{3}t_i,\
+q_{i+1}-\tfrac{h_i}{3}t_{i+1},\ q_{i+1}\bigr).
+\end{equation}
+
+\textbf{Bézier 控制点}用于确定一段曲线的形状。第一个和最后一个控制点确定端点，中间两个控制点决定曲线以什么切向离开起点、进入终点。段内参数 \(u\in[0,1]\) 从 0 走到 1，就表示从这一段的起点走到终点。
+
+程序先计算三次曲线 \(B(u)\)，再把结果归一化，使方向始终落在单位球面上：
+
+\begin{equation}
+\label{eq:normalize}
+\begin{gathered}
+B(u)=(1-u)^3 b_0+3u(1-u)^2b_1+3u^2(1-u)b_2+u^3b_3,
+\\
+q(u)=\frac{B(u)}{\|B(u)\|}.
+\end{gathered}
+\end{equation}
+
+段内参数走过相同比例，并不一定对应相同转角。为了按真实转角查询，程序数值计算角长度积分 \(\int_0^u\|q'(\xi)\|\,\mathrm d\xi\)，并加上前面各段的角长度。查询时，再根据给定的累计角 \(\zeta\) 反查段内参数 \(u\)。
+
+这个按球面弧长重新编号的连续方向曲线记为 \(\widehat Q(\zeta)\)。对于非零长度的段，按定义有 \(\|\widehat Q'(\zeta)\|=1\)，意思是参数每增加一单位转角，曲线也走过同样大小的球面弧长。实现采用数值求积，并在查询中保留误差界。过近的重复点会被跳过；反向连接存在歧义、出现尖点或不满足正则条件的插值会被拒绝。这里的正则条件用于保证曲线方向及其变化可以被正常计算。
+
+平滑连接后的曲线可能偏离原来的积分短弧，所以原点列通过检查还不够。程序会对\textbf{平滑后的整段方向曲线}重新检查 \(\Omega\) 覆盖。它先利用控制点限定每一段可能经过的方向范围，必要时把曲线继续细分，再检查这些范围所覆盖的格。 \sourceref{S30}{连续方向曲线} · \sourceref{S31}{连续角域检查} · \sourceref{S32}{检查接线}
+
+\subsubsection*{6.2 曲率与转向长度的安排}
+
+\textbf{切向}表示沿曲线前进时的方向。\textbf{曲率}表示每走一米，这个方向改变得有多快；曲率越大，转弯越急。
+
+以恒速 \(V\) 沿半径 \(R\) 的圆弧运动时，曲率为 \(1/R\)，垂直于运动方向的法向加速度为 \(V^2/R\)。项目采用 \(80\,\mathrm{m/s^2}\) 作为参考曲线的转向设计值，据此确定最大曲率和最小转弯半径：
+
+\begin{equation}
+\label{eq:curvature}
+\kappa(s)=\frac{\mathrm d\zeta}{\mathrm ds},\qquad
+\kappa_{\max}=\frac{80}{V^2}=\frac59\,\mathrm{m^{-1}},
+\qquad
+R_{\min}=\frac{1}{\kappa_{\max}}=1.80\,\mathrm m.
+\end{equation}
+
+转弯开始和结束时，曲率也需要逐渐变化。按 \(V=12\,\mathrm{m/s}\) 的速度和 \(0.10\,\mathrm s\) 的渐变时间设计，达到最大曲率所需的单侧渐变长度为 \(\ell_r=1.20\,\mathrm m\)。
+
+设 \(\zeta_e\) 是\textbf{平滑后方向曲线的累计转角}，\(a\) 是单侧曲率渐变段长度，\(b\) 是中间恒曲率段长度。程序让曲率从零线性增加，转角足够大时保持一段峰值，再线性降回零。对于正转角，具体安排如下：
+
+\begin{equation}
+\label{eq:profile}
+\begin{gathered}
+a=\min\!\left(\ell_r,\sqrt{\frac{\zeta_e\ell_r}{\kappa_{\max}}}\right),
+\qquad
+\kappa_p=\kappa_{\max}\frac{a}{\ell_r},
+\qquad\\
+b=\max(0,\zeta_e/\kappa_p-a),\\[3pt]
+\kappa(s)=
+\begin{cases}
+(\kappa_p/a)s,&0\le s<a,\\
+\kappa_p,&a\le s<a+b,\\
+(\kappa_p/a)(2a+b-s),&a+b\le s<2a+b,\\
+0,&s\ge 2a+b.
+\end{cases}
+\end{gathered}
+\end{equation}
+
+把每一小段的“每米转角”沿距离累加，就得到总转角 \(\zeta_e\)。因此，曲率随距离变化的图形面积等于累计转角，转向段的总长度为
+
+\begin{equation}
+\label{eq:turn-length}
+L_{\rm turn}=2a+b=
+\begin{cases}
+2\sqrt{\zeta_e\ell_r/\kappa_{\max}},&
+\zeta_e<\kappa_{\max}\ell_r,\\
+\zeta_e/\kappa_{\max}+\ell_r,&
+\zeta_e\ge\kappa_{\max}\ell_r.
+\end{cases}
+\end{equation}
+
+小转角用两个较短的渐变段即可完成，峰值也低于 \(\kappa_{\max}\)，无需先升到最大曲率。小于 \(10^{-12}\) rad 的转角在代码中按零长度转向段处理。
+
+例如，连续方向曲线 \(\widehat Q\) 的累计转角为 \(90^\circ\) 时，转向段长 \(L_{\rm turn}\approx4.027\,\mathrm m\)，以 \(12\,\mathrm{m/s}\) 匀速走完约需 \(0.336\,\mathrm s\)。这里使用的是沿整条方向曲线累加的转角。如果方向先上抬再回落，中途的转动同样要计入，不能只用起终方向之间的夹角代替。 \sourceref{S33}{曲率轮廓} · \sourceref{S04}{设计参数}
+
+\subsubsection*{6.3 从切向计算世界系位置}
+
+现在已经知道转向的形状，也安排好了每米转多少角度。\textbf{弧长}就是沿曲线走过的距离。走到弧长 \(s\) 时，程序先计算累计转角，再查询对应方向并旋转到世界坐标系，最后沿这些方向积分得到位置：
+
+\begin{equation}
+\label{eq:spatial}
+\begin{aligned}
+\zeta(s)&=\int_0^s \kappa(u)\,\mathrm du,\\
+T_W(s)&=R_o\widehat Q(\zeta(s)),\\
+\gamma_W(s)&=p_a+\int_0^s T_W(u)\,\mathrm du,\\
+\mathbf K_W(s)&=\frac{\mathrm dT_W}{\mathrm ds}
+=R_o\widehat Q'(\zeta(s))\,\kappa(s).
+\end{aligned}
+\end{equation}
+
+这四行公式依次给出转角进度、世界系切向、世界系位置和曲率向量。\(p_a\) 是\textbf{空间锚点}，也就是这条空间曲线从哪里开始；首次生成通常取当前位置，切换时可以取旧参考上的连接位置。\(\mathbf K_W\) 是\textbf{曲率向量}，既表示转弯有多急，也表示朝哪边弯。
+
+位置、切向和曲率来自同一条连续曲线。为便于快速查询，程序建立间隔为 \(0.05\,\mathrm m\) 的位置表，并额外插入曲率分段的连接点。每个区间用 16 点复合中点法近似积分，也就是在区间内取多个小段中点，用中点处的切向累加位移，同时保存位置误差界。查询并不限于表中的节点，节点之间也能计算。
+
+转向结束后，参考沿末端切向继续接直线，正常参考不会因为到达转向段末端就强制停车。\(4\,\mathrm m\) 限制的是当前观测证据范围，\(L_{\rm turn}\) 描述的是完成转向需要走过的距离。较长的曲线可以先构造出来，但其中哪些部分能够用于执行，还要由后续观测检查决定。
+
+如果只演示从锚点出发、按恒速前进的名义轨迹，可以写成 \(\gamma_W(Vt)\)。实际跟踪时，进度 \(s\) 由当前状态和曲线投影更新，不能只按时间向前累加。 \sourceref{S34}{位置表与连接点} · \sourceref{S35}{位置、直线尾段与曲率查询} · \sourceref{S36}{积分和误差界}
+
+\clearpage
+\topicgroup{三、净空检查与跟踪控制}{reviewPurple}
+\begin{point}{使用原始深度检查空间管道}
+\end{point}
+\subsubsection*{7.1 连续管道与覆盖球}
+
+机体中心能沿一条曲线通过，并不代表整个机体都有足够空间。这里的\textbf{占用管道}是沿参考曲线放置半径为 \(r_{\rm env}\) 的球后形成的空间区域，它同时计入机体尺寸和预留的跟踪误差。
+
+检查时把参考分成若干小段。对弧长区间 \([s_0,s_1]\)，令 \(h=s_1-s_0\)，两端的位置为 \(p_0,p_1\)。程序用一个更大的\textbf{覆盖球}包住这段连续管道，球心和半径计算为
+
+\begin{equation}
+\label{eq:ball}
+c_{\rm cover}=\frac{p_0+p_1}{2},\qquad
+r_{\rm cover}
+=r_{\rm env}+\frac{\|p_1-p_0\|}{2}
++\frac{K_{\rm bound}h^2}{8}+\epsilon_{\rm pos}.
+\end{equation}
+
+\textbf{弦}是连接曲线两端点的直线段。以上覆盖球放在弦的中点，半径中的半弦长用于包住整条端点连线；\(K_{\rm bound}h^2/8\) 再覆盖曲线偏离直线的部分。\(\epsilon_{\rm pos}\) 用来计入位置计算误差，取两端误差界的较大值并加上舍入余量。机体和跟踪误差所需的包络也已包含在半径中。
+
+程序令 \(K_{\rm bound}\) 等于 \(\kappa_{\max}\) 乘参考旋转的范数上界，用于保守估计弯曲程度。只有在计入累计角长误差后仍能确认该段已经进入直线尾段，弯曲项才取零。覆盖球比实际管道更大，因而检查较为保守，有时会拒绝实际能够通过的窄空间。 \sourceref{S37}{连续覆盖球}
+
+\subsubsection*{7.2 将覆盖球投回真实相机}
+
+覆盖球描述的是实际空间位置，需要与相机真正拍到的位置对应。因此，这一步使用每台相机的真实安装位置和朝向。程序先把球心从世界坐标系转到拍摄时的机体坐标系，再转到相机坐标系：
+
+\begin{equation}
+\label{eq:frames}
+c_B=R_o^\top(c_{\rm cover}-p_o),\qquad
+c_C=R_{BC}^\top(c_B-t_{BC}),
+\end{equation}
+
+其中 \(p_o\) 是拍摄时的机体位置，\(t_{BC}\) 是相机光心在机体中的安装位置。位置变换既要旋转，也要扣除这两个平移量。程序还对数值变换的范数留出余量，以保守地处理球的半径。
+
+若机体系下的球半径为 \(r_B\)，而 \(\|c_B\|+r_B>4\,\mathrm m\)，说明这个球至少有一部分超出了有效观测范围，检查直接返回超范围。
+
+把覆盖球投影到图像上，就能确定需要读取哪些像素。程序用一个矩形包住投影区域，这个矩形称为\textbf{ROI}，即感兴趣区域。
+
+设相机系下的球半径为 \(r_C\)，它沿光轴占据的深度区间为 \([c_{C,z}-r_C,c_{C,z}+r_C]\)，近端和远端分别记作 \(Z_{\rm ball,near}\) 与 \(Z_{\rm ball,far}\)。如果 \(c_{C,z}\le r_C\)，球会触及或跨过相机光心所在的深度平面，程序不进行这里的球投影计算。
+
+投影边缘对应恰好与球相切的视线。对图像横轴或纵轴中的一个，令 \(a\) 为相机内参相应一行的前两个系数，\(k_0\) 为该行的主点偏移。为简化表达，记 \(m=a^\top(c_{C,x},c_{C,y})^\top\)、\(D=c_{C,z}^2-r_C^2\)。该轴上包住球投影的两个边界像素坐标为
+
+\begin{equation}
+\label{eq:image-bounds}
+\mathrm{pixel}_{\pm}=k_0+
+\frac{m c_{C,z}\ \pm\ r_C\sqrt{\max(0,m^2+\|a\|^2D)}}{D}.
+\end{equation}
+
+横轴和纵轴分别计算一次，再向外取整，就得到需要查询的矩形窗口。如果投影超出画面，程序会裁掉画面外的部分，同时保留“投影是否完整”的标记。\textbf{能查到部分像素，不等于看到了整个覆盖球。}
+
+\begin{itemize}
+\item \textbf{确认净空。} 净空表示这段占用空间有足够证据表明没有障碍。 至少一路相机必须完整看见这个球的投影。该相机的\textbf{近裁面}，即它能提供证据的最近光轴深度，必须已知且为有限正数，球的近端须位于近裁面或更远处。ROI 内原始深度须全部有效，且满足 \(\min_{\rm ROI}Z_{\rm raw}>Z_{\rm ball,far}\)。
+\item \textbf{疑似障碍优先否决。} 任何相机只要成功投影，包括部分落在画面内的相机，若补值 ROI 的最小深度 \(\min_{\rm ROI}Z_{\rm filled}\le Z_{\rm ball,far}\)，就优先返回疑似障碍。
+\item \textbf{保留未知。} 如果没有相机发现疑似障碍，但也没有任何一路满足完整净空条件，结果就是未知。两台相机各看见一部分，不能在这里拼成完整净空证明。
+\end{itemize}
+
+完成这些检查后，需要区分三件事：曲线是否已经构造出来，某一小段是否有完整净空证据，以及下一步实际运动是否已经通过检查。前一项成功不能代替后一项。
+
+全管道诊断会在计算出的观测检查范围内逐段记录状态；滚动执行则优先检查当前位置附近、下一步需要使用的参考前缀。\textbf{参考前缀}在这里指从当前检查起点开始连续得到证据的一段，中间不能跳过未知区间。 \sourceref{S38}{真实相机球投影} · \sourceref{S39}{原图净空与否决规则} · \sourceref{S40}{全管道诊断接线}
+
+\begin{point}{空间参考的跟踪与滚动执行}
+\end{point}
+\subsubsection*{8.1 外层跟踪与恒速纠偏}
+
+\textbf{跟踪}就是根据实际位置和速度不断修正运动，使无人机贴近参考曲线。这里介绍的正常跟踪分支用于已接近巡航状态的情况。首次接入要求实际速率与 \(12\,\mathrm{m/s}\) 的差不超过 \(0.001\,\mathrm{m/s}\)，位置偏差不超过 \(0.10\,\mathrm m\)，运动方向偏差不超过 \(5^\circ\)。起步加速和异常停车由其他执行流程处理。 \sourceref{S41}{跟踪接入} · \sourceref{S42}{几何接入检查}
+
+外层控制首先要确定无人机现在对应参考上的哪一处。为减少搜索，它只在上次进度 \(s_{\rm prev}\) 附近查找，窗口为 \([\max(0,s_{\rm prev}-0.05),\,\min(s_{\rm cert},s_{\rm prev}+0.25)]\)，单位是米。其中 \(s_{\rm cert}\) 是现有证据允许使用的最远弧长。
+
+程序先在位置表中寻找最接近实际位置 \(x\) 的线段，再针对连续曲线最多做一次 \textbf{Newton 修正}。这种方法利用当前偏差和局部变化率估计更准确的位置。令 \(r=x-\gamma_W(s)\)；当最近点位于曲线内部时，位置差应当与切向垂直，即 \(r\cdot T=0\)，由此得到修正式
+
+\begin{equation}
+\label{eq:projection}
+s_{\rm new}=\operatorname{clamp}_{\rm window}\!
+\left(s+\frac{r\cdot T}{1-r\cdot\mathbf K}\right).
+\end{equation}
+
+式中的限制操作把修正后的进度保留在搜索窗口内。程序还会检查分母、修正后位置差与切向的正交残差，以及横向误差。
+
+这里的\textbf{横向误差}指垂直于当前三维切向的偏差，既可能包含左右偏移，也可能包含上下偏移。设 \(I\) 是三维单位矩阵，程序先提取这部分误差，再计算纠偏速度和沿参考前进的速度：
+
+\begin{equation}
+\label{eq:cross-track}
+\begin{gathered}
+e_\perp=(I-TT^\top)r,\qquad
+w=-k_e e_\perp,\\
+v_d=\sqrt{V^2-\|w\|^2}\,T+w,\qquad
+k_e=2\,\mathrm{s^{-1}}.
+\end{gathered}
+\end{equation}
+
+\(w\) 是指向参考曲线的纠偏速度，与单位切向 \(T\) 垂直。程序根据纠偏速度的大小调整切向分量，使两者合成后的目标速率仍为 \(V\)。这相当于在固定总速度中分出一部分用于回到参考，其余部分用于沿参考前进。
+
+横向误差加上位置误差界必须不超过 \(0.20\,\mathrm m\)。外层更新由累计的实际物理时间触发，目标周期为 5 ms。 \sourceref{S43}{外层更新} · \sourceref{S44}{投影与纠偏公式}
+
+\subsubsection*{8.2 内层方向控制与变化限幅}
+
+外层算出了期望速度，内层还要让当前运动方向平滑地转过去。令 \(d=v_d/V\) 为期望运动方向，\(h=v_k/\|v_k\|\) 为当前实际速度方向，\(\dot d\) 表示期望方向随时间的变化率。程序通过对外层跟踪公式直接求导得到这一变化率，这称为\textbf{解析求导}。
+
+当投影点位于曲线内部并满足最近点条件时，进度变化率和切向变化率分别使用 \(\dot s=(v_k\cdot T)/(1-r\cdot\mathbf K)\) 与 \(\dot T=\mathbf K\dot s\)。如果投影停留在参考起点，而实际位置仍在起点后方，程序令 \(\dot s=0\)，不把这一情况当作已经沿参考向前推进。
+
+下面的公式按顺序计算位置差、横向误差、纠偏速度和期望方向的变化率。变量上方的点表示对时间求导。记 \(V_\parallel=\sqrt{V^2-\|w\|^2}\) 为沿参考切向分配的速率，则
+
+\begin{equation}
+\label{eq:derivatives}
+\begin{aligned}
+\dot r&=v_k-T\dot s,\\
+\dot e_\perp&=\dot r-
+    (\dot r\cdot T+r\cdot\dot T)T-(r\cdot T)\dot T,\\
+\dot w&=-k_e\dot e_\perp,\qquad
+\dot V_\parallel=-\frac{w\cdot\dot w}{V_\parallel},\\
+\dot d&=(\dot V_\parallel T+V_\parallel\dot T+\dot w)/V.
+\end{aligned}
+\end{equation}
+
+方向变化还要满足执行限值。\(\operatorname{clip}_M(a)\) 表示\textbf{向量限幅}：方向保持不变，只把超过上限的模长缩小到 \(M\)；没有超限时保留原值。
+
+外层先计算期望角速度，内层再根据实际物理步长 \(\Delta t\) 限制角速度的变化量，最后旋转当前运动方向，得到下一步的速度目标：
+
+\begin{equation}
+\label{eq:rotation}
+\begin{aligned}
+\omega^*&=\operatorname{clip}_{10}\bigl(d\times\dot d
+                   +20\,h\times d\bigr),\\
+\omega_k&=\omega_{k-1}
+       +\operatorname{clip}_{100\Delta t}(\omega^*-\omega_{k-1}),\\
+v^*_{k+1}&=V\,\operatorname{Rot}(\omega_k\Delta t)\,h.
+\end{aligned}
+\end{equation}
+
+第一行包含两部分。\(d\times\dot d\) 是\textbf{前馈}，根据期望方向正在怎样变化，提前给出转向趋势；\(20\,h\times d\) 是\textbf{反馈}，根据当前方向与期望方向的偏差继续纠正。
+
+\(\operatorname{Rot}\) 表示绕角速度向量所指的轴旋转，转角为 \(\|\omega_k\|\Delta t\)，实现采用 Rodrigues 旋转公式。角速度上限为 \(10\,\mathrm{rad/s}\)，角加速度上限为 \(100\,\mathrm{rad/s^2}\)。前者限制方向每秒转得多快，后者限制这种转动速度每秒可以改变多少。 \sourceref{S45}{方向变化率和前馈反馈} · \sourceref{S46}{角加速度限幅和旋转}
+
+\subsubsection*{8.3 执行模型的逆补偿}
+
+执行模型收到速度输入后，实际速度不会立刻变成输入值，而是按响应时间逐步靠近。对于正常非零指令，并且执行加速度限制尚未触发的分支，下一步速度向输入 \(u_k\) 靠近的关系为
+
+\begin{equation}
+\label{eq:actuator}
+v_{k+1}=v_k+\lambda(u_k-v_k),\qquad
+\lambda=\min(1,\Delta t/\tau),\qquad \tau=0.10\,\mathrm s.
+\end{equation}
+
+如果直接把速度目标作为输入，模型的响应滞后会使下一步达不到目标。\textbf{逆补偿}利用已知模型反推需要发送的输入：希望下一步达到 \(v^*_{k+1}\)，就把上式反解为
+
+\begin{equation}
+\label{eq:compensation}
+u_k=v_k+\frac{v^*_{k+1}-v_k}{\lambda}.
+\end{equation}
+
+因此，当实际速度目标为 \(12\,\mathrm{m/s}\) 时，内部补偿输入的模长可能超过 12 m/s。这是为了补偿模型响应，并不表示把正常飞行速率目标提高了。
+
+补偿结果仍需通过能力检查。下一步所需的速度变化不能超过 \(150\,\mathrm{m/s^2}\) 乘实际步长；内部输入模长不能超过 \(17\,\mathrm{m/s}\)；相邻输入的变化率不能超过 \(450\,\mathrm{m/s^2}\)。任何一项超限，或者补偿输入接近零，程序都会拒绝这个正常跟踪步。
+
+这里有几组用途不同的加速度参数。\(80\,\mathrm{m/s^2}\) 用于设计参考曲率，\(150\,\mathrm{m/s^2}\) 用于校验执行模型的能力；旧的 \(20\,\mathrm{m/s^2}\) 参考指令限幅则属于另一配置项，不能把它们当成同一个参数。 \sourceref{S46}{逆补偿与拒绝条件} · \sourceref{S47}{模型反馈夹具} · \sourceref{S04}{参数定义}
+
+\subsubsection*{8.4 滚动续证、参考切换和下一步安全复核}
+
+\textbf{滚动续证}是随着无人机前进，用新深度图重新检查旧参考前方的一小段。只要原参考仍然适用，就可以继续跟踪，减少重新求场和构造曲线的次数。
+
+每收到一个新深度组，程序先更新图像数据，再从当前进度 \(s\) 向后退 \(0.05\,\mathrm m\)，对齐到位置网格，并保证检查起点不小于零。向前最多检查到 \(s+0.35\,\mathrm m\)；一旦遇到没有净空证据的小段，就在那里截断，不能跳过去继续累积可用长度。
+
+如果期望方向相对当前参考采用的方向意图变化不超过 \(1^\circ\)，且证据已经连续覆盖到 \(s+V\Delta t\)，本周期可以跳过求场和空间参考重建。证据最长使用 10 ms 仿真时间。收到相同状态时间戳时可以更新证据，但不重复执行控制步。
+
+滚动层把相邻实际状态的时间戳差作为 \(\Delta t\)，首步采用配置的 5 ms。若间隔超过一个配置物理步、状态过期或时钟回退，程序会进入对应的保护或重置流程。
+
+需要更换参考时，程序先核对连接处的\textbf{位置、切向和曲率向量}。这些检查分别关注是否接在同一位置、前进方向是否衔接、转弯状态是否连续，随后还要核对接入条件和新参考的净空证据。
+
+切换成功后，累计进度、上一步角速度和补偿输入都会继续保留。新曲线从零曲率开始，因此旧参考仍处于非零曲率弯道时，需要等待合适的连接位置。如果旧参考也已经缺少有效证据，就进入保护流程。
+
+参考前方已有净空证据之后，还要检查实际速度候选会把机体带到哪里。程序用 \(p_1=x+v^*_{k+1}\Delta t\) 预测下一步机体中心。\textbf{扫掠空间}是机体沿这一小步运动时占据的全部空间。
+
+程序要求至少一个已经通过净空检查的覆盖球，同时包住本步起点和终点的机体球：
+
+\begin{equation}
+\label{eq:sweep}
+\max\bigl(\|x-c_{\rm cover}\|,\ \|p_1-c_{\rm cover}\|\bigr)
++r_{\rm body}\le r_{\rm cover}.
+\end{equation}
+
+球是\textbf{凸集}，即球内任意两点之间的线段也在球内。因此，同一个覆盖球满足上述条件时，也能包住机体沿两端点连线运动的整步扫掠。检查失败则返回保护状态。
+
+在这里描述的 ROS \texttt{--track-rolling} 诊断入口中，结果用于记录速度候选和保护状态，运动发布数为零。后面的实验部分会另行说明 R05 专用仿真入口的验证范围。 \sourceref{S48}{续证窗口和切换验收} · \sourceref{S49}{扫掠计算} · \sourceref{S50}{调度与保护} · \sourceref{S51}{ROS 输出}
+
+\clearpage
+\topicgroup{四、方法对照与实验验证}{reviewGreen}
+\begin{point}{EGO4P2 与三维 FLARE 的实现对照}
+\end{point}
+两种方法都先构造调和势，再沿梯度积分。主要差别在于求场的位置：FLARE 在三维位置空间中计算，EGO4P2 在单位方向球面上计算。因此，前者的积分曲线直接表示空间路径，后者还要把方向变化转换成以米为单位的位置曲线。
+
+FLARE 论文第 III 节先膨胀局部障碍，再从三维工作空间中移除这些障碍区域，形成粗、细自由域。该流程没有把 ESDF 列为建域步骤。\textbf{ESDF} 是一种距离表示，给空间位置记录到最近障碍的带符号欧氏距离；论文在讨论其他方法时提及它。 \sourceref{S52}{FLARE 论文第 III 节、图 2–3 与式 (2)–(11)}
+
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{0.19\linewidth}>{\raggedright\arraybackslash}p{0.37\linewidth}>{\raggedright\arraybackslash}p{0.37\linewidth}@{}}
+\caption{三维 FLARE 与 EGO4P2 的实现对照}\label{tab:flare}\\
+\toprule
+\textbf{对比环节} & \textbf{三维 FLARE} & \textbf{当前 EGO4P2} \\
+\midrule
+\endfirsthead
+\multicolumn{3}{l}{\small 三维 FLARE 与 EGO4P2 的实现对照（续）}\\
+\toprule
+\textbf{对比环节} & \textbf{三维 FLARE} & \textbf{当前 EGO4P2} \\
+\midrule
+\endhead
+\midrule
+\multicolumn{3}{r}{\small 接下页}\\
+\endfoot
+\bottomrule
+\endlastfoot
+场所在的位置 & 三维自由空间，变量 \(\xi\) 是一个米制位置。 & 二维单位球面，变量 \(d\) 是一个三维单位方向。 \\
+粗细边界 & 粗场外边界编码期望方向，细场自由耦合边界继承粗势值。 & 粗层用低势 0 与出口 1。默认细场用局部通道、独立低势和继承的出口标签。 \\
+积分起点 & 空间锚点 \(a_r\)。 & 实际速度方向或连接切向 \(q_0\)。 \\
+梯度积分输出 & 直接得到米制空间参考的几何路径。 & 得到累计转角参数下的方向曲线，还要通过曲率安排和位置积分生成空间参考。 \\
+跟踪纠偏 & 用穿过锚点的等势面建立横向坐标。 & 在上次进度附近投影到空间曲线，做横向反馈、方向限幅和执行模型补偿。 \\
+\end{longtable}
+
+\subsubsection*{9.1 FLARE 的势方程与积分曲线}
+
+用 \(W^c\) 表示粗工作空间，用 \(\Gamma_{cf}^{\rm free}\) 表示细场与粗场之间可以传递势值的自由耦合边界，用 \(q_{\rm cmd}\) 表示命令方向。下面两行分别给出粗场和细场的方程；每行左侧规定内部平衡，右侧规定边界取值：
+
+\begin{equation}
+\label{eq:flare-potential}
+\begin{aligned}
+\Delta_{\mathbb R^3}\phi^c&=0
+&&\text{在粗自由域内},&
+\phi^c|_{\partial W^c}&=q_{\rm cmd}^{\top}\xi,\\
+\Delta_{\mathbb R^3}\phi^f&=0
+&&\text{在细自由域内},&
+\phi^f|_{\Gamma_{cf}^{\rm free}}&=\phi^c|_{\Gamma_{cf}^{\rm free}},
+\end{aligned}
+\end{equation}
+
+粗、细两层面对障碍的边界均满足 \(\nabla\phi^{c,f}\cdot n=0\)。其中 \(n\) 是垂直于边界的法向，梯度在这个方向上的分量为零，表示不穿过障碍边界。
+
+每次更新势场后，论文在该更新区间使用梯度场 \(u_r(\xi)=\nabla_\xi\phi_r^f(\xi)\)，并由空间锚点 \(a_r\) 选定穿过该点的一条积分曲线。在梯度非零处，把梯度归一化只改变沿线推进的参数速度，不改变几何路径。EGO4P2 在方向球面上采用相似的积分过程，但还需经过问题 6 的空间积分，才能得到实际位置。 \sourceref{S52}{FLARE 式 (2)–(6)}
+
+\subsubsection*{9.2 FLARE 的 flow-box 跟踪}
+
+\textbf{等势面}由势值相同的空间点组成。FLARE 使用的 \textbf{flow-box 坐标}可以理解为：沿一束邻近流线建立局部坐标，用来区分沿线前进和横向偏离。
+
+具体做法是沿当前位置所在的流线，追溯到穿过锚点的等势面，再用交点在该面上的两个坐标描述横向位置。论文用 \(\Psi_r(\xi)\) 表示从空间点 \(\xi\) 所在流线找到的交点。\(E_r\) 的两列是该等势面在锚点处切平面的两个正交单位方向，用它们把三维位置差转换成两个横向坐标：
+
+\begin{equation}
+\label{eq:flow-box}
+\begin{gathered}
+\chi_r(\xi)=E_r^\top\bigl(\Psi_r(\xi)-a_r\bigr),\qquad\\
+\eta_r(t)=\chi_r(x(t)),\qquad J_r=D\chi_r.
+\end{gathered}
+\end{equation}
+
+\(J_r\) 是\textbf{Jacobian 矩阵}，中文常称雅可比矩阵，记录空间位置发生微小变化时，两个横向坐标分别会改变多少。\(J_r^\dagger\) 是这里使用的右伪逆，用于把需要的横向修正转换回三维速度。
+
+令 \(K_f\) 为论文中的正定反馈增益矩阵，用来设定各横向误差的纠正强度，并令 \(\hat u_r=u_r/\|u_r\|\) 表示单位梯度方向，速度指令为
+
+\begin{equation}
+\label{eq:flare-feedback}
+v_{\rm cmd}=v_t\hat u_r-J_r^\dagger K_f\eta_r,\qquad
+J_r^\dagger=J_r^\top(J_rJ_r^\top)^{-1}.
+\end{equation}
+
+当局部坐标有效、参考保持固定，并采用理想速度执行模型时，论文得到 \(\dot\eta_r=-K_f\eta_r\)。它表示横向误差按设定的反馈规律衰减，这个结论依赖上述条件。
+
+EGO4P2 使用问题 8 中定义的投影误差 \(e_\perp\)，并考虑离散执行、方向变化限值和响应补偿。两者都安排沿参考前进和横向纠偏，但误差的定义与控制方程不同，不能直接把论文的误差结论作为当前实现的验证结果。 \sourceref{S52}{FLARE 式 (7)–(11)}
+
+\begin{point}{已有实验结果与验证范围}
+\end{point}
+阅读实验结果时，需要先区分测试对象和计时范围。\textbf{闭环}表示执行后的实际位置、速度会返回控制器，参与下一步命令的计算。模型闭环可以检查控制逻辑与指定模型是否配合，仿真飞行则还包含传感器、通信和场景交互。
+
+\textbf{FIFO5} 表示相关测试中的五个算法线程使用 Linux 的 \texttt{SCHED\_FIFO} 调度策略、优先级为 5，四路相机线程与协调线程分别绑定 CPU。它描述线程怎样获得处理器时间，本身不代表每次计算都能满足时限。
+
+\textbf{P99} 是 99\% 样本位于其下或与之相等的耗时统计位置，用于观察较慢的那部分运行。\textbf{最大值}则是这批样本中最慢的一次。汇报这些指标时，还要说明样本来源、计时包含的阶段，以及超过 5 ms 预算的次数。
+
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{0.21\linewidth}>{\raggedright\arraybackslash}p{0.40\linewidth}>{\raggedright\arraybackslash}p{0.32\linewidth}@{}}
+\caption{模型、ROS 回放和 Isaac Sim 的验证范围}\label{tab:experiments}\\
+\toprule
+\textbf{证据} & \textbf{已有结果} & \textbf{这组证据覆盖的范围} \\
+\midrule
+\endfirsthead
+\multicolumn{3}{l}{\small 模型、ROS 回放和 Isaac Sim 的验证范围（续）}\\
+\toprule
+\textbf{证据} & \textbf{已有结果} & \textbf{这组证据覆盖的范围} \\
+\midrule
+\endhead
+\midrule
+\multicolumn{3}{r}{\small 接下页}\\
+\endfoot
+\bottomrule
+\endlastfoot
+第 5 步模型闭环与 FIFO5 & 8,400 个模型周期中，8,328 个跳过求场，续证加跟踪平均 \(0.858\) ms，P99 \(1.230\) ms，最大 \(1.506\) ms。72 个含规划周期平均 \(4.293\) ms，最大 \(6.467\) ms，12 次超过 5 ms。 & 模型用几何观测谓词提供净空证据。12 次超时均在首次规划。 \\
+ROS 原始深度回放 & 实测接收 10 个完整组，经历一次时钟回退。近场原图净空不足时进入保护，运动发布数为零。 & 验证输入链、保护和重置行为。 \\
+R05 Isaac Sim 隔离引导飞行 & \(41.50\) 仿真秒，\(308.925\,\mathrm m\)，独立检查 \(8{,}300\) 步扫掠零重叠，终点误差 \(0.169\,\mathrm m\)，最终速度为零。 & 使用历史路线做几何引导、四路实时深度、独立碰撞复核，以及实验专用起停和引导控制。只给终点的自主对照未完成。 \\
+R05 滚动分支计时 & 552 个有完整分段计时的周期平均 \(1.175\) ms，P99 \(3.618\) ms，最大 \(4.914\) ms，0 次超过 5 ms。 & 五线程普通调度。其余 7,648 个引导控制周期和外层安全复核缺对应的完整分段计时。整轮飞行的 5 ms 算法时限仍待完整测量。 \\
+\end{longtable}
+
+R05 中的\textbf{5 ms 是仿真物理步长}，表示仿真状态每次向前推进的时间。\textbf{墙钟时间}是现实中实际经过的时间；该轮平均每个飞行步约需 18.60 ms，包含渲染、通信、控制和独立碰撞复核。
+
+该实验的 Isaac 深度入口还对“射线没有命中物体”作了专门适配。程序先确认各相机的远裁面大于 \(4.5\,\mathrm m\)，才把该渲染器返回的 \texttt{+Inf} 无命中值映射成 \(4.5\,\mathrm m\) 的光轴深度，局部净空查询仍限制在 \(4\,\mathrm m\) 内。这属于实验入口的特定处理；问题 2 介绍的通用深度预处理仍按其原有规则判断异常像素。
+
+展示视频使用已验收的 R05 飞行轨迹，在原 Isaac Sim 场景中重新渲染。表中的飞行成绩来自原始运行日志和独立审计，视频回放本身不构成一次新的闭环飞行验证。 \sourceref{S53}{第 5 步实现和计时} · \sourceref{S54}{R05 实验、计时和视频}
+\clearpage
+\section*{源码、论文与实验索引}
+\addcontentsline{toc}{section}{源码、论文与实验索引}
+以下项目相对路径以 \path|/home/starry/isaac-data/EGO4P2/docs/| 为基准，行号对应原讲解稿核对的源码版本。本文移动到下载目录或 Overleaf 后，路径仍用于定位原项目文件；本次文字整理未重新验证源码版本或实验结果。
+\begingroup\small
+\begin{description}[style=multiline,leftmargin=3.1em,labelwidth=2.5em,itemsep=0.3em]
+\sourceentry{S01}{构建接线}\par \path|../src/new_controller/CMakeLists.txt|，第 21 行
+\sourceentry{S02}{当前项目检查点}\par \path|CURRENT_CHECKPOINT.json|
+\sourceentry{S03}{基础参数}\par \path|../candidates/ldlt_parallel/new_controller/include/new_controller/base_config.hpp|，第 5 行
+\sourceentry{S04}{导航参数}\par \path|../candidates/ldlt_parallel/new_controller/include/new_controller/navigation_config.hpp|，第 5 行
+\sourceentry{S05}{四路接收与对时}\par \path|../src/new_controller/src/navigation_input.cpp|，第 24 行
+\sourceentry{S06}{输入身份与校验}\par \path|../candidates/ldlt_parallel/new_controller/include/new_controller/navigation_pipeline.hpp|，第 69 行
+\sourceentry{S07}{射线查表}\par \path|../candidates/ldlt_parallel/new_controller/include/new_controller/depth_preprocess.hpp|，第 49 行
+\sourceentry{S08}{虚拟环视查表}\par \path|../candidates/ldlt_parallel/new_controller/include/new_controller/depth_virtual_panorama.hpp|，第 45 行
+\sourceentry{S09}{邻域补值}\par \path|../candidates/ldlt_parallel/new_controller/include/new_controller/depth_preprocess.hpp|，第 19 行
+\sourceentry{S10}{两级摘要和区域查询}\par \path|../candidates/ldlt_parallel/new_controller/include/new_controller/depth_observations.hpp|，第 204 行
+\sourceentry{S11}{近块判定}\par \path|../candidates/ldlt_parallel/new_controller/include/new_controller/depth_local_field.hpp|，第 20 行
+\sourceentry{S12}{分档与角窗口}\par \path|../candidates/ldlt_parallel/new_controller/include/new_controller/depth_virtual_panorama.hpp|，第 60 行
+\sourceentry{S13}{四路合并和三态判定}\par \path|../candidates/ldlt_parallel/new_controller/include/new_controller/depth_local_field.hpp|，第 80 行
+\sourceentry{S14}{球面网格}\par \path|../candidates/ldlt_parallel/new_controller/include/new_controller/harmonic_solver.hpp|，第 8 行
+\sourceentry{S15}{粗格观测来源}\par \path|../candidates/ldlt_parallel/new_controller/include/new_controller/harmonic_planner.hpp|，第 134 行
+\sourceentry{S16}{球面权重}\par \path|../candidates/ldlt_parallel/new_controller/include/new_controller/harmonic_solver.hpp|，第 14 行
+\sourceentry{S17}{域外面处理}\par \path|../candidates/ldlt_parallel/new_controller/include/new_controller/grounded_system.hpp|，第 19 行
+\sourceentry{S18}{起点来源}\par \path|../candidates/ldlt_parallel/new_controller/include/new_controller/navigation_pipeline.hpp|，第 102 行
+\sourceentry{S19}{连通域与出口}\par \path|../candidates/ldlt_parallel/new_controller/include/new_controller/harmonic_planner.hpp|，第 51 行
+\sourceentry{S20}{边界帽}\par \path|../candidates/ldlt_parallel/new_controller/include/new_controller/harmonic_adaptive.hpp|，第 32 行
+\sourceentry{S21}{粗格聚合}\par \path|../candidates/ldlt_parallel/new_controller/include/new_controller/harmonic_adaptive.hpp|，第 41 行
+\sourceentry{S22}{局部通道与重试}\par \path|../candidates/ldlt_parallel/new_controller/include/new_controller/harmonic_planner.hpp|，第 70 行
+\sourceentry{S23}{细场边界分支}\par \path|../candidates/ldlt_parallel/new_controller/include/new_controller/harmonic_planner.hpp|，第 162 行
+\sourceentry{S24}{稀疏装配}\par \path|../candidates/ldlt_parallel/new_controller/include/new_controller/grounded_system.hpp|，第 14 行
+\sourceentry{S25}{LDLT 后端}\par \path|../candidates/ldlt_parallel/new_controller/src/sparse_trial_backend.cpp|
+\sourceentry{S26}{严格缓存与残差}\par \path|../candidates/ldlt_parallel/new_controller/include/new_controller/trial_field_solver.hpp|，第 78 行
+\sourceentry{S27}{Hermite 插值和极区分支}\par \path|../candidates/ldlt_parallel/new_controller/include/new_controller/harmonic_direction_field.hpp|，第 10 行
+\sourceentry{S28}{球面积分与接受条件}\par \path|../candidates/ldlt_parallel/new_controller/include/new_controller/harmonic_curve.hpp|，第 84 行
+\sourceentry{S29}{角长度计算}\par \path|../candidates/ldlt_parallel/new_controller/include/new_controller/harmonic_curve_evidence.hpp|，第 75 行
+\sourceentry{S30}{连续方向曲线}\par \path|../candidates/ldlt_parallel/new_controller/include/new_controller/spatial_reference.hpp|，第 23 行
+\sourceentry{S31}{连续角域检查}\par \path|../candidates/ldlt_parallel/new_controller/include/new_controller/reference_occupancy.hpp|，第 20 行
+\sourceentry{S32}{检查接线}\par \path|../candidates/ldlt_parallel/new_controller/include/new_controller/navigation_pipeline.hpp|，第 172 行
+\sourceentry{S33}{曲率轮廓}\par \path|../candidates/ldlt_parallel/new_controller/include/new_controller/spatial_reference.hpp|，第 161 行
+\sourceentry{S34}{位置表与连接点}\par \path|../candidates/ldlt_parallel/new_controller/include/new_controller/spatial_reference.hpp|，第 183 行
+\sourceentry{S35}{位置、直线尾段与曲率查询}\par \path|../candidates/ldlt_parallel/new_controller/include/new_controller/spatial_reference.hpp|，第 228 行
+\sourceentry{S36}{积分和误差界}\par \path|../candidates/ldlt_parallel/new_controller/include/new_controller/spatial_reference.hpp|，第 296 行
+\sourceentry{S37}{连续覆盖球}\par \path|../candidates/ldlt_parallel/new_controller/include/new_controller/reference_occupancy.hpp|，第 87 行
+\sourceentry{S38}{真实相机球投影}\par \path|../candidates/ldlt_parallel/new_controller/include/new_controller/depth_local_geometry.hpp|，第 98 行
+\sourceentry{S39}{原图净空与否决规则}\par \path|../candidates/ldlt_parallel/new_controller/include/new_controller/reference_occupancy.hpp|，第 58 行
+\sourceentry{S40}{全管道诊断接线}\par \path|../candidates/ldlt_parallel/new_controller/include/new_controller/navigation_pipeline.hpp|，第 184 行
+\sourceentry{S41}{跟踪接入}\par \path|../candidates/ldlt_parallel/new_controller/include/new_controller/fixed_reference_tracker.hpp|，第 34 行
+\sourceentry{S42}{几何接入检查}\par \path|../candidates/ldlt_parallel/new_controller/include/new_controller/spatial_reference.hpp|，第 280 行
+\sourceentry{S43}{外层更新}\par \path|../candidates/ldlt_parallel/new_controller/include/new_controller/fixed_reference_tracker.hpp|，第 66 行
+\sourceentry{S44}{投影与纠偏公式}\par \path|../candidates/ldlt_parallel/new_controller/include/new_controller/fixed_reference_tracker.hpp|，第 146 行
+\sourceentry{S45}{方向变化率和前馈反馈}\par \path|../candidates/ldlt_parallel/new_controller/include/new_controller/fixed_reference_tracker.hpp|，第 182 行
+\sourceentry{S46}{角加速度限幅和旋转}\par \path|../candidates/ldlt_parallel/new_controller/include/new_controller/fixed_reference_tracker.hpp|，第 82 行
+\sourceentry{S47}{模型反馈夹具}\par \path|../candidates/ldlt_parallel/new_controller/test/fixed_tracking_cases.hpp|，第 44 行
+\sourceentry{S48}{续证窗口和切换验收}\par \path|../candidates/ldlt_parallel/new_controller/include/new_controller/rolling_navigation.hpp|，第 29 行
+\sourceentry{S49}{扫掠计算}\par \path|../candidates/ldlt_parallel/new_controller/include/new_controller/rolling_navigation.hpp|，第 99 行
+\sourceentry{S50}{调度与保护}\par \path|../candidates/ldlt_parallel/new_controller/include/new_controller/rolling_navigation.hpp|，第 173 行
+\sourceentry{S51}{ROS 输出}\par \path|../src/new_controller/src/navigation_input.cpp|，第 200 行
+\sourceentry{S52}{FLARE 论文第 III 节、图 2–3 与式 (2)–(11)}\par \path|/home/starry/桌面/2027ICRA_FLARE.pdf|
+\sourceentry{S53}{第 5 步实现和计时}\par \path|performance/step5_rolling_20261107/REPORT.md|
+\sourceentry{S54}{R05 实验、计时和视频}\par \path|performance/r05_flight_20261107/REPORT.md|
+\end{description}
+\endgroup
+\end{document}

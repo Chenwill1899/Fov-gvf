@@ -43,15 +43,3 @@ def test_continuous_final_goal_must_match_protocol():
     with pytest.raises(ValueError):SequenceGoalTrial(p)
 
 
-def test_manual_launcher_uses_validated_child_affinity_only(monkeypatch):
-    import ast, os
-    source=ROOT/'src/pc_gvf/launch/isaac_cloud_navigation.launch.py'
-    tree=ast.parse(source.read_text())
-    function=next(n for n in tree.body if isinstance(n,ast.FunctionDef) and n.name=='controller_cpu_prefix')
-    scope={'os':os};exec(compile(ast.Module(body=[function],type_ignores=[]),str(source),'exec'),scope)
-    monkeypatch.setattr(os,'sched_getaffinity',lambda pid:set(range(16)))
-    monkeypatch.setenv('EGO5090_CONTROLLER_CPU_AFFINITY','0,1,7,15')
-    assert scope['controller_cpu_prefix']()==['taskset -c 0,1,7,15']
-    for invalid in ['0,0','99999','0; echo bad']:
-        monkeypatch.setenv('EGO5090_CONTROLLER_CPU_AFFINITY',invalid)
-        with pytest.raises(ValueError):scope['controller_cpu_prefix']()

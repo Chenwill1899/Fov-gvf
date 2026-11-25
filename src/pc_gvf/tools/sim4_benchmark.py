@@ -13,7 +13,7 @@ import time
 
 import numpy as np
 
-from speed_benchmark import MAPS, ROOT, audit as legacy_audit
+from speed_benchmark import MAPS, ROOT, audit as legacy_audit, terminal_report
 
 
 OUTPUT_ROOT = ROOT / 'docs/performance/p6_speed_20261019'
@@ -224,9 +224,9 @@ def audit_sensor_evidence(result, protocol, manifest, effective=None):
 
 def freeze_trial_evidence(result, protocol, command, environment):
     """Save content-addressed source/install bytes before starting this trial."""
-    install = Path(environment.get('FOV_GVF_INSTALL', '/home/starry/isaac-data/EGO2P6/docs/performance/runtime/install'))
+    install = Path(environment.get('FOV_GVF_INSTALL', '/home/starry/isaac-data/EGO4P4/docs/performance/runtime/install'))
     executable = Path(environment.get('FOV_GVF_CONTROLLER_EXECUTABLE',
-        '/home/starry/isaac-data/EGO2P6/docs/performance/runtime/install/pc_gvf/lib/pc_gvf/depth_angular_controller_goal'))
+        environment.get('EGO4P0_CONTROLLER_EXECUTABLE', '')))
     manifest_path = result.with_suffix('.manifest.json')
     if manifest_path.exists():
         raise RuntimeError('refusing to overwrite ' + str(manifest_path))
@@ -500,81 +500,7 @@ def audit_trial(result, scene, shape):
 
 
 def run(args):
-    goal_headless = os.environ.get('EGO2P6_GOAL_HEADLESS', '1')
-    if goal_headless not in ('0', '1'):
-        raise ValueError('EGO2P6_GOAL_HEADLESS must be 0 or 1')
-    goal_rviz = os.environ.get('EGO2P6_GOAL_RVIZ', 'true' if goal_headless == '0' else 'false').lower()
-    if goal_rviz not in ('true', 'false'):
-        raise ValueError('EGO2P6_GOAL_RVIZ must be true or false')
-    folder = args.out.resolve() / args.label
-    folder.mkdir(parents=True, exist_ok=True)
-    summary = folder / f'summary_r{args.repeat_start:02d}_n{args.repeats:02d}.json'
-    if summary.exists():
-        raise RuntimeError('refusing to overwrite ' + str(summary))
-    for repeat in range(args.repeat_start, args.repeat_start + args.repeats):
-        for map_name in args.maps:
-            stem = f'{map_name}_v{args.speed:g}_a{args.accel:g}_r{repeat:02d}'
-            if list(folder.glob(stem + '.*')) or (folder / (stem + '_replays')).exists():
-                raise RuntimeError('refusing to overwrite ' + str(folder / stem))
-    reports = []
-    for repeat in range(args.repeat_start, args.repeat_start + args.repeats):
-        for map_name in args.maps:
-            scene, shape, _ = MAPS[map_name]
-            stem = f'{map_name}_v{args.speed:g}_a{args.accel:g}_r{repeat:02d}'
-            result = folder / (stem + '.json')
-            if list(folder.glob(stem + '.*')) or (folder / (stem + '_replays')).exists():
-                raise RuntimeError('refusing to overwrite ' + str(result))
-            protocol = protocol_for(args, map_name)
-            protocol_path = result.with_suffix('.protocol.json')
-            write_json(protocol_path, protocol)
-            environment = dict(os.environ, ISAAC_MANUAL_INPUT_MODE='goal', ISAAC_HEADLESS=goal_headless,
-                FOV_GVF_RVIZ=goal_rviz, FOV_GVF_BENCHMARK_ALGORITHM='ego2p6',
-                FOV_GVF_SCENE_MODE='cloud', FOV_GVF_SCENE=str(scene),
-                FOV_GVF_ESDF_OCCUPANCY=str(scene.with_name('occupancy.bin')),
-                ISAAC_GOAL_PROTOCOL=str(protocol_path), ISAAC_BENCHMARK_RESULT=str(result),
-                ISAAC_ACCEPTANCE_TRACE=str(result.with_suffix('.csv')),
-                FOV_GVF_RUN_ID=f'ego2p6_sim4_{args.label}_{stem}',
-                FOV_GVF_PERFORMANCE_LOG=str(folder / 'PERFORMANCE.md'),
-                FOV_GVF_REPLAY_DIR=(str(folder / (stem + '_replays'))
-                    if os.environ.get('EGO2P6_RECORD_REPLAYS', '0') == '1' else ''),
-                FOV_GVF_EMERGENCY_CERTIFICATE='1' if args.emergency else '0',
-                FOV_GVF_COMMAND_FRAME='world', ISAAC_COMMAND_FRAME='world',
-                ISAAC_MANUAL_TIMEOUT='0', ISAAC_EXPLORATION_STALL_S=str(args.abort_stall),
-                ROS_DOMAIN_ID='42', FOV_GVF_WAIT_FOR_LOCK='1')
-            if args.camera_hfov is not None:
-                environment['ISAAC_DEPTH_HFOV_DEG'] = str(args.camera_hfov)
-            if args.camera_offset is not None:
-                environment['ISAAC_DEPTH_CAMERA_OFFSET_M'] = str(args.camera_offset)
-            command = ['bash', str(ROOT / 'scripts/run_isaac_fov_gvf_navigation.sh')]
-            manifest = freeze_trial_evidence(result, protocol, command, environment)
-            started = time.perf_counter()
-            print('START', args.label, stem, flush=True)
-            with result.with_suffix('.log').open('x') as stream:
-                child = subprocess.run(command,
-                    cwd=ROOT, env=environment, stdout=stream, stderr=subprocess.STDOUT)
-            process_wall_s = time.perf_counter() - started
-            finish_trial_evidence(result, manifest)
-            data = json.loads(result.read_text()) if result.exists() else dict(status='RUNTIME_ERROR')
-            data.update(process_exit_code=child.returncode, process_wall_s=process_wall_s,
-                driver_requested_environment={key: environment[key] for key in
-                    ('FOV_GVF_COMMAND_FRAME', 'ISAAC_COMMAND_FRAME', 'FOV_GVF_EMERGENCY_CERTIFICATE', 'ISAAC_DEPTH_HFOV_DEG', 'ISAAC_DEPTH_CAMERA_OFFSET_M') if key in environment})
-            write_json(result, data)
-            try:
-                report = audit_trial(result, scene, shape)
-            except Exception as error:
-                report = dict(audit_version='sim4_v6', result=str(result.relative_to(ROOT)),
-                    status=data['status'], safe_arrival=False, cap_attained=False, accepted=False,
-                    audit_error=str(error), rejection_reasons=['audit_error'])
-                write_json(result.with_suffix('.audit.json'), report)
-            reports.append(report)
-            # Unique repeat-indexed summaries allow further trials in this batch without overwriting evidence.
-            complete = len(reports) == len(args.maps) * args.repeats
-            write_json(summary, dict(all_accepted=bool(complete and all(r['accepted'] for r in reports)),
-                complete=complete, completed=len(reports), requested=len(args.maps) * args.repeats, reports=reports))
-            print('END', stem, json.dumps(report, allow_nan=False), flush=True)
-            if not report['accepted'] and args.stop_on_failure:
-                return 1
-    return 0 if reports and all(report['accepted'] for report in reports) else 1
+    raise RuntimeError("EGO4P0旧控制器运行调度已移除；离线审计与统计可继续导入，新算法需重新对接运行协议。")
 
 
 def parser():

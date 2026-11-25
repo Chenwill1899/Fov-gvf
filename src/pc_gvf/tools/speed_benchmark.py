@@ -19,8 +19,23 @@ BASE_PROTOCOL = ROOT / 'src/pc_gvf/config/navigation_protocol.json'
 # There is one current Cloud map. Historical maps live only in the merge archive.
 MAPS = {
     'original': (ROOT / 'scenes/ego_swarm_cloud/ego_swarm_cloud_navigation.usd',
-                 (1200, 300, 50), [384., 11.2, 2.8]),
+                 (1200, 300, 100), [384., 11.2, 2.8]),
 }
+
+
+def terminal_report(report):
+    """Show compute timings, then travel metrics, without changing report data."""
+    priority = (
+        'performance',
+        'sim_s', 'wall_s', 'path_m',
+        'requested_speed_mps', 'actual_peak_mps', 'actual_p95_mps',
+        'route_average_mps', 'actual_route_average_mps', 'mean_sample_speed_mps',
+        'time_at_95pct_cap_s', 'longest_at_95pct_cap_s',
+        'time_ge_3p8_s', 'longest_ge_3p8_s', 'stopped_s', 'longest_stop_s',
+    )
+    ordered = {key: report[key] for key in priority if key in report}
+    ordered.update((key, value) for key, value in report.items() if key not in ordered)
+    return ordered
 
 
 def audit(result, scene, shape):
@@ -114,57 +129,7 @@ def audit(result, scene, shape):
 
 
 def run(args):
-    folder = OUT / args.label
-    folder.mkdir(parents=True, exist_ok=True)
-    for speed in args.speeds:
-        stage_ok = True
-        for repeat in range(1, args.repeats + 1):
-            for name in args.maps:
-                scene, shape, goal = MAPS[name]
-                stem = f'{name}_v{speed:g}_r{repeat:02d}'
-                result = folder / (stem + '.json')
-                if result.exists() or result.with_suffix('.log').exists():
-                    raise RuntimeError('refusing to overwrite ' + stem)
-                protocol = json.loads(BASE_PROTOCOL.read_text())
-                protocol.update(version='ego2p1_speed_v1', max_speed_mps=speed, goal=goal,
-                    timeout_s=600., max_depth_m=args.depth,
-                    final_repeats=args.repeats,goal_proposal_cache=args.cache,restart_clearance_m=args.restart,
-                    goal_proposal_cache_ttl_s=args.cache_ttl,goal_speed_governor=args.governor)
-                protocol_path = folder / (stem + '.protocol.json')
-                protocol_path.write_text(json.dumps(protocol, indent=2) + '\n')
-                env = dict(os.environ, ISAAC_MANUAL_INPUT_MODE='goal', ISAAC_HEADLESS='1',
-                    FOV_GVF_RVIZ='false', FOV_GVF_BENCHMARK_ALGORITHM='ego2p6',
-                    FOV_GVF_SCENE=str(scene), ISAAC_GOAL_PROTOCOL=str(protocol_path),
-                    ISAAC_BENCHMARK_RESULT=str(result), ISAAC_ACCEPTANCE_TRACE=str(result.with_suffix('.csv')),
-                    FOV_GVF_RUN_ID=f'p2_speed_{args.label}_{stem}',
-                    FOV_GVF_PERFORMANCE_LOG=str(folder/'PERFORMANCE.md'),
-                    FOV_GVF_REPLAY_DIR=(str(folder/(stem+'_replays'))
-                        if os.environ.get('EGO2P6_RECORD_REPLAYS', '0') == '1' else ''), ISAAC_MANUAL_TIMEOUT='0',
-                    ISAAC_EXPLORATION_STALL_S=str(args.abort_stall),
-                    ROS_DOMAIN_ID='42', FOV_GVF_WAIT_FOR_LOCK='1')
-                if args.emergency:
-                    env['FOV_GVF_EMERGENCY_CERTIFICATE']='1'
-                start = time.perf_counter()
-                print('START', args.label, stem, flush=True)
-                with result.with_suffix('.log').open('w') as stream:
-                    child = subprocess.run(['bash', str(ROOT/'scripts/run_isaac_fov_gvf_navigation.sh')],
-                        cwd=ROOT, env=env, stdout=stream, stderr=subprocess.STDOUT)
-                data = json.loads(result.read_text()) if result.exists() else dict(status='RUNTIME_ERROR')
-                data.update(process_exit_code=child.returncode, process_wall_s=time.perf_counter()-start)
-                result.write_text(json.dumps(data, indent=2) + '\n')
-                try:
-                    report = audit(result, scene, shape)
-                except Exception as exc:
-                    report = dict(safe_arrival=False, status=data['status'], audit_error=str(exc))
-                    result.with_suffix('.audit.json').write_text(json.dumps(report, indent=2) + '\n')
-                print('END', stem, json.dumps(report), flush=True)
-                if not report['safe_arrival'] and args.stop_on_failure:
-                    print('STOP: profile rejected on this failed repeat; remaining repeats not run',flush=True)
-                    return
-                stage_ok &= report['safe_arrival'] and (not args.require_cap or report.get('cap_attained',False))
-        if not stage_ok and not args.continue_after_failure:
-            print('STOP: failed arrival or requested cap not attained; no automatic increase', flush=True)
-            break
+    raise RuntimeError("EGO4P0旧控制器运行调度已移除；离线审计与统计可继续导入，新算法需重新对接运行协议。")
 
 
 if __name__ == '__main__':

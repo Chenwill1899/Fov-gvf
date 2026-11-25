@@ -57,14 +57,24 @@ class TimedVelocitySample:
         return vector, sequence, age
 
 
+def actual_simulation_dt(previous: float, current: float, expected: float) -> float:
+    """Use observed simulation time; never enlarge or clamp a small physics step."""
+    dt = current - previous
+    if not all(math.isfinite(v) for v in (previous, current, expected)) or expected <= 0 or dt < 0:
+        raise ValueError("invalid simulation time")
+    if dt and not math.isclose(dt, expected, rel_tol=0., abs_tol=1e-8):
+        raise ValueError(f"actual physics interval {dt} differs from configured {expected}")
+    return dt
+
+
 def desired_velocity_from_direction(forward: float, left: float, vertical: float,
-                                    max_speed: float, max_z_speed: float) -> Vector3:
+                                    max_speed: float, max_z_speed: float | None = None) -> Vector3:
     """Encode one 3-D input direction and magnitude, without axis-wise speeds."""
     norm = math.sqrt(forward * forward + left * left + vertical * vertical)
     if norm <= 1.0e-9:
         return (0.0, 0.0, 0.0)
     scale = max_speed / max(1.0, norm)
-    if abs(vertical) * scale > max_z_speed:
+    if max_z_speed is not None and abs(vertical) * scale > max_z_speed:
         scale = max_z_speed / abs(vertical)
     return (scale * forward, scale * left, scale * vertical)
 

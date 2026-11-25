@@ -1,5 +1,7 @@
-# EGO2P6 规则入口
+# EGO4P5 工作约定
 
-本项目完整维护规则位于 [docs/AGENTS.md](docs/AGENTS.md)。
-处理本项目任何文件前必须阅读并遵守该文件；规则适用于整个 EGO2P6 目录。
-说明入口为 docs/README.md，项目日志为 docs/WORK_LOG.md，当前进度为 docs/CURRENT_CHECKPOINT.json。
+当前主版本是由二维深度图 B 版派生的 Isaac Sim 球面自动巡航。先读[项目首页](docs/README.md)、[项目状态](docs/PROJECT_STATUS.md) 和上级工作区 HISTORY 的记录规则。算法、构建与启动入口均在本目录维护。修改项目时同时更新 docs/WORK_LOG.md 与工作区 HISTORY/CHANGELOG.md。
+
+延续二维求解与三维飞行约定。四路原始深度的完整性和未知区域否决规则、原有逐拍扫掠和制动净空检查必须保留。默认正式复飞使用五个算法线程 SCHED_FIFO/5，协调线程在 CPU 0，四个相机线程在 CPU 1–4。按实际回读验收；调度不符时报错。仿真与监督器使用非实时调度；无需更改全局实时参数。
+
+项目提供模拟飞行入口。生产运动输出默认关闭。运行日志和渲染缓存由运行入口写至项目目录之外。

@@ -1,14 +1,15 @@
 #!/usr/bin/env bash
 set -eo pipefail
+/usr/bin/python3 -B "$(dirname -- "${BASH_SOURCE[0]}")/require_new_controller.py" >/dev/null
 
 # Sleeping OpenMP workers leave CPU time available for sensor rendering.
 export OMP_WAIT_POLICY="${OMP_WAIT_POLICY:-PASSIVE}"
 
-PROJECT_ROOT="/home/starry/isaac-data/EGO2P6"
+PROJECT_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 ISAAC_ROOT="/home/starry/isaac-data/isaacsim"
 source "$PROJECT_ROOT/scripts/environment.sh"
 HUMBLE_BRIDGE_LIB="$ISAAC_ROOT/exts/isaacsim.ros2.core/humble/lib"
-ROS_INSTALL="${FOV_GVF_INSTALL:-/home/starry/isaac-data/EGO2P6/docs/performance/runtime/install}"
+ROS_INSTALL="${FOV_GVF_INSTALL:-$PROJECT_ROOT/docs/performance/runtime/install}"
 INPUT_MODE="${ISAAC_MANUAL_INPUT_MODE:-joystick}"
 case "$INPUT_MODE" in
   joystick)
@@ -23,7 +24,6 @@ case "$INPUT_MODE" in
     ;;
   goal)
     test -f "${ISAAC_GOAL_PROTOCOL:?goal mode requires ISAAC_GOAL_PROTOCOL}"
-    : "${FOV_GVF_BENCHMARK_ALGORITHM:?select ego2p6, ego2p5, ego2p4, ego2p3, ego2p2, ego2p1, ego2p0, ego1p5, ego1p3, ego1p2, ego1p1, ego1p0 or user_ego}"
     : "${ISAAC_BENCHMARK_RESULT:?set result JSON path}"
     ;;
   trace)
@@ -83,10 +83,10 @@ if [[ -z "${FOV_GVF_ESDF_OCCUPANCY+x}" ]]; then
     unset FOV_GVF_ESDF_OCCUPANCY
   fi
 fi
-export ROS_LOG_DIR="${ROS_LOG_DIR:-/home/starry/isaac-data/EGO2P6/docs/performance/runtime/ros_log}"
+export ROS_LOG_DIR="${ROS_LOG_DIR:-$PROJECT_ROOT/docs/performance/runtime/ros_log}"
 export FOV_GVF_RUN_ID="${FOV_GVF_RUN_ID:-$(date +%Y%m%d_%H%M%S)}"
 # Keep full binary snapshots opt-in to prevent multi-GB diagnostic growth.
-if [[ "${EGO2P6_RECORD_REPLAYS:-0}" == 1 ]]; then
+if [[ "${EGO4P0_RECORD_REPLAYS:-0}" == 1 ]]; then
   export FOV_GVF_REPLAY_DIR="${FOV_GVF_REPLAY_DIR-$PROJECT_ROOT/docs/performance/runtime/replays/$FOV_GVF_RUN_ID}"
 else
   export FOV_GVF_REPLAY_DIR="${FOV_GVF_REPLAY_DIR-}"
@@ -147,10 +147,7 @@ if (( existing_publishers != 0 )); then
   exit 1
 fi
 
-LAUNCH_FILE=isaac_cloud_navigation.launch.py
-if [[ "$INPUT_MODE" == goal ]]; then
-  LAUNCH_FILE=navigation_benchmark.launch.py
-fi
+LAUNCH_FILE=controller_interface.launch.py
 setsid ros2 launch pc_gvf "$LAUNCH_FILE" rviz:="$FOV_GVF_RVIZ" &
 ROS_LAUNCH_PID=$!
 publisher_count=0
